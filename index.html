@@ -147,6 +147,7 @@ select option{background:var(--surface2)}
   <div class="tab" onclick="switchTab('amazon')">🛒 Amazon Monitor <span class="tab-count b" id="tc-amz">0</span></div>
   <div class="tab" onclick="switchTab('watchlist')">👁 Watchlist <span class="tab-count b" id="tc-watch">0</span></div>
   <div class="tab" onclick="switchTab('alerts')">🇿🇦 Competitor Prices <span class="tab-count r" id="tc-alerts">0</span></div>
+  <div class="tab" onclick="switchTab('usd')">💱 USD Pricing <span class="tab-count b" id="tc-usd">0</span></div>
   <div class="tab" onclick="switchTab('seo')">🔍 SEO Agent</div>
   <div class="tab" onclick="switchTab('publish')">🚀 Publish to Wix</div>
   <div class="tab" onclick="switchTab('settings')">⚙ Settings</div>
@@ -257,7 +258,7 @@ select option{background:var(--surface2)}
         <input type="checkbox" id="sec_airtime" style="margin-top:3px;accent-color:var(--accent)">
         <div>
           <div style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--text);margin-bottom:4px">📡 Airtime &amp; SIM Activation</div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);line-height:1.6">This device requires a satellite airtime subscription or prepaid SIM. Contact us at 084 514 1652 or sales@satcomms.co.za to discuss the best plan for your needs.</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);line-height:1.6">This device requires a satellite airtime subscription or prepaid SIM. Contact us at 084 514 1652 or <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a5d6c4c9c0d6e5d6c4d1c6cac8c8d68bc6ca8bdfc4">[email&#160;protected]</a> to discuss the best plan for your needs.</div>
         </div>
       </label>
 
@@ -400,6 +401,147 @@ select option{background:var(--surface2)}
 
   <div id="compEmpty" class="empty"><div class="empty-icon">🇿🇦</div><div class="empty-text">No products being monitored yet.<br>Add a product above to start tracking competitor prices.</div></div>
   <div id="compGrid"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- USD PRICING -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-usd">
+  <div class="shdr">
+    <div class="stitle">💱 USD <span>Pricing Manager</span></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div style="background:var(--surface2);border:1px solid var(--border2);padding:6px 14px;display:flex;align-items:center;gap:10px">
+        <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">USD/ZAR RATE</span>
+        <span style="font-family:var(--cond);font-size:20px;font-weight:700;color:var(--accent4)" id="usdRateDisplay">—</span>
+        <span style="font-family:var(--mono);font-size:8px;color:var(--muted)" id="usdRateTime"></span>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="fetchUSDRate()" id="usdRefreshBtn">↻ Refresh Rate</button>
+      <button class="btn btn-success btn-sm" onclick="pushAllUSDPrices()" id="usdPushAllBtn">🚀 Push All USD Products to Wix</button>
+    </div>
+  </div>
+
+  <!-- RATE PANEL -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:20px">
+    <div style="background:var(--surface);border:1px solid var(--accent4);padding:18px">
+      <div class="flabel" style="color:var(--accent4);margin-bottom:12px">💱 Live USD/ZAR Exchange Rate</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
+        <div style="flex:1;min-width:140px">
+          <div class="flabel">Rate source</div>
+          <select id="usdRateSource">
+            <option value="auto">Auto (live API)</option>
+            <option value="manual">Manual override</option>
+          </select>
+        </div>
+        <div style="min-width:120px">
+          <div class="flabel">Manual rate (if override)</div>
+          <input type="number" id="usdManualRate" placeholder="e.g. 18.75" step="0.01" min="1">
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="applyManualRate()">Apply</button>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);padding:12px">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:8px;line-height:1.8">
+          Rate used for ZAR conversion:<br>
+          <span style="color:var(--accent4);font-size:11px" id="usdRateSummary">Not loaded yet — click Refresh Rate</span>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div class="mfield" style="margin:0;flex:1;min-width:100px">
+            <div class="flabel" style="margin-bottom:4px">Buffer / markup %</div>
+            <input type="number" id="usdBuffer" value="5" min="0" max="50" step="0.5" title="Added on top of the raw USD×ZAR to cover rate fluctuation">
+          </div>
+          <div class="mfield" style="margin:0;flex:1;min-width:100px">
+            <div class="flabel" style="margin-bottom:4px">ZAR rounding</div>
+            <select id="usdRounding">
+              <option value="10">Round to R10</option>
+              <option value="5">Round to R5</option>
+              <option value="1">Round to R1</option>
+              <option value="0">No rounding</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);padding:18px">
+      <div class="flabel" style="margin-bottom:12px">Quick USD → ZAR Calculator</div>
+      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:12px">
+        <div style="flex:1">
+          <div class="flabel">USD price</div>
+          <input type="number" id="calcUSD" placeholder="e.g. 49.95" step="0.01" min="0" oninput="calcZAR()">
+        </div>
+        <div style="font-family:var(--cond);font-size:24px;color:var(--muted2);padding-bottom:6px">=</div>
+        <div style="flex:1">
+          <div class="flabel">ZAR result</div>
+          <input type="text" id="calcZARResult" readonly style="background:var(--surface3);color:var(--accent2);font-family:var(--cond);font-size:18px;font-weight:700">
+        </div>
+      </div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);line-height:1.8">
+        Result includes buffer %. Use this to sanity-check prices before pushing to Wix.
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD USD PRODUCT -->
+  <div style="background:var(--surface);border:1px solid var(--accent);padding:16px;margin-bottom:16px">
+    <div class="flabel" style="color:var(--accent);margin-bottom:10px">+ Tag a Product as USD-Priced</div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:12px;line-height:1.8">
+      Select from your loaded Wix products or enter manually. Ticked products will have their Wix price auto-recalculated whenever you push updated rates.
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <div style="flex:2;min-width:220px">
+        <div class="flabel">Load from My Products</div>
+        <select id="usdProductSelect" style="width:100%">
+          <option value="">— Load products first or enter manually below —</option>
+        </select>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="loadProductsForUSD()">📦 Load Products</button>
+      <button class="btn btn-primary btn-sm" onclick="addUSDProductFromSelect()">+ Tag Selected</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-top:10px;align-items:flex-end">
+      <div>
+        <div class="flabel">Product name (manual)</div>
+        <input type="text" id="usdProdName" placeholder="e.g. Iridium 50-unit airtime">
+      </div>
+      <div>
+        <div class="flabel">USD price $</div>
+        <input type="number" id="usdProdUSD" placeholder="49.95" step="0.01" min="0" oninput="previewUSDProduct()">
+      </div>
+      <div>
+        <div class="flabel">ZAR preview</div>
+        <input type="text" id="usdProdZARPreview" readonly style="background:var(--surface3);color:var(--accent2);font-family:var(--cond);font-size:15px;font-weight:700">
+      </div>
+      <button class="btn btn-success" onclick="addUSDProductManual()">+ Add</button>
+    </div>
+    <div id="usdAddStatus" style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:8px"></div>
+  </div>
+
+  <!-- USD PRODUCTS TABLE -->
+  <div class="shdr" style="margin-bottom:12px">
+    <div class="stitle">USD-Priced <span>Products</span> <span class="tab-count b" id="tc-usd2">0</span></div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted2)">Tick to include in bulk push · ZAR auto-recalculates from live rate</div>
+  </div>
+  <div id="usdEmpty" class="empty"><div class="empty-icon">💱</div><div class="empty-text">No USD-priced products yet.<br>Tag products above to start tracking.</div></div>
+  <div id="usdProductsWrap" style="display:none">
+    <table class="wtable" id="usdTable">
+      <thead><tr>
+        <th><input type="checkbox" id="usdSelectAll" onchange="toggleAllUSD(this.checked)" style="accent-color:var(--accent)"> All</th>
+        <th>Product</th>
+        <th>USD Price</th>
+        <th>Rate Used</th>
+        <th>Buffer</th>
+        <th>ZAR Price</th>
+        <th>Wix ID</th>
+        <th>Last Pushed</th>
+        <th></th>
+      </tr></thead>
+      <tbody id="usdTableBody"></tbody>
+    </table>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-success btn-sm" onclick="pushSelectedUSDPrices()">🚀 Push Selected to Wix</button>
+      <button class="btn btn-ghost btn-sm" onclick="recalcAllUSD()">↻ Recalculate All ZAR</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportUSDCSV()">⬇ Export CSV</button>
+      <span id="usdPushStatus" style="font-family:var(--mono);font-size:10px;color:var(--muted2)"></span>
+    </div>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -610,7 +752,7 @@ select option{background:var(--surface2)}
         Wix Site ID: 79780a2f-25ec-4363-9225-355eebd1e361<br>
         Operating since 2002<br>
         <span style="color:var(--muted)">📡 Iridium · Inmarsat · Thuraya · Garmin</span><br>
-        084 514 1652 · sales@satcomms.co.za
+        084 514 1652 · <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="8ffceee3eafccffceefbece0e2e2fca1ece0a1f5ee">[email&#160;protected]</a>
       </div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);padding:20px">
@@ -710,7 +852,7 @@ select option{background:var(--surface2)}
 </div>
 
 <!-- ============================================================ -->
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ─────────────────────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────────────────────
@@ -797,7 +939,7 @@ function saveWix(){
 // TABS
 // ─────────────────────────────────────────────────────────────
 function switchTab(id){
-  const tabs=['mywix','amazon','watchlist','alerts','seo','publish','settings'];
+  const tabs=['mywix','amazon','watchlist','alerts','usd','seo','publish','settings'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===id));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
@@ -806,6 +948,7 @@ function switchTab(id){
   if(id==='alerts'){ renderCompGrid(); updateCompTabCount(); }
   if(id==='amazon') renderAmazonGrid();
   if(id==='seo') renderRankGrid();
+  if(id==='usd'){ fetchUSDRate(); renderUSDTable(); }
 }
 
 function switchSeoTab(id){
@@ -1739,7 +1882,339 @@ async function loadGSCData(){
 }
 
 // ─────────────────────────────────────────────────────────────
-// RANK TRACKER
+// USD PRICING MANAGER
+// ─────────────────────────────────────────────────────────────
+let usdProducts = JSON.parse(localStorage.getItem('sc_usd')||'[]');
+let liveUSDRate = null;
+let rateLastFetched = null;
+let usdSelected = new Set();
+
+function saveUSD(){ localStorage.setItem('sc_usd',JSON.stringify(usdProducts)); }
+
+function getEffectiveRate(){
+  const src = document.getElementById('usdRateSource')?.value;
+  if(src==='manual'){
+    const manual = parseFloat(document.getElementById('usdManualRate')?.value);
+    if(!isNaN(manual)&&manual>0) return manual;
+  }
+  return liveUSDRate;
+}
+
+function getBuffer(){ return parseFloat(document.getElementById('usdBuffer')?.value||5)/100; }
+
+function getRounding(){ return parseInt(document.getElementById('usdRounding')?.value||10); }
+
+function toZAR(usdPrice){
+  const rate = getEffectiveRate();
+  if(!rate||!usdPrice) return null;
+  const raw = usdPrice * rate * (1 + getBuffer());
+  const round = getRounding();
+  if(round===0) return Math.round(raw*100)/100;
+  return Math.ceil(raw/round)*round;
+}
+
+async function fetchUSDRate(){
+  const btn = document.getElementById('usdRefreshBtn');
+  if(btn){ btn.disabled=true; btn.textContent='Fetching...'; }
+  try{
+    // Try exchangerate-api free endpoint first (no key needed)
+    const r = await fetch('https://open.er-api.com/v6/latest/USD');
+    const data = await r.json();
+    if(data && data.rates && data.rates.ZAR){
+      liveUSDRate = data.rates.ZAR;
+      rateLastFetched = new Date();
+      updateRateDisplay();
+      recalcAllUSD();
+      const rateEl=document.getElementById('usdRateSummary');
+      if(rateEl) rateEl.textContent=`Live rate: $1 = R${liveUSDRate.toFixed(4)} · Buffer: ${document.getElementById('usdBuffer')?.value||5}% applied`;
+    } else {
+      throw new Error('Rate not found in response');
+    }
+  }catch(e){
+    // Fallback: try alternative free API
+    try{
+      const r2 = await fetch('https://api.frankfurter.app/latest?from=USD&to=ZAR');
+      const data2 = await r2.json();
+      if(data2&&data2.rates&&data2.rates.ZAR){
+        liveUSDRate = data2.rates.ZAR;
+        rateLastFetched = new Date();
+        updateRateDisplay();
+        recalcAllUSD();
+      } else {
+        throw new Error('Both rate APIs failed');
+      }
+    }catch(e2){
+      const d=document.getElementById('usdRateSummary');
+      if(d){d.textContent='⚠ Could not fetch live rate. Use Manual Override above.';d.style.color='var(--accent3)';}
+      const disp=document.getElementById('usdRateDisplay');
+      if(disp) disp.textContent='ERR';
+    }
+  }
+  if(btn){ btn.disabled=false; btn.textContent='↻ Refresh Rate'; }
+}
+
+function updateRateDisplay(){
+  if(!liveUSDRate) return;
+  const disp=document.getElementById('usdRateDisplay');
+  const time=document.getElementById('usdRateTime');
+  if(disp) disp.textContent='R'+liveUSDRate.toFixed(2);
+  if(time&&rateLastFetched) time.textContent='Updated '+rateLastFetched.toLocaleTimeString('en-ZA');
+  // Also update calculator if there's a value
+  calcZAR();
+}
+
+function applyManualRate(){
+  const v=parseFloat(document.getElementById('usdManualRate')?.value);
+  if(isNaN(v)||v<=0){ alert('Enter a valid rate.'); return; }
+  liveUSDRate=v;
+  rateLastFetched=new Date();
+  const d=document.getElementById('usdRateSummary');
+  if(d){d.textContent=`Manual rate: $1 = R${v.toFixed(4)} · Buffer: ${document.getElementById('usdBuffer')?.value||5}% applied`;d.style.color='var(--accent4)';}
+  updateRateDisplay();
+  recalcAllUSD();
+}
+
+function calcZAR(){
+  const usd=parseFloat(document.getElementById('calcUSD')?.value);
+  const res=document.getElementById('calcZARResult');
+  if(!res) return;
+  if(isNaN(usd)||usd<=0||!liveUSDRate){ res.value=''; return; }
+  const zar=toZAR(usd);
+  res.value=zar?'R'+zar.toLocaleString('en-ZA'):'—';
+}
+
+function previewUSDProduct(){
+  const usd=parseFloat(document.getElementById('usdProdUSD')?.value);
+  const prev=document.getElementById('usdProdZARPreview');
+  if(!prev) return;
+  const zar=usd&&!isNaN(usd)?toZAR(usd):null;
+  prev.value=zar?'R'+zar.toLocaleString('en-ZA'):'—';
+}
+
+async function loadProductsForUSD(){
+  const sel=document.getElementById('usdProductSelect');
+  sel.innerHTML='<option value="">Loading...</option>';
+  if(!wixProducts.length){
+    try{ await loadMyWixProducts(); }catch(e){ sel.innerHTML='<option value="">Error loading products</option>'; return; }
+  }
+  sel.innerHTML='<option value="">— Select a product —</option>'+
+    wixProducts.map(p=>`<option value="${p.id}" data-name="${(p.name||'').replace(/"/g,'&quot;')}" data-price="${p.priceData?.price||0}">${(p.name||'Unknown').substring(0,60)} — R${p.priceData?.price||0}</option>`).join('');
+  document.getElementById('usdAddStatus').textContent=`${wixProducts.length} products loaded.`;
+  document.getElementById('usdAddStatus').style.color='var(--accent2)';
+}
+
+function addUSDProductFromSelect(){
+  const sel=document.getElementById('usdProductSelect');
+  const opt=sel.options[sel.selectedIndex];
+  if(!opt||!opt.value){ alert('Select a product first.'); return; }
+  const wixId=opt.value;
+  const name=opt.dataset.name||opt.text;
+  const currentZAR=parseFloat(opt.dataset.price)||0;
+  if(usdProducts.find(u=>u.wixId===wixId)){ alert('Already tracking this product.'); return; }
+  // Estimate reverse USD from current ZAR price as starting point
+  const rate=getEffectiveRate();
+  const estimatedUSD=rate?Math.round((currentZAR/rate/(1+getBuffer()))*100)/100:0;
+  usdProducts.push({
+    wixId, name, usdPrice:estimatedUSD, zarPrice:currentZAR,
+    rateUsed:rate||null, bufferUsed:getBuffer(), enabled:true,
+    lastPushed:null, addedAt:new Date().toISOString()
+  });
+  saveUSD();
+  document.getElementById('usdAddStatus').textContent=`✓ "${name.substring(0,40)}" tagged as USD-priced. Review USD price in table.`;
+  document.getElementById('usdAddStatus').style.color='var(--accent2)';
+  document.getElementById('tc-usd').textContent=usdProducts.length;
+  document.getElementById('tc-usd2').textContent=usdProducts.length;
+  renderUSDTable();
+}
+
+function addUSDProductManual(){
+  const name=document.getElementById('usdProdName').value.trim();
+  const usdPrice=parseFloat(document.getElementById('usdProdUSD').value);
+  if(!name){ alert('Enter a product name.'); return; }
+  if(isNaN(usdPrice)||usdPrice<=0){ alert('Enter a valid USD price.'); return; }
+  const rate=getEffectiveRate();
+  const zarPrice=toZAR(usdPrice)||0;
+  usdProducts.push({
+    wixId:null, name, usdPrice, zarPrice,
+    rateUsed:rate, bufferUsed:getBuffer(), enabled:true,
+    lastPushed:null, addedAt:new Date().toISOString()
+  });
+  saveUSD();
+  document.getElementById('usdProdName').value='';
+  document.getElementById('usdProdUSD').value='';
+  document.getElementById('usdProdZARPreview').value='';
+  document.getElementById('usdAddStatus').textContent=`✓ "${name.substring(0,40)}" added.`;
+  document.getElementById('usdAddStatus').style.color='var(--accent2)';
+  document.getElementById('tc-usd').textContent=usdProducts.length;
+  document.getElementById('tc-usd2').textContent=usdProducts.length;
+  renderUSDTable();
+}
+
+function recalcAllUSD(){
+  const rate=getEffectiveRate();
+  if(!rate) return;
+  usdProducts.forEach(u=>{
+    u.zarPrice=toZAR(u.usdPrice)||u.zarPrice;
+    u.rateUsed=rate;
+    u.bufferUsed=getBuffer();
+  });
+  saveUSD();
+  renderUSDTable();
+}
+
+function toggleAllUSD(checked){
+  usdSelected=checked?new Set(usdProducts.map((_,i)=>i)):new Set();
+  renderUSDTable();
+}
+
+function toggleUSDRow(i){
+  if(usdSelected.has(i)) usdSelected.delete(i); else usdSelected.add(i);
+  renderUSDTable();
+}
+
+function removeUSDProduct(i){
+  usdProducts.splice(i,1);
+  saveUSD();
+  document.getElementById('tc-usd').textContent=usdProducts.length;
+  document.getElementById('tc-usd2').textContent=usdProducts.length;
+  renderUSDTable();
+}
+
+function updateUSDPrice(i, field, val){
+  if(!usdProducts[i]) return;
+  usdProducts[i][field]=parseFloat(val)||0;
+  if(field==='usdPrice'){
+    usdProducts[i].zarPrice=toZAR(usdProducts[i].usdPrice)||usdProducts[i].zarPrice;
+    usdProducts[i].rateUsed=getEffectiveRate();
+    usdProducts[i].bufferUsed=getBuffer();
+  }
+  saveUSD();
+  // Update ZAR display in the same row without full re-render
+  const zarCell=document.getElementById(`usd-zar-${i}`);
+  if(zarCell&&field==='usdPrice') zarCell.textContent='R'+(usdProducts[i].zarPrice||0).toLocaleString('en-ZA');
+}
+
+function updateUSDWixId(i, val){
+  if(!usdProducts[i]) return;
+  usdProducts[i].wixId=val.trim()||null;
+  saveUSD();
+}
+
+function renderUSDTable(){
+  const empty=document.getElementById('usdEmpty');
+  const wrap=document.getElementById('usdProductsWrap');
+  const tbody=document.getElementById('usdTableBody');
+  document.getElementById('tc-usd').textContent=usdProducts.length;
+  document.getElementById('tc-usd2').textContent=usdProducts.length;
+  if(!usdProducts.length){ empty.style.display='block'; wrap.style.display='none'; return; }
+  empty.style.display='none'; wrap.style.display='block';
+  const rate=getEffectiveRate();
+  tbody.innerHTML=usdProducts.map((u,i)=>{
+    const isSel=usdSelected.has(i);
+    const canPush=!!u.wixId;
+    return `<tr style="background:${isSel?'rgba(0,180,255,.04)':''}">
+      <td><input type="checkbox" ${isSel?'checked':''} onchange="toggleUSDRow(${i})" style="accent-color:var(--accent)"></td>
+      <td>
+        <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text);margin-bottom:3px">${u.name.substring(0,55)}</div>
+        ${u.wixId
+          ?`<div style="font-family:var(--mono);font-size:8px;color:var(--muted)">Wix: ${u.wixId}</div>`
+          :`<div style="display:flex;gap:4px;margin-top:4px">
+              <input type="text" placeholder="Paste Wix Product ID..." id="usd-wixid-${i}"
+                style="font-family:var(--mono);font-size:8px;padding:2px 6px;width:180px;background:var(--surface2);border:1px solid var(--accent3);color:var(--text)"
+                onchange="updateUSDWixId(${i},this.value)">
+              <span style="font-family:var(--mono);font-size:8px;color:var(--accent3)">⚠ Need Wix ID to push</span>
+            </div>`
+        }
+      </td>
+      <td>
+        <div style="display:flex;gap:3px;align-items:center">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">$</span>
+          <input type="number" value="${u.usdPrice||''}" step="0.01" min="0"
+            style="width:80px;font-family:var(--cond);font-size:15px;font-weight:700;color:var(--accent4);background:var(--surface2);border:1px solid var(--border2);padding:3px 6px"
+            onchange="updateUSDPrice(${i},'usdPrice',this.value)">
+        </div>
+      </td>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${u.rateUsed?'R'+u.rateUsed.toFixed(2):'—'}</td>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${u.bufferUsed!=null?Math.round(u.bufferUsed*100)+'%':'—'}</td>
+      <td>
+        <span id="usd-zar-${i}" style="font-family:var(--cond);font-size:17px;font-weight:700;color:var(--accent2)">
+          ${u.zarPrice?'R'+u.zarPrice.toLocaleString('en-ZA'):'—'}
+        </span>
+      </td>
+      <td style="font-family:var(--mono);font-size:9px;color:var(--muted)">${u.wixId?u.wixId.substring(0,18)+'…':'<span style="color:var(--accent3)">Not linked</span>'}</td>
+      <td style="font-family:var(--mono);font-size:9px;color:var(--muted)">${u.lastPushed?new Date(u.lastPushed).toLocaleString('en-ZA'):'Never'}</td>
+      <td style="display:flex;gap:4px">
+        ${canPush?`<button class="btn btn-success btn-sm" onclick="pushSingleUSD(${i})" title="Push to Wix now">↑</button>`:''}
+        <button class="btn btn-danger btn-sm" onclick="removeUSDProduct(${i})">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function pushSingleUSD(i){
+  const u=usdProducts[i];
+  if(!u||!u.wixId){ alert('No Wix ID set for this product. Paste the Wix Product ID first.'); return; }
+  if(!u.zarPrice){ alert('No ZAR price calculated. Fetch the rate first.'); return; }
+  const status=document.getElementById('usdPushStatus');
+  status.textContent=`Pushing "${u.name.substring(0,30)}"...`; status.style.color='var(--muted2)';
+  try{
+    await callRelay('updateProduct',{productId:u.wixId, product:{priceData:{price:u.zarPrice}}});
+    u.lastPushed=new Date().toISOString();
+    saveUSD();
+    status.textContent=`✓ "${u.name.substring(0,30)}" → R${u.zarPrice.toLocaleString()} pushed to Wix`;
+    status.style.color='var(--accent2)';
+    renderUSDTable();
+  }catch(e){
+    status.textContent=`✗ Failed: ${e.message}`; status.style.color='var(--accent3)';
+  }
+}
+
+async function pushSelectedUSDPrices(){
+  const toProcess=[...usdSelected].map(i=>({i,u:usdProducts[i]})).filter(({u})=>u&&u.wixId&&u.zarPrice);
+  if(!toProcess.length){ alert('Select products with Wix IDs and calculated ZAR prices.'); return; }
+  const status=document.getElementById('usdPushStatus');
+  status.textContent=`Pushing ${toProcess.length} products...`; status.style.color='var(--muted2)';
+  let done=0, errs=0;
+  for(const {i,u} of toProcess){
+    try{
+      await callRelay('updateProduct',{productId:u.wixId, product:{priceData:{price:u.zarPrice}}});
+      u.lastPushed=new Date().toISOString();
+      done++;
+    }catch(e){ errs++; }
+    await new Promise(r=>setTimeout(r,400));
+  }
+  saveUSD();
+  status.textContent=`✓ ${done} pushed${errs?' · '+errs+' failed':''}`;
+  status.style.color=errs?'var(--accent4)':'var(--accent2)';
+  renderUSDTable();
+}
+
+async function pushAllUSDPrices(){
+  const all=usdProducts.filter(u=>u.wixId&&u.zarPrice);
+  if(!all.length){ alert('No products with Wix IDs linked. Link products first.'); return; }
+  if(!confirm(`Push updated ZAR prices for all ${all.length} USD-priced products to Wix?`)) return;
+  usdSelected=new Set(usdProducts.filter(u=>u.wixId&&u.zarPrice).map((_,i)=>i));
+  await pushSelectedUSDPrices();
+}
+
+function exportUSDCSV(){
+  const rows=[['Product','USD Price','Rate Used','Buffer','ZAR Price','Wix ID','Last Pushed']];
+  usdProducts.forEach(u=>rows.push([
+    `"${(u.name||'').replace(/"/g,'""')}"`,
+    u.usdPrice||0,
+    u.rateUsed?u.rateUsed.toFixed(4):'',
+    u.bufferUsed!=null?Math.round(u.bufferUsed*100)+'%':'',
+    u.zarPrice||0,
+    u.wixId||'',
+    u.lastPushed?new Date(u.lastPushed).toLocaleString('en-ZA'):''
+  ]));
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='satcomms_usd_pricing.csv';
+  a.click();
+}
+
 // ─────────────────────────────────────────────────────────────
 function renderRankGrid(){
   const el=document.getElementById('rankGrid');
@@ -1777,18 +2252,4 @@ async function checkRank(i){
   try{
     const data=await callRelay('checkRank',{keyword:k.keyword,domain:SITE_URL,site:SITE_NAME});
     k.position=data.position||null;
-    k.lastChecked=new Date().toISOString();
-    localStorage.setItem('sc_rank',JSON.stringify(rankKeywords));
-    renderRankGrid();
-  }catch(e){ alert('Rank check failed: '+e.message); }
-}
-
-async function checkAllRanks(){
-  for(let i=0;i<rankKeywords.length;i++){
-    await checkRank(i);
-    await new Promise(r=>setTimeout(r,1200));
-  }
-}
-</script>
-</body>
-</html>
+    k.lastCh
