@@ -1076,6 +1076,91 @@ select option{background:var(--surface2)}
 <!-- ============================================================ -->
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ─────────────────────────────────────────────────────────────
+// CORE — switchTab, callRelay, settings, init
+// ─────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const tabEl = document.querySelector(`.tab[onclick*="'${name}'"]`);
+  if (tabEl) tabEl.classList.add('active');
+  const panelEl = document.getElementById('panel-' + name);
+  if (panelEl) panelEl.classList.add('active');
+  // lazy-load tab content
+  if (name === 'usd' && typeof renderUSDTable === 'function') renderUSDTable();
+  if (name === 'alerts' && typeof renderCompGrid === 'function') renderCompGrid();
+  if (name === 'publish' && typeof renderQueue === 'function') renderQueue();
+  if (name === 'watchlist' && typeof renderWatchlist === 'function') renderWatchlist();
+  if (name === 'mywix' && typeof loadWixProducts === 'function' && !wixProducts.length) loadWixProducts();
+}
+
+async function callRelay(action, body) {
+  const cfg = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
+  const url = cfg.relayUrl || document.getElementById('relayUrl')?.value;
+  if (!url || url.includes('PASTE_YOUR')) throw new Error('Relay URL not configured — go to ⚙ Settings');
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action, ...body })
+  });
+  const data = await resp.json();
+  if (!data.success && data.error) throw new Error(data.error);
+  return data.data !== undefined ? data.data : data;
+}
+
+function loadSettings() {
+  const s = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
+  if (s.relayUrl) { const el = document.getElementById('relayUrl'); if (el) el.value = s.relayUrl; }
+  if (s.defaultAiContext) { const el = document.getElementById('defaultAiContext'); if (el) el.value = s.defaultAiContext; }
+  if (s.garminMarkup !== undefined) { const el = document.getElementById('garminMarkup'); if (el) el.value = s.garminMarkup; }
+  if (s.garminVAT !== undefined) { const el = document.getElementById('garminVAT'); if (el) el.value = s.garminVAT; }
+  if (s.garminRounding !== undefined) { const el = document.getElementById('garminRounding'); if (el) el.value = s.garminRounding; }
+}
+
+function saveSettings() {
+  const s = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
+  const relayEl = document.getElementById('relayUrl');
+  const ctxEl = document.getElementById('defaultAiContext');
+  const markupEl = document.getElementById('garminMarkup');
+  const vatEl = document.getElementById('garminVAT');
+  const roundEl = document.getElementById('garminRounding');
+  if (relayEl?.value) s.relayUrl = relayEl.value.trim();
+  if (ctxEl?.value) s.defaultAiContext = ctxEl.value;
+  if (markupEl?.value) s.garminMarkup = parseFloat(markupEl.value);
+  if (vatEl?.value) s.garminVAT = parseFloat(vatEl.value);
+  if (roundEl?.value) s.garminRounding = parseInt(roundEl.value);
+  localStorage.setItem('sc_cfg', JSON.stringify(s));
+  const btn = document.querySelector('[onclick="saveSettings()"]');
+  if (btn) { const orig = btn.textContent; btn.textContent = '✓ Saved'; setTimeout(() => btn.textContent = orig, 1500); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
+  if (typeof initAutoToggle === 'function') initAutoToggle();
+  if (typeof updateCompTabCount === 'function') updateCompTabCount();
+  if (typeof renderCompGrid === 'function') renderCompGrid();
+  if (typeof renderQueue === 'function') renderQueue();
+  if (typeof updateRateDisplay === 'function') updateRateDisplay();
+  if (typeof renderUSDTable === 'function') renderUSDTable();
+  if (typeof updateGarminStats === 'function') updateGarminStats();
+  // Show last comparison date
+  const lastDate = localStorage.getItem('sc_garmin_prev_date');
+  const el = document.getElementById('gs-lastcompare');
+  if (el && lastDate) {
+    const d = new Date(lastDate);
+    el.textContent = d.toLocaleDateString('en-ZA', {day:'numeric', month:'short'}) + ' ' + d.toLocaleTimeString('en-ZA', {hour:'2-digit', minute:'2-digit'});
+  }
+  // Restore active tab
+  const lastTab = localStorage.getItem('sc_tab') || 'mywix';
+  switchTab(lastTab);
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      const m = t.getAttribute('onclick')?.match(/'(\w+)'/);
+      if (m) localStorage.setItem('sc_tab', m[1]);
+    });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────────────────────
 let wixProducts=[], wixFiltered=[], wixSelected=new Set(), wixVisibleCount=60;
