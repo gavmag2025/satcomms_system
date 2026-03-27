@@ -520,58 +520,89 @@ select option{background:var(--surface2)}
 <!-- ═══════════════════════════════════════════════════════════ -->
 <div class="panel" id="panel-alerts">
   <div class="shdr">
-    <div class="stitle">🇿🇦 Competitor <span>Price Monitor</span></div>
-    <div style="font-family:var(--mono);font-size:9px;color:var(--muted2)">Track SA satellite phone & equipment competitors</div>
+    <div class="stitle">🇿🇦 Garmin <span>Price Comparison</span></div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted2)">Compare your Garmin prices against SA competitors in real time</div>
   </div>
 
-  <div style="background:var(--surface);border:1px solid var(--border);padding:16px;margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end">
+  <!-- COMPETITOR TOGGLES & SETTINGS -->
+  <div style="background:var(--surface);border:1px solid var(--border);padding:14px 16px;margin-bottom:14px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end">
     <div>
-      <div class="flabel" style="margin-bottom:8px">Alert threshold</div>
-      <select id="compThreshold" style="width:auto;min-width:150px">
-        <option value="0">Any price difference</option>
-        <option value="3">More than 3%</option>
-        <option value="5" selected>More than 5%</option>
-        <option value="10">More than 10%</option>
-        <option value="15">More than 15%</option>
+      <div class="flabel" style="margin-bottom:6px">Competitors to check</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;cursor:pointer">
+          <input type="checkbox" id="comp_navworld" checked style="accent-color:var(--accent)"> 🧭 Navworld
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;cursor:pointer">
+          <input type="checkbox" id="comp_takealot" checked style="accent-color:var(--accent)"> 🛒 Takealot
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;cursor:pointer">
+          <input type="checkbox" id="comp_amazon_coza" checked style="accent-color:var(--accent)"> 📦 Amazon.co.za
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;cursor:pointer">
+          <input type="checkbox" id="comp_wantitall" style="accent-color:var(--accent)"> 🏷 WantItAll
+        </label>
+      </div>
+    </div>
+    <div>
+      <div class="flabel" style="margin-bottom:6px">Alert if competitor is cheaper by more than</div>
+      <select id="compThreshold" style="width:160px">
+        <option value="0">Any amount</option>
+        <option value="3">3%</option>
+        <option value="5" selected>5%</option>
+        <option value="10">10%</option>
+        <option value="15">15%</option>
       </select>
     </div>
     <div>
-      <div class="flabel" style="margin-bottom:6px">Competitors to monitor</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <label style="display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10px;cursor:pointer"><input type="checkbox" id="comp_takealot" checked style="accent-color:var(--accent)"> Takealot</label>
-        <label style="display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10px;cursor:pointer"><input type="checkbox" id="comp_wantitall" checked style="accent-color:var(--accent)"> WantItAll</label>
-        <label style="display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10px;cursor:pointer"><input type="checkbox" id="comp_pricecheck" checked style="accent-color:var(--accent)"> PriceCheck</label>
-        <label style="display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10px;cursor:pointer"><input type="checkbox" id="comp_amazon_coza" style="accent-color:var(--accent)"> Amazon.co.za</label>
+      <div class="flabel" style="margin-bottom:6px">Load products from</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="loadGarminForComp()">🗺 From Garmin CSV</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadWixForComp()">📦 From Wix</button>
       </div>
     </div>
   </div>
 
-  <!-- ADD PRODUCT -->
-  <div style="background:var(--surface);border:1px solid var(--accent3);padding:16px;margin-bottom:16px">
-    <div class="flabel" style="color:var(--accent3);margin-bottom:10px">+ Add Product to Monitor</div>
+  <!-- MANUAL ADD -->
+  <div style="background:var(--surface);border:1px solid var(--border2);padding:14px 16px;margin-bottom:14px">
+    <div class="flabel" style="margin-bottom:8px">+ Add product manually</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-      <div style="flex:1;min-width:200px">
+      <div style="flex:1;min-width:220px">
         <div class="flabel">Product name / model</div>
-        <input type="text" id="compProductName" placeholder="e.g. Iridium 9575A Extreme Satellite Phone">
+        <input type="text" id="compProductName" placeholder="e.g. Garmin GPSMAP 67i">
       </div>
-      <div style="min-width:120px;max-width:140px">
-        <div class="flabel">Your Price (R)</div>
-        <input type="number" id="compMyPrice" placeholder="18999" min="0">
+      <div style="min-width:110px">
+        <div class="flabel">Your Price (R incl VAT)</div>
+        <input type="number" id="compMyPrice" placeholder="15999" min="0">
       </div>
-      <button class="btn btn-primary" onclick="addCompetitorProduct()" id="compAddBtn">Search Competitors</button>
+      <div style="min-width:110px">
+        <div class="flabel">SKU / Part No.</div>
+        <input type="text" id="compSku" placeholder="010-02812-00">
+      </div>
+      <button class="btn btn-primary" onclick="addCompetitorProduct()" id="compAddBtn">🔍 Check Prices</button>
     </div>
-    <div style="margin-top:10px">
-      <div class="flabel" style="margin-bottom:6px">Or load from your Wix products</div>
-      <button class="btn btn-ghost btn-sm" onclick="loadWixForComp()">📦 Load My Products</button>
-      <select id="compWixSelect" style="min-width:260px;display:none" onchange="prefillCompFromWix()">
+    <div id="compAddStatus" style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:8px"></div>
+    <!-- Wix product selector -->
+    <div style="margin-top:8px;display:none" id="compWixWrap">
+      <select id="compWixSelect" style="min-width:260px" onchange="prefillCompFromWix()">
         <option value="">— Select a product —</option>
       </select>
     </div>
-    <div id="compAddStatus" style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:8px"></div>
   </div>
 
-  <div id="compEmpty" class="empty"><div class="empty-icon">🇿🇦</div><div class="empty-text">No products being monitored yet.<br>Add a product above to start tracking competitor prices.</div></div>
-  <div id="compGrid"></div>
+  <!-- SUMMARY STATS -->
+  <div id="compSummaryBar" style="display:none;background:var(--surface2);border:1px solid var(--border);padding:10px 16px;margin-bottom:12px;display:flex;gap:20px;flex-wrap:wrap">
+    <div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">PRODUCTS</span><br><span style="font-family:var(--cond);font-size:22px;font-weight:700;color:var(--accent)" id="compStatTotal">0</span></div>
+    <div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">CHEAPEST</span><br><span style="font-family:var(--cond);font-size:22px;font-weight:700;color:var(--accent2)" id="compStatCheapest">—</span></div>
+    <div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">MOST EXPENSIVE</span><br><span style="font-family:var(--cond);font-size:22px;font-weight:700;color:var(--accent3)" id="compStatExp">—</span></div>
+    <div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">ALERTS</span><br><span style="font-family:var(--cond);font-size:22px;font-weight:700;color:var(--accent4)" id="compStatAlerts">0</span></div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px">
+      <button class="btn btn-primary btn-sm" onclick="refreshAllComp()">↻ Refresh All</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearCompProducts()">✕ Clear All</button>
+    </div>
+  </div>
+
+  <div id="compEmpty" class="empty"><div class="empty-icon">🇿🇦</div><div class="empty-text">No products tracked yet.<br>Add a product above, or load from your Garmin CSV / Wix store.</div></div>
+  <div id="compGrid" style="display:flex;flex-direction:column;gap:8px"></div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -1076,863 +1107,338 @@ let wixProducts=[], wixFiltered=[], wixSelected=new Set(), wixVisibleCount=60;
 let watchlist=JSON.parse(localStorage.getItem('sc_wl')||'[]');
 let published=JSON.parse(localStorage.getItem('sc_pub')||'[]');
 let settings=JSON.parse(localStorage.getItem('sc_cfg')||'{}');
-let compItems=JSON.parse(localStorage.getItem('sc_comp')||'[]');
-let amazonItems=JSON.parse(localStorage.getItem('sc_amz')||'[]');
-let rankKeywords=JSON.parse(localStorage.getItem('sc_rank')||'[]');
-let isPublishing=false;
-let currentEditorProductId=null;
+// ─────────────────────────────────────────────────────────────
+// GARMIN COMPETITOR PRICE COMPARISON
+// ─────────────────────────────────────────────────────────────
+let compProducts = JSON.parse(localStorage.getItem('sc_comp_garmin') || '[]');
 
-const DEFAULT_RELAY='PASTE_YOUR_SATCOMMS_RELAY_URL_HERE';
-const SITE_NAME='satcomms.co.za';
-const SITE_URL='https://www.satcomms.co.za';
-const SITE_ID='79780a2f-25ec-4363-9225-355eebd1e361';
-
-const COMPETITORS={
-  takealot:  {name:'Takealot',    color:'#1a9be8', searchUrl:'https://www.takealot.com/all?qsearch='},
-  wantitall: {name:'WantItAll',   color:'#e85c1a', searchUrl:'https://www.wantitall.co.za/search?keyword='},
-  pricecheck:{name:'PriceCheck',  color:'#ffb300', searchUrl:'https://www.pricecheck.co.za/search/?search='},
-  amazon_coza:{name:'Amazon.co.za',color:'#ff9900',searchUrl:'https://www.amazon.co.za/s?k='}
+const GARMIN_COMPETITORS = {
+  navworld:    { name: 'Navworld',     color: '#00b4ff', icon: '🧭', url: 'https://navworld.co.za',     searchUrl: q => `https://navworld.co.za/?s=${encodeURIComponent(q)}&post_type=product` },
+  takealot:    { name: 'Takealot',     color: '#0077c8', icon: '🛒', url: 'https://www.takealot.com',   searchUrl: q => `https://www.takealot.com/all?search=${encodeURIComponent(q)}` },
+  amazon_coza: { name: 'Amazon.co.za', color: '#ff9900', icon: '📦', url: 'https://www.amazon.co.za',  searchUrl: q => `https://www.amazon.co.za/s?k=${encodeURIComponent(q)}` },
+  wantitall:   { name: 'WantItAll',    color: '#e53935', icon: '🏷',  url: 'https://www.wantitall.co.za', searchUrl: q => `https://www.wantitall.co.za/search/?search=${encodeURIComponent(q)}` },
 };
 
-const AI_BRANDS = ['iridium','inmarsat','thuraya','garmin'];
+function saveComp() { localStorage.setItem('sc_comp_garmin', JSON.stringify(compProducts)); }
 
-// ─────────────────────────────────────────────────────────────
-// RELAY
-// ─────────────────────────────────────────────────────────────
-function getRelay(){ return document.getElementById('relayUrl')?.value?.trim() || settings.relayUrl || DEFAULT_RELAY; }
-
-async function callRelay(action, payload={}){
-  const relay = getRelay();
-  if(!relay || relay===DEFAULT_RELAY){
-    throw new Error('Relay URL not configured. Go to Publish → Settings and paste your Apps Script URL.');
-  }
-  const res = await fetch(relay, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({action, ...payload})
-  });
-  const data = await res.json();
-  if(!data.success) throw new Error(data.error || 'Relay error');
-  return data.data;
-}
-
-// ─────────────────────────────────────────────────────────────
-// INIT
-// ─────────────────────────────────────────────────────────────
-window.addEventListener('load',()=>{
-  loadSettings();
-  renderWatchlist();
-  renderQueue();
-  renderCompGrid();
-  renderAmazonGrid();
-  renderRankGrid();
-  document.getElementById('feedStatusText').textContent='Ready';
-  updateCompTabCount();
-  initAutoToggle();
-});
-
-function loadSettings(){
-  if(settings.relayUrl) document.getElementById('relayUrl').value=settings.relayUrl;
-  if(settings.defaultMarkup) document.getElementById('defaultMarkup').value=settings.defaultMarkup;
-  if(settings.defaultAiContext) document.getElementById('defaultAiContext').value=settings.defaultAiContext;
-}
-
-function saveSettings(){
-  settings.relayUrl=document.getElementById('relayUrl').value;
-  settings.defaultMarkup=document.getElementById('defaultMarkup').value;
-  settings.defaultAiContext=document.getElementById('defaultAiContext').value;
-  localStorage.setItem('sc_cfg',JSON.stringify(settings));
-  alert('Settings saved.');
-}
-
-function saveWix(){
-  settings.relayUrl=document.getElementById('relayUrl').value;
-  localStorage.setItem('sc_cfg',JSON.stringify(settings));
-  document.getElementById('wixStatus').textContent='Saved.';
-  document.getElementById('wixStatus').style.color='var(--accent2)';
-}
-
-// ─────────────────────────────────────────────────────────────
-// TABS
-// ─────────────────────────────────────────────────────────────
-function switchTab(id){
-  const tabs=['mywix','garmin','amazon','watchlist','alerts','usd','seo','publish','settings'];
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===id));
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  document.getElementById('panel-'+id).classList.add('active');
-  if(id==='watchlist') renderWatchlist();
-  if(id==='publish') renderQueue();
-  if(id==='alerts'){ renderCompGrid(); updateCompTabCount(); }
-  if(id==='amazon') renderAmazonGrid();
-  if(id==='seo') renderRankGrid();
-  if(id==='usd'){ fetchUSDRate(); renderUSDTable(); }
-  if(id==='garmin') renderGarminGrid();
-}
-
-function switchSeoTab(id){
-  ['audit','keywords','rank','onpage','content','gsc'].forEach(t=>{
-    document.getElementById('seosec-'+t).style.display=t===id?'block':'none';
-    const btn=document.getElementById('seotab-'+t);
-    if(btn){ btn.className=t===id?'btn btn-primary btn-sm':'btn btn-ghost btn-sm'; btn.style.borderRadius='0'; }
+function getEnabledCompetitors() {
+  return Object.keys(GARMIN_COMPETITORS).filter(k => {
+    const el = document.getElementById('comp_' + k);
+    return el ? el.checked : false;
   });
 }
 
-// ─────────────────────────────────────────────────────────────
-// WIX TEST
-// ─────────────────────────────────────────────────────────────
-async function testWix(){
-  const st=document.getElementById('wixStatus');
-  st.textContent='Testing connection via relay...'; st.style.color='var(--muted2)';
-  try{
-    const data = await callRelay('test');
-    st.textContent=`✓ Connected! Found ${data.productCount||0} products in your Wix store.`;
-    st.style.color='var(--accent2)';
-    saveWix();
-  }catch(e){
-    st.textContent='✗ '+e.message;
-    st.style.color='var(--accent3)';
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// MY WIX PRODUCTS
-// ─────────────────────────────────────────────────────────────
-async function loadMyWixProducts(){
-  const btn=document.getElementById('loadWixBtn');
-  const info=document.getElementById('wixProductsInfo');
-  const empty=document.getElementById('wixProductsEmpty');
-  btn.disabled=true; btn.textContent='Loading...';
-  info.textContent='Fetching products from satcomms.co.za...';
-  empty.style.display='none';
-  document.getElementById('feedStatusText').textContent='Syncing...';
-  try{
-    wixProducts=[]; let offset=0; let hasMore=true;
-    while(hasMore){
-      const data=await callRelay('getWixProducts',{limit:50, offset});
-      const prods=data.products||[];
-      wixProducts=[...wixProducts,...prods];
-      offset+=prods.length;
-      hasMore=prods.length===50&&wixProducts.length<500;
-      info.textContent=`Loaded ${wixProducts.length} products...`;
-    }
-    document.getElementById('tc-mywix').textContent=wixProducts.length;
-    wixFiltered=[...wixProducts];
-    updateWixStats();
-    info.textContent=`${wixProducts.length} products loaded from satcomms.co.za`;
-    renderWixProducts();
-    document.getElementById('feedStatusText').textContent='satcomms.co.za Synced';
-    document.getElementById('feedTime').textContent='Updated '+new Date().toLocaleTimeString('en-ZA');
-  }catch(e){
-    info.textContent='Error: '+e.message;
-    info.style.color='var(--accent3)';
-    document.getElementById('feedStatusText').textContent='Sync Error';
-    empty.style.display='block';
-    empty.innerHTML='<div class="empty-icon">⚠</div><div class="empty-text">Could not load products.<br>'+e.message+'<br><br>Check relay URL in Publish tab.</div>';
-  }
-  btn.disabled=false; btn.textContent='↻ Load from satcomms.co.za';
-}
-
-function updateWixStats(){
-  document.getElementById('sw-total').textContent=wixProducts.length;
-  document.getElementById('sw-visible').textContent=wixProducts.filter(p=>p.visible).length;
-  document.getElementById('sw-hidden').textContent=wixProducts.filter(p=>!p.visible).length;
-  document.getElementById('sw-instock').textContent=wixProducts.filter(p=>(p.stock?.quantity||0)>0).length;
-  const prices=wixProducts.map(p=>p.priceData?.price||0).filter(Boolean);
-  document.getElementById('sw-avgprice').textContent=prices.length?'R'+Math.round(prices.reduce((a,b)=>a+b,0)/prices.length).toLocaleString():'—';
-}
-
-function filterWixProducts(){
-  const q=document.getElementById('wixSearchInput').value.toLowerCase();
-  const brand=document.getElementById('wixBrandFilter').value.toLowerCase();
-  const vis=document.getElementById('wixVisFilter').value;
-  const sort=document.getElementById('wixSortFilter').value;
-  wixFiltered=wixProducts.filter(p=>{
-    if(q&&!p.name?.toLowerCase().includes(q)&&!p.sku?.toLowerCase().includes(q)) return false;
-    if(brand){
-      const nm=(p.name||'').toLowerCase()+(p.description||'').toLowerCase();
-      if(brand==='other'){
-        if(AI_BRANDS.some(b=>nm.includes(b))) return false;
-      } else {
-        if(!nm.includes(brand)) return false;
-      }
-    }
-    if(vis==='visible'&&!p.visible) return false;
-    if(vis==='hidden'&&p.visible) return false;
-    return true;
-  });
-  wixFiltered.sort((a,b)=>{
-    if(sort==='price_asc') return (a.priceData?.price||0)-(b.priceData?.price||0);
-    if(sort==='price_desc') return (b.priceData?.price||0)-(a.priceData?.price||0);
-    return (a.name||'').localeCompare(b.name||'');
-  });
-  document.getElementById('wixProductsInfo').textContent=`Showing ${Math.min(wixVisibleCount,wixFiltered.length)} of ${wixFiltered.length} products`;
-  renderWixProducts();
-}
-
-function loadMoreWix(){ wixVisibleCount+=60; renderWixProducts(); }
-
-function renderWixProducts(){
-  const grid=document.getElementById('wixProductsGrid');
-  const empty=document.getElementById('wixProductsEmpty');
-  const wrap=document.getElementById('wixLoadMoreWrap');
-  if(!wixFiltered.length){
-    empty.style.display='block';
-    empty.innerHTML='<div class="empty-icon">🔍</div><div class="empty-text">No products match.</div>';
-    grid.innerHTML=''; return;
-  }
-  empty.style.display='none';
-  wrap.style.display=wixFiltered.length>wixVisibleCount?'block':'none';
-  const slice=wixFiltered.slice(0,wixVisibleCount);
-  document.getElementById('wixProductsInfo').textContent=`Showing ${slice.length} of ${wixFiltered.length} products`;
-  grid.innerHTML=slice.map(p=>{
-    const isSel=wixSelected.has(p.id);
-    const img=p.mainMedia?.image?.url||'';
-    const price=p.priceData?.price||0;
-    const qty=p.stock?.quantity??0;
-    const sections=(p.additionalInfoSections||[]).map(s=>(s.title||'').toLowerCase());
-    const has={
-      warranty: sections.some(t=>t.includes('warrant')),
-      delivery: sections.some(t=>t.includes('deliver')),
-      vat:      sections.some(t=>t.includes('vat')),
-      airtime:  sections.some(t=>t.includes('airtime')||t.includes('sim')),
-      health:   sections.some(t=>t.includes('health')||t.includes('check')),
-      courier:  sections.some(t=>t.includes('courier')||t.includes('insurance'))
-    };
-    const secBadge=(present,label)=>`<span title="${label}" style="font-family:var(--mono);font-size:7px;padding:1px 4px;margin-right:2px;background:${present?'var(--accent2)':'var(--surface2)'};color:${present?'#000':'var(--muted)'};border:1px solid ${present?'var(--accent2)':'var(--border2)'}">${label}</span>`;
-
-    // detect brand
-    const nm=(p.name||'').toLowerCase();
-    let brandTag='', brandCol='var(--muted2)';
-    if(nm.includes('iridium')){brandTag='IRIDIUM';brandCol='var(--accent)';}
-    else if(nm.includes('inmarsat')){brandTag='INMARSAT';brandCol='var(--accent2)';}
-    else if(nm.includes('thuraya')){brandTag='THURAYA';brandCol='var(--accent4)';}
-    else if(nm.includes('garmin')){brandTag='GARMIN';brandCol='#76c442';}
-
-    return `<div class="pcard ${isSel?'sel':''}" id="wp-${p.id}">
-      <div class="pcard-sel-box" onclick="toggleWixSelect('${p.id}',event)">${isSel?'✓':''}</div>
-      ${brandTag?`<div style="position:absolute;top:8px;left:8px;font-family:var(--mono);font-size:7px;padding:2px 6px;font-weight:700;background:${brandCol};color:#000;z-index:2">${brandTag}</div>`:''}
-      ${!p.visible?`<div style="position:absolute;top:8px;${brandTag?'left:80px':'left:8px'};font-family:var(--mono);font-size:7px;padding:2px 6px;background:var(--accent3);color:#fff;z-index:2">HIDDEN</div>`:''}
-      ${img?`<img class="pcard-img" src="${img}" onerror="this.style.display='none'" onclick="openProductEditor('${p.id}')" style="cursor:pointer">`:`<div class="pcard-img-ph" onclick="openProductEditor('${p.id}')" style="cursor:pointer">📡 Click to Edit</div>`}
-      <div class="pcard-body" onclick="openProductEditor('${p.id}')" style="cursor:pointer">
-        <div class="pcard-sku">${p.sku||'—'} <span style="font-family:var(--mono);font-size:7px;padding:1px 5px;background:var(--accent);color:#000;margin-left:4px">WIX</span></div>
-        <div class="pcard-name">${(p.name||'').substring(0,65)}</div>
-        <div class="price-row">
-          <div class="pi"><div class="pi-l">Price</div><div class="pi-v yours">R${price.toLocaleString()}</div></div>
-          <div class="pi"><div class="pi-l">Stock</div><div class="pi-v ${qty>5?'':qty>0?'rrp':'cost'}">${qty}</div></div>
-          <div class="pi"><div class="pi-l">Visible</div><div class="pi-v" style="font-size:12px;color:${p.visible?'var(--accent2)':'var(--accent3)'}">${p.visible?'YES':'NO'}</div></div>
-        </div>
-        <div style="margin-top:5px;margin-bottom:2px;line-height:2">
-          ${secBadge(has.warranty,'🛡 WTY')}${secBadge(has.delivery,'🚚 DEL')}${secBadge(has.vat,'🧾 VAT')}${secBadge(has.airtime,'📡 AIR')}${secBadge(has.health,'🔧 CHK')}
-        </div>
-        <!-- Inline editors -->
-        <div style="display:flex;gap:6px;margin-top:8px;align-items:flex-end" onclick="event.stopPropagation()">
-          <div style="flex:1">
-            <div class="flabel" style="font-size:7px;margin-bottom:2px">PRICE (R)</div>
-            <div style="display:flex;gap:3px">
-              <input type="number" id="price-${p.id}" value="${price}" min="0" step="1"
-                style="width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:3px 6px"
-                onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter')saveWixPrice('${p.id}')">
-              <button class="btn btn-success btn-sm" style="padding:2px 7px;font-size:9px" onclick="event.stopPropagation();saveWixPrice('${p.id}')">✓</button>
-            </div>
-          </div>
-          <div style="flex:1">
-            <div class="flabel" style="font-size:7px;margin-bottom:2px">QTY</div>
-            <div style="display:flex;gap:3px">
-              <input type="number" id="qty-${p.id}" value="${qty}" min="0" step="1"
-                style="width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:3px 6px"
-                onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter')saveWixQty('${p.id}')">
-              <button class="btn btn-primary btn-sm" style="padding:2px 7px;font-size:9px" onclick="event.stopPropagation();saveWixQty('${p.id}')">✓</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="pcard-actions">
-        <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();addToWatch(p,'${p.id}')">👁 Watch</button>
-        <button class="btn btn-sm" style="background:var(--accent2);color:#000" onclick="event.stopPropagation();openProductEditor('${p.id}')">✏ Edit</button>
-      </div>
-    </div>`;
-  }).join('');
-  document.getElementById('sw-selected').textContent=wixSelected.size;
-  document.getElementById('wixBulkBar').style.display=wixSelected.size>0?'flex':'none';
-  document.getElementById('wixBulkInfo').textContent=`${wixSelected.size} product${wixSelected.size!==1?'s':''} selected`;
-}
-
-function toggleWixSelect(id,e){
-  e&&e.stopPropagation();
-  if(wixSelected.has(id)) wixSelected.delete(id); else wixSelected.add(id);
-  const c=document.getElementById('wp-'+id);
-  if(c){c.classList.toggle('sel',wixSelected.has(id));const b=c.querySelector('.pcard-sel-box');if(b)b.textContent=wixSelected.has(id)?'✓':'';}
-  document.getElementById('sw-selected').textContent=wixSelected.size;
-  document.getElementById('wixBulkBar').style.display=wixSelected.size>0?'flex':'none';
-  document.getElementById('wixBulkInfo').textContent=`${wixSelected.size} product${wixSelected.size!==1?'s':''} selected`;
-}
-
-function clearWixSelection(){ wixSelected.clear(); renderWixProducts(); }
-
-async function saveWixPrice(pid){
-  const inp=document.getElementById('price-'+pid);
-  const price=parseFloat(inp.value);
-  if(isNaN(price)||price<0){ alert('Invalid price.'); return; }
-  inp.style.borderColor='var(--muted2)'; inp.disabled=true;
-  try{
-    await callRelay('updateProduct',{productId:pid, product:{priceData:{price}}});
-    const p=wixProducts.find(x=>x.id===pid);
-    if(p&&p.priceData) p.priceData.price=price;
-    inp.style.borderColor='var(--accent2)';
-    setTimeout(()=>{inp.style.borderColor='var(--border2)';},1800);
-  }catch(e){ alert('Save failed: '+e.message); inp.style.borderColor='var(--accent3)'; }
-  inp.disabled=false;
-}
-
-async function saveWixQty(pid){
-  const inp=document.getElementById('qty-'+pid);
-  const qty=parseInt(inp.value);
-  if(isNaN(qty)||qty<0){ alert('Invalid quantity.'); return; }
-  inp.style.borderColor='var(--muted2)'; inp.disabled=true;
-  try{
-    await callRelay('updateProduct',{productId:pid, product:{stock:{quantity:qty,trackQuantity:true}}});
-    const p=wixProducts.find(x=>x.id===pid);
-    if(p&&p.stock) p.stock.quantity=qty;
-    inp.style.borderColor='var(--accent2)';
-    setTimeout(()=>{inp.style.borderColor='var(--border2)';},1800);
-  }catch(e){ alert('Save failed: '+e.message); inp.style.borderColor='var(--accent3)'; }
-  inp.disabled=false;
-}
-
-function addToWatch(p,id){
-  if(!id) return;
-  const prod=wixProducts.find(x=>x.id===id)||p;
-  if(!prod) return;
-  if(watchlist.find(w=>w.wixId===id)){ alert('Already on watchlist.'); return; }
-  watchlist.push({
-    wixId:id, name:prod.name||'Unknown', sku:prod.sku||'',
-    price:prod.priceData?.price||0, basePrice:prod.priceData?.price||0,
-    stock:prod.stock?.quantity??0, visible:prod.visible,
-    addedAt:new Date().toISOString(), lastSynced:new Date().toISOString(),
-    priceChange:0
-  });
-  localStorage.setItem('sc_wl',JSON.stringify(watchlist));
-  document.getElementById('tc-watch').textContent=watchlist.length;
-  alert(`✓ Added "${prod.name?.substring(0,40)}" to watchlist.`);
-}
-
-function exportWixCSV(){
-  const rows=[['Name','SKU','Price','Stock','Visible','ID']];
-  wixFiltered.forEach(p=>rows.push([
-    `"${(p.name||'').replace(/"/g,'""')}"`,
-    p.sku||'',
-    p.priceData?.price||0,
-    p.stock?.quantity??0,
-    p.visible?'Yes':'No',
-    p.id||''
-  ]));
-  const csv=rows.map(r=>r.join(',')).join('\n');
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='satcomms_products_'+new Date().toISOString().split('T')[0]+'.csv';
-  a.click();
-}
-
-// ─────────────────────────────────────────────────────────────
-// INFO SECTIONS BULK
-// ─────────────────────────────────────────────────────────────
-function showInfoSectionsPanel(){
-  document.getElementById('infoSectionsPanel').style.display='block';
-}
-
-async function bulkApplyInfoSections(){
-  const ids=[...wixSelected];
-  if(!ids.length){ alert('Select products first.'); return; }
-  const status=document.getElementById('infoSectionsStatus');
-  const sections=[];
-  if(document.getElementById('sec_warranty').checked) sections.push({title:'🛡️ Warranty',description:'All products carry a 1-year warranty unless specified. Batteries are excluded from warranty coverage. Products will be inspected before any warranty decision is made.'});
-  if(document.getElementById('sec_delivery').checked) sections.push({title:'🚚 Delivery',description:'Delivery: 1–3 business days nationally. International/import items ship from overseas warehouses, taking 6–12 working days. No additional customs charges applied.'});
-  if(document.getElementById('sec_vat').checked) sections.push({title:'🧾 VAT Invoice',description:'SatComms is VAT registered. A full VAT invoice is available on request — useful for business expense claims and tax deductions.'});
-  if(document.getElementById('sec_airtime').checked) sections.push({title:'📡 Airtime & SIM Activation',description:'This device requires a satellite airtime subscription or prepaid SIM. Contact us at 084 514 1652 or sales@satcomms.co.za to discuss the best plan for your needs.'});
-  if(document.getElementById('sec_healthcheck').checked) sections.push({title:'🔧 Satellite Phone Health Check',description:'Keep your device performing at its best with our Annual Satellite Phone Health Check — includes full inspection, firmware update, battery assessment and signal test. Ask us for details.'});
-  if(document.getElementById('sec_courier').checked) sections.push({title:'📦 Courier Insurance',description:'Courier insurance may apply at 1.5% of item value for high-value items. We will invoice separately — or you may collect in person to avoid this charge.'});
-
-  if(!sections.length){ alert('Select at least one section.'); return; }
-  status.textContent=`Applying ${sections.length} sections to ${ids.length} products...`;
-  status.style.color='var(--muted2)';
-  let done=0, errs=0;
-  for(const pid of ids){
-    try{
-      const prod=wixProducts.find(x=>x.id===pid);
-      const existing=(prod?.additionalInfoSections||[]).filter(ex=>!sections.some(s=>s.title===ex.title));
-      await callRelay('updateProduct',{productId:pid,product:{additionalInfoSections:[...existing,...sections]}});
-      done++;
-      status.textContent=`${done+errs}/${ids.length} — applied to ${done} products...`;
-    }catch(e){ errs++; }
-    await new Promise(r=>setTimeout(r,400));
-  }
-  status.textContent=`✓ Done — ${done} products updated${errs?' · '+errs+' errors':''}`;
-  status.style.color=errs?'var(--accent4)':'var(--accent2)';
-  loadMyWixProducts();
-}
-
-// ─────────────────────────────────────────────────────────────
-// PRODUCT EDITOR MODAL
-// ─────────────────────────────────────────────────────────────
-function openProductEditor(pid){
-  const p=wixProducts.find(x=>x.id===pid);
-  if(!p) return;
-  currentEditorProductId=pid;
-  document.getElementById('editorTitle').textContent=p.name||'Edit Product';
-  document.getElementById('editorSku').textContent=(p.sku||'No SKU')+' · Wix ID: '+pid;
-  document.getElementById('edName').value=p.name||'';
-  document.getElementById('edSku').value=p.sku||'';
-  document.getElementById('edPrice').value=p.priceData?.price||0;
-  document.getElementById('edQty').value=p.stock?.quantity??0;
-  document.getElementById('edDesc').value=p.description||'';
-  document.getElementById('edMetaTitle').value=p.seoData?.tags?.find(t=>t.type==='title')?.props?.content||'';
-  document.getElementById('edMetaDesc').value=p.seoData?.tags?.find(t=>t.type==='description')?.props?.content||'';
-  document.getElementById('edAiCtx').value='';
-  document.getElementById('edAiStatus').textContent='';
-  document.getElementById('editorSaveLog').textContent='';
-  document.getElementById('productEditorModal').style.display='flex';
-}
-
-function closeProductEditor(){ document.getElementById('productEditorModal').style.display='none'; currentEditorProductId=null; }
-
-async function runEditorAI(){
-  const pid=currentEditorProductId;
-  const p=wixProducts.find(x=>x.id===pid);
-  if(!p){ alert('No product loaded.'); return; }
-  const btn=document.getElementById('edAiBtn');
-  const status=document.getElementById('edAiStatus');
-  btn.disabled=true; btn.textContent='Generating...';
-  status.textContent='Claude AI is writing your product copy...'; status.style.color='var(--muted2)';
-  try{
-    const aiCtx=document.getElementById('edAiCtx').value.trim();
-    const defCtx=document.getElementById('defaultAiContext').value.trim();
-    const sj=await callRelay('generateSEO',{
-      product:{
-        name:p.name, price:p.priceData?.price||0,
-        catTree:'Satellite Communications', brand:'',
-        warranty:'1 year', desc:p.description||'', sku:p.sku||''
-      },
-      extraContext:[defCtx,aiCtx].filter(Boolean).join(' · ')
-    });
-    if(sj.description) document.getElementById('edDesc').value=sj.description;
-    if(sj.title) document.getElementById('edName').value=sj.title;
-    if(sj.metaTitle) document.getElementById('edMetaTitle').value=sj.metaTitle;
-    if(sj.metaDescription) document.getElementById('edMetaDesc').value=sj.metaDescription;
-    status.textContent=`✓ Done! Focus keyword: "${sj.focusKeyword||'—'}"`;
-    status.style.color='var(--accent2)';
-  }catch(e){
-    status.textContent='✗ '+e.message; status.style.color='var(--accent3)';
-  }
-  btn.disabled=false; btn.textContent='🤖 Generate AI Description + Meta';
-}
-
-async function saveProductEditor(){
-  const pid=currentEditorProductId;
-  if(!pid){ alert('No product.'); return; }
-  const log=document.getElementById('editorSaveLog');
-  const btn=document.getElementById('edSaveBtn');
-  btn.disabled=true; log.textContent='Saving...'; log.style.color='var(--muted2)';
-  try{
-    const payload={
-      name: document.getElementById('edName').value,
-      description: document.getElementById('edDesc').value,
-      priceData:{ price: parseFloat(document.getElementById('edPrice').value)||0 },
-      stock:{ quantity: parseInt(document.getElementById('edQty').value)||0, trackQuantity:true }
-    };
-    const metaTitle=document.getElementById('edMetaTitle').value;
-    const metaDesc=document.getElementById('edMetaDesc').value;
-    if(metaTitle||metaDesc){
-      payload.seoData={tags:[]};
-      if(metaTitle) payload.seoData.tags.push({type:'title',props:{content:metaTitle}});
-      if(metaDesc) payload.seoData.tags.push({type:'description',props:{content:metaDesc}});
-    }
-    await callRelay('updateProduct',{productId:pid, product:payload});
-    log.textContent='✓ Saved to Wix successfully!'; log.style.color='var(--accent2)';
-    // Update local cache
-    const p=wixProducts.find(x=>x.id===pid);
-    if(p){
-      p.name=payload.name; p.description=payload.description;
-      if(!p.priceData) p.priceData={};
-      p.priceData.price=payload.priceData.price;
-      if(!p.stock) p.stock={};
-      p.stock.quantity=payload.stock.quantity;
-    }
-    renderWixProducts();
-    setTimeout(closeProductEditor,1200);
-  }catch(e){
-    log.textContent='✗ '+e.message; log.style.color='var(--accent3)';
-  }
-  btn.disabled=false;
-}
-
-function addToWatchFromEditor(){
-  const pid=currentEditorProductId;
-  const p=wixProducts.find(x=>x.id===pid);
-  if(p) addToWatch(p,pid);
-}
-
-// ─────────────────────────────────────────────────────────────
-// BULK AI REWRITE
-// ─────────────────────────────────────────────────────────────
-async function bulkRunSEO(){
-  const ids=[...wixSelected];
-  if(!ids.length){ alert('Select products first.'); return; }
-  if(!confirm(`Run AI rewrite on ${ids.length} product${ids.length!==1?'s':''}? This will update names, descriptions and meta on Wix.`)) return;
-  const defCtx=document.getElementById('defaultAiContext').value.trim();
-  let done=0, errs=0;
-  for(const pid of ids){
-    const p=wixProducts.find(x=>x.id===pid);
-    if(!p) continue;
-    document.getElementById('feedStatusText').textContent=`AI: ${done+1}/${ids.length}`;
-    try{
-      const sj=await callRelay('generateSEO',{
-        product:{name:p.name,price:p.priceData?.price||0,catTree:'Satellite Communications',brand:'',warranty:'1 year',desc:p.description||'',sku:p.sku||''},
-        extraContext:defCtx
-      });
-      const payload={};
-      if(sj.title) payload.name=sj.title;
-      if(sj.description) payload.description=sj.description;
-      if(sj.metaTitle||sj.metaDescription){
-        payload.seoData={tags:[]};
-        if(sj.metaTitle) payload.seoData.tags.push({type:'title',props:{content:sj.metaTitle}});
-        if(sj.metaDescription) payload.seoData.tags.push({type:'description',props:{content:sj.metaDescription}});
-      }
-      await callRelay('updateProduct',{productId:pid,product:payload});
-      if(sj.title) p.name=sj.title;
-      if(sj.description) p.description=sj.description;
-      done++;
-    }catch(e){ errs++; }
-    await new Promise(r=>setTimeout(r,900));
-  }
-  document.getElementById('feedStatusText').textContent='AI Done';
-  alert(`✓ AI rewrite complete — ${done} updated${errs?' · '+errs+' errors':''}`);
-  wixSelected.clear();
-  renderWixProducts();
-}
-
-// ─────────────────────────────────────────────────────────────
-// WATCHLIST
-// ─────────────────────────────────────────────────────────────
-function renderWatchlist(){
-  const el=document.getElementById('watchGrid');
-  const empty=document.getElementById('watchEmpty');
-  document.getElementById('tc-watch').textContent=watchlist.length;
-  if(!watchlist.length){ empty.style.display='block'; el.innerHTML=''; return; }
-  empty.style.display='none';
-  el.innerHTML=`<table class="wtable">
-    <thead><tr><th>Product</th><th>SKU</th><th>Price</th><th>Stock</th><th>Change</th><th>Last Synced</th><th></th></tr></thead>
-    <tbody>
-    ${watchlist.map((w,i)=>{
-      const chg=w.priceChange?((w.priceChange>0?'+':'')+Math.round(w.priceChange*100)+'%'):'—';
-      const chgCl=w.priceChange>0?'chg-up':w.priceChange<0?'chg-dn':'chg-nil';
-      return `<tr>
-        <td style="font-size:12px">${w.name?.substring(0,55)||'—'}</td>
-        <td style="font-family:var(--mono);font-size:10px">${w.sku||'—'}</td>
-        <td style="font-family:var(--cond);font-size:16px;color:var(--accent2)">R${(w.price||0).toLocaleString()}</td>
-        <td><span class="schip ${(w.stock||0)>5?'g':(w.stock||0)>0?'y':'r'}">${w.stock??'—'}</span></td>
-        <td class="${chgCl}">${chg}</td>
-        <td style="font-family:var(--mono);font-size:9px;color:var(--muted)">${w.lastSynced?new Date(w.lastSynced).toLocaleString('en-ZA'):'—'}</td>
-        <td>
-          <button class="btn btn-ghost btn-sm" onclick="openProductEditor('${w.wixId}')" style="margin-right:4px">✏</button>
-          <button class="btn btn-danger btn-sm" onclick="removeWatch(${i})">✕</button>
-        </td>
-      </tr>`;
-    }).join('')}
-    </tbody></table>`;
-}
-
-function removeWatch(i){ watchlist.splice(i,1); localStorage.setItem('sc_wl',JSON.stringify(watchlist)); renderWatchlist(); }
-
-async function syncWatch(){
-  if(!watchlist.length) return;
-  const btn=document.querySelector('.panel.active .btn-primary');
-  document.getElementById('feedStatusText').textContent='Syncing watchlist...';
-  let updated=0;
-  for(let i=0;i<watchlist.length;i++){
-    const w=watchlist[i];
-    try{
-      const data=await callRelay('getWixProduct',{productId:w.wixId});
-      if(data&&data.product){
-        const prev=w.price;
-        w.price=data.product.priceData?.price||w.price;
-        w.stock=data.product.stock?.quantity??w.stock;
-        w.visible=data.product.visible;
-        w.priceChange=prev&&w.price?((w.price-prev)/prev):0;
-        w.lastSynced=new Date().toISOString();
-        updated++;
-      }
-    }catch(e){}
-    await new Promise(r=>setTimeout(r,400));
-  }
-  localStorage.setItem('sc_wl',JSON.stringify(watchlist));
-  document.getElementById('feedStatusText').textContent='Watchlist Synced';
-  renderWatchlist();
-}
-
-function exportWatch(){
-  const rows=[['Name','SKU','Price','Stock','Price Change','Added']];
-  watchlist.forEach(w=>rows.push([
-    `"${(w.name||'').replace(/"/g,'""')}"`,
-    w.sku||'',w.price||0,w.stock||0,
-    w.priceChange?Math.round(w.priceChange*100)+'%':'0%',
-    w.addedAt?.split('T')[0]||''
-  ]));
-  const csv=rows.map(r=>r.join(',')).join('\n');
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='satcomms_watchlist.csv';
-  a.click();
-}
-
-// ─────────────────────────────────────────────────────────────
-// AMAZON MONITOR
-// ─────────────────────────────────────────────────────────────
-function saveAmazon(){ localStorage.setItem('sc_amz',JSON.stringify(amazonItems)); }
-
-async function fetchAmazonProduct(){
-  const url=document.getElementById('amzUrlInput').value.trim();
-  const label=document.getElementById('amzLabelInput').value.trim();
-  const btn=document.getElementById('amzFetchBtn');
-  const status=document.getElementById('amzFetchStatus');
-  if(!url){ alert('Paste an Amazon URL first.'); return; }
-  const asinMatch=url.match(/\/dp\/([A-Z0-9]{10})/i)||url.match(/\/gp\/product\/([A-Z0-9]{10})/i)||url.match(/asin=([A-Z0-9]{10})/i);
-  const asin=asinMatch?asinMatch[1]:null;
-  btn.disabled=true; btn.textContent='Fetching...';
-  status.textContent='Fetching product data...'; status.style.color='var(--muted2)';
-  try{
-    const data=await callRelay('fetchAmazon',{url,asin});
-    if(!data||!data.name){
-      status.textContent='Could not extract product data. Try a direct product page URL.';
-      status.style.color='var(--accent3)';
-    } else if(amazonItems.find(a=>a.asin===data.asin||a.url===url)){
-      status.textContent='Already monitoring this product.'; status.style.color='var(--accent4)';
-    } else {
-      amazonItems.push({url,asin:data.asin||asin||'',name:label||data.name,originalName:data.name,
-        price:data.price,basePrice:data.price,available:data.available,image:data.image,rating:data.rating,
-        addedAt:new Date().toISOString(),lastSynced:new Date().toISOString(),priceChange:0,status:data.available?'ok':'oos'});
-      saveAmazon();
-      document.getElementById('amzUrlInput').value='';
-      document.getElementById('amzLabelInput').value='';
-      document.getElementById('tc-amz').textContent=amazonItems.length;
-      status.textContent=`✓ Added: ${data.name?.substring(0,60)} — R${data.price||'N/A'}`;
-      status.style.color='var(--accent2)';
-      renderAmazonGrid();
-    }
-  }catch(e){ status.textContent='Error: '+e.message; status.style.color='var(--accent3)'; }
-  btn.disabled=false; btn.textContent='Fetch Product';
-}
-
-async function syncAllAmazon(){
-  if(!amazonItems.length) return;
-  document.getElementById('feedStatusText').textContent='Syncing Amazon...';
-  for(let i=0;i<amazonItems.length;i++){
-    const item=amazonItems[i];
-    try{
-      const data=await callRelay('fetchAmazon',{url:item.url,asin:item.asin});
-      if(data&&data.name){
-        const prev=item.price;
-        item.price=data.price; item.available=data.available;
-        item.lastSynced=new Date().toISOString();
-        item.priceChange=prev&&data.price?((data.price-prev)/prev):0;
-        item.status=!data.available?'oos':Math.abs(item.priceChange)>0.05?'price':'ok';
-      }
-    }catch(e){ item.status='error'; }
-    await new Promise(r=>setTimeout(r,1500));
-  }
-  saveAmazon();
-  document.getElementById('feedStatusText').textContent='Amazon Synced';
-  document.getElementById('tc-amz').textContent=amazonItems.length;
-  renderAmazonGrid();
-}
-
-function removeAmazon(i){ amazonItems.splice(i,1); saveAmazon(); document.getElementById('tc-amz').textContent=amazonItems.length; renderAmazonGrid(); }
-function clearAllAmazon(){ if(!confirm('Remove all Amazon monitored products?')) return; amazonItems=[]; saveAmazon(); document.getElementById('tc-amz').textContent=0; renderAmazonGrid(); }
-
-function renderAmazonGrid(){
-  const grid=document.getElementById('amzGrid');
-  const empty=document.getElementById('amzEmpty');
-  document.getElementById('tc-amz').textContent=amazonItems.length;
-  if(!amazonItems.length){ empty.style.display='block'; grid.innerHTML=''; return; }
-  empty.style.display='none';
-  grid.innerHTML=amazonItems.map((a,i)=>{
-    const priceChg=a.priceChange?((a.priceChange>0?'+':'')+Math.round(a.priceChange*100)+'%'):'';
-    const statusCol=a.status==='oos'?'var(--accent3)':a.status==='price'?'var(--accent4)':a.status==='error'?'var(--accent3)':'var(--accent2)';
-    const statusTxt=a.status==='oos'?'OUT OF STOCK':a.status==='price'?'PRICE CHANGED':a.status==='error'?'FETCH ERROR':'IN STOCK';
-    return `<div class="pcard" style="border-color:${statusCol}30">
-      ${a.image?`<img class="pcard-img" src="${a.image}" onerror="this.style.display='none'">`:'<div class="pcard-img-ph">📡</div>'}
-      <div class="pcard-body">
-        <div style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-bottom:5px">
-          ${a.asin||'—'} <span style="background:var(--accent4);color:#000;padding:1px 5px;font-size:7px;margin-left:4px">AMAZON</span>
-        </div>
-        <div class="pcard-name">${(a.name||'').substring(0,65)}</div>
-        <div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap">
-          <div class="pi" style="flex:1"><div class="pi-l">Price</div><div class="pi-v yours">${a.price?'R'+a.price.toLocaleString():'N/A'}</div></div>
-          <div class="pi" style="flex:1"><div class="pi-l">Change</div><div class="pi-v" style="color:${a.priceChange>0?'var(--accent3)':a.priceChange<0?'var(--accent2)':'var(--muted2)'};font-size:14px">${priceChg||'—'}</div></div>
-          <div class="pi" style="flex:1"><div class="pi-l">Status</div><div style="font-family:var(--mono);font-size:8px;color:${statusCol};margin-top:4px">${statusTxt}</div></div>
-        </div>
-        <div style="font-family:var(--mono);font-size:8px;color:var(--muted)">Synced: ${a.lastSynced?new Date(a.lastSynced).toLocaleDateString('en-ZA'):'Never'}</div>
-      </div>
-      <div class="pcard-actions">
-        <a href="${a.url}" target="_blank"><button class="btn btn-ghost btn-sm">↗ View</button></a>
-        <button class="btn btn-danger btn-sm" onclick="removeAmazon(${i})">✕ Remove</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-// ─────────────────────────────────────────────────────────────
-// COMPETITOR PRICES
-// ─────────────────────────────────────────────────────────────
-function saveComp(){ localStorage.setItem('sc_comp',JSON.stringify(compItems)); }
-
-function updateCompTabCount(){
-  const alerts=compItems.filter(item=>{
-    if(!item.competitors) return false;
-    const threshold=parseFloat(document.getElementById('compThreshold')?.value||5)/100;
-    const myPrice=item.myPrice;
-    const prices=Object.values(item.competitors).map(c=>c.price).filter(Boolean);
-    const cheapest=prices.length?Math.min(...prices):null;
-    return cheapest&&myPrice&&((myPrice-cheapest)/myPrice)>threshold;
-  }).length;
-  document.getElementById('tc-alerts').textContent=compItems.length;
-  const badge=document.getElementById('tc-alerts');
-  badge.className=alerts>0?'tab-count r':'tab-count b';
-}
-
-async function addCompetitorProduct(){
-  const name=document.getElementById('compProductName').value.trim();
-  const price=parseFloat(document.getElementById('compMyPrice').value)||0;
-  if(!name){ alert('Enter a product name first.'); return; }
-  const btn=document.getElementById('compAddBtn');
-  const status=document.getElementById('compAddStatus');
-  btn.disabled=true; btn.textContent='Searching...';
-  status.textContent='Searching SA competitors...'; status.style.color='var(--muted2)';
-
-  const enabledComps={};
-  if(document.getElementById('comp_takealot').checked) enabledComps.takealot=COMPETITORS.takealot;
-  if(document.getElementById('comp_wantitall').checked) enabledComps.wantitall=COMPETITORS.wantitall;
-  if(document.getElementById('comp_pricecheck').checked) enabledComps.pricecheck=COMPETITORS.pricecheck;
-  if(document.getElementById('comp_amazon_coza').checked) enabledComps.amazon_coza=COMPETITORS.amazon_coza;
-
-  const competitors={};
-  for(const [key,comp] of Object.entries(enabledComps)){
-    const searchUrl=comp.searchUrl+encodeURIComponent(name);
-    try{
-      const data=await callRelay('searchCompetitor',{site:key,query:name,searchUrl});
-      competitors[key]={name:comp.name,price:data.price||null,url:searchUrl,found:!!data.price,lastSynced:new Date().toISOString()};
-    }catch(e){ competitors[key]={name:comp.name,price:null,url:searchUrl,error:e.message,found:false}; }
-    await new Promise(r=>setTimeout(r,600));
-  }
-
-  compItems.push({productName:name,myPrice:price,competitors,addedAt:new Date().toISOString(),lastSynced:new Date().toISOString()});
-  saveComp();
-  document.getElementById('compProductName').value='';
-  document.getElementById('compMyPrice').value='';
-  status.textContent='✓ Added. Competitor prices fetched.'; status.style.color='var(--accent2)';
-  btn.disabled=false; btn.textContent='Search Competitors';
-  renderCompGrid(); updateCompTabCount();
-}
-
-async function loadWixForComp(){
-  const sel=document.getElementById('compWixSelect');
-  sel.style.display='inline-block';
-  if(wixProducts.length){
-    sel.innerHTML='<option value="">— Select a product —</option>'+wixProducts.map(p=>`<option value="${p.id}">${p.name?.substring(0,60)||'Unknown'} — R${p.priceData?.price||0}</option>`).join('');
+// ---- Load from Garmin CSV ----
+function loadGarminForComp() {
+  if (!garminProducts || !garminProducts.length) {
+    alert('Load your Garmin CSV first (go to the Garmin tab and upload a CSV).');
     return;
   }
-  try{
-    await loadMyWixProducts();
-    sel.innerHTML='<option value="">— Select a product —</option>'+wixProducts.map(p=>`<option value="${p.id}">${p.name?.substring(0,60)||'Unknown'} — R${p.priceData?.price||0}</option>`).join('');
-  }catch(e){ alert('Could not load products: '+e.message); }
+  // Get only published Garmin products so we have real prices
+  const pub = JSON.parse(localStorage.getItem('sc_pub') || '[]');
+  const pubSkus = new Map(pub.map(p => [p.sku, p]));
+
+  // Show a product picker filtered to only published Garmin items
+  const published = garminProducts.filter(p => pubSkus.has(p.sku));
+  const all = garminProducts;
+  const source = published.length > 0 ? published : all;
+
+  const status = document.getElementById('compAddStatus');
+  if (!source.length) { status.textContent = '⚠ No Garmin products found. Upload CSV first.'; return; }
+
+  // Auto-load all published Garmin products
+  let added = 0;
+  source.slice(0, 30).forEach(p => { // limit to 30
+    const existing = compProducts.find(c => c.sku === p.sku);
+    if (existing) return;
+    const pubEntry = pubSkus.get(p.sku);
+    const myPrice = pubEntry?.price || calcGarminPrice(p);
+    compProducts.push({
+      id: Date.now() + Math.random(),
+      name: p.name,
+      sku: p.sku,
+      myPrice,
+      competitors: {},
+      addedAt: new Date().toISOString(),
+      lastChecked: null,
+    });
+    added++;
+  });
+  saveComp();
+  updateCompTabCount();
+  renderCompGrid();
+  status.textContent = added > 0 ? `✓ Added ${added} Garmin product${added!==1?'s':''} to comparison.` : 'ℹ All products already in comparison.';
+  status.style.color = 'var(--accent2)';
 }
 
-function prefillCompFromWix(){
-  const id=document.getElementById('compWixSelect').value;
-  const p=wixProducts.find(x=>x.id===id);
-  if(!p) return;
-  document.getElementById('compProductName').value=p.name||'';
-  document.getElementById('compMyPrice').value=p.priceData?.price||0;
+// ---- Load from Wix ----
+async function loadWixForComp() {
+  const status = document.getElementById('compAddStatus');
+  status.textContent = 'Loading products from Wix...';
+  try {
+    const r = await callRelay('getWixProducts', { limit: 100 });
+    const products = r?.products || r?.items || [];
+    if (!products.length) { status.textContent = '⚠ No products found on Wix.'; return; }
+    const wrap = document.getElementById('compWixWrap');
+    const sel = document.getElementById('compWixSelect');
+    sel.innerHTML = '<option value="">— Select a product —</option>' +
+      products.map(p => `<option value="${p.id}" data-price="${p.price||0}" data-name="${(p.name||'').replace(/"/g,'')}">${(p.name||'').substring(0,60)} — R${p.price?.toLocaleString('en-ZA')||'?'}</option>`).join('');
+    wrap.style.display = 'block';
+    status.textContent = `✓ ${products.length} products loaded from Wix.`;
+    status.style.color = 'var(--accent2)';
+  } catch(e) {
+    status.textContent = 'Error loading from Wix: ' + e.message;
+    status.style.color = 'var(--accent3)';
+  }
 }
 
-function removeComp(i){ compItems.splice(i,1); saveComp(); renderCompGrid(); updateCompTabCount(); }
+function prefillCompFromWix() {
+  const sel = document.getElementById('compWixSelect');
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.value) return;
+  document.getElementById('compProductName').value = opt.dataset.name || '';
+  document.getElementById('compMyPrice').value = opt.dataset.price || '';
+}
 
-function renderCompGrid(){
-  const el=document.getElementById('compGrid');
-  const empty=document.getElementById('compEmpty');
-  if(!compItems.length){ empty.style.display='block'; el.innerHTML=''; return; }
-  empty.style.display='none';
-  const threshold=(parseFloat(document.getElementById('compThreshold')?.value||5))/100;
-  el.innerHTML=compItems.map((item,idx)=>{
-    const compEntries=Object.entries(item.competitors||{});
-    const prices=compEntries.map(([,c])=>c.price).filter(Boolean);
-    const cheapestPrice=prices.length?Math.min(...prices):null;
-    const myPrice=item.myPrice;
-    const priceDiff=cheapestPrice&&myPrice?((myPrice-cheapestPrice)/myPrice):null;
-    const isAlert=priceDiff!==null&&priceDiff>threshold;
-    return `<div style="background:var(--surface);border:1px solid ${isAlert?'var(--accent3)':'var(--border)'};margin-bottom:12px;padding:0">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);background:${isAlert?'rgba(255,77,109,.06)':'var(--surface2)'}">
-        <div>
-          <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text)">${item.productName.substring(0,70)}</div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:3px">Your price: <span style="color:var(--accent2);font-weight:700">R${myPrice?myPrice.toLocaleString():'—'}</span> ${cheapestPrice?`· Cheapest: <span style="color:${isAlert?'var(--accent3)':'var(--muted2)'};font-weight:700">R${cheapestPrice.toLocaleString()}</span>`:''}${priceDiff!==null?` (${priceDiff>0?'you\'re '+Math.round(priceDiff*100)+'% more expensive':'you\'re '+Math.round(Math.abs(priceDiff)*100)+'% cheaper'})`:''}
-          </div>
+// ---- Add product manually ----
+async function addCompetitorProduct() {
+  const name = document.getElementById('compProductName').value.trim();
+  const price = parseFloat(document.getElementById('compMyPrice').value) || 0;
+  const sku   = document.getElementById('compSku')?.value?.trim() || '';
+  if (!name) { alert('Enter a product name first.'); return; }
+
+  const btn = document.getElementById('compAddBtn');
+  const status = document.getElementById('compAddStatus');
+  btn.disabled = true; btn.textContent = 'Searching...';
+  status.textContent = 'Searching competitors...'; status.style.color = 'var(--muted2)';
+
+  const existing = compProducts.find(c => c.name.toLowerCase() === name.toLowerCase() || (sku && c.sku === sku));
+  const item = existing || {
+    id: Date.now(),
+    name, sku, myPrice: price,
+    competitors: {},
+    addedAt: new Date().toISOString(),
+    lastChecked: null,
+  };
+
+  if (!existing) compProducts.push(item);
+  else if (price) item.myPrice = price;
+
+  // Search all enabled competitors
+  const enabled = getEnabledCompetitors();
+  let found = 0;
+  for (const key of enabled) {
+    try {
+      const r = await callRelay('searchCompetitorPrice', { productName: name, sku, competitor: key });
+      item.competitors[key] = {
+        name:  GARMIN_COMPETITORS[key]?.name || key,
+        price: r.price || null,
+        url:   r.url   || null,
+        found: !!r.price,
+        lastSynced: new Date().toISOString(),
+      };
+      if (r.price) found++;
+    } catch(e) {
+      item.competitors[key] = { name: GARMIN_COMPETITORS[key]?.name || key, price: null, found: false, error: e.message, lastSynced: new Date().toISOString() };
+    }
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  item.lastChecked = new Date().toISOString();
+  saveComp();
+  renderCompGrid();
+  updateCompTabCount();
+  btn.disabled = false; btn.textContent = '🔍 Check Prices';
+  status.textContent = `✓ Done — ${found} price${found!==1?'s':''} found across ${enabled.length} competitor${enabled.length!==1?'s':''}.`;
+  status.style.color = found > 0 ? 'var(--accent2)' : 'var(--accent4)';
+
+  // Clear inputs
+  document.getElementById('compProductName').value = '';
+  document.getElementById('compMyPrice').value = '';
+  if (document.getElementById('compSku')) document.getElementById('compSku').value = '';
+}
+
+// ---- Refresh all ----
+async function refreshAllComp() {
+  if (!compProducts.length) return;
+  const btn = document.querySelector('[onclick="refreshAllComp()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Refreshing...'; }
+  const enabled = getEnabledCompetitors();
+  for (const item of compProducts) {
+    for (const key of enabled) {
+      try {
+        const r = await callRelay('searchCompetitorPrice', { productName: item.name, sku: item.sku || '', competitor: key });
+        item.competitors[key] = {
+          name: GARMIN_COMPETITORS[key]?.name || key,
+          price: r.price || null,
+          url:   r.url   || null,
+          found: !!r.price,
+          lastSynced: new Date().toISOString(),
+        };
+      } catch(e) {
+        item.competitors[key] = { ...(item.competitors[key]||{}), error: e.message, lastSynced: new Date().toISOString() };
+      }
+      await new Promise(r => setTimeout(r, 400));
+    }
+    item.lastChecked = new Date().toISOString();
+  }
+  saveComp();
+  renderCompGrid();
+  updateCompTabCount();
+  if (btn) { btn.disabled = false; btn.textContent = '↻ Refresh All'; }
+}
+
+function clearCompProducts() {
+  if (!confirm(`Remove all ${compProducts.length} tracked products?`)) return;
+  compProducts = [];
+  saveComp();
+  renderCompGrid();
+  updateCompTabCount();
+}
+
+function removeCompProduct(id) {
+  compProducts = compProducts.filter(p => p.id !== id);
+  saveComp();
+  renderCompGrid();
+  updateCompTabCount();
+}
+
+async function refreshSingleComp(id) {
+  const item = compProducts.find(p => p.id === id);
+  if (!item) return;
+  const enabled = getEnabledCompetitors();
+  for (const key of enabled) {
+    try {
+      const r = await callRelay('searchCompetitorPrice', { productName: item.name, sku: item.sku || '', competitor: key });
+      item.competitors[key] = {
+        name: GARMIN_COMPETITORS[key]?.name || key,
+        price: r.price || null, url: r.url || null,
+        found: !!r.price, lastSynced: new Date().toISOString(),
+      };
+    } catch(e) {}
+    await new Promise(r => setTimeout(r, 300));
+  }
+  item.lastChecked = new Date().toISOString();
+  saveComp();
+  renderCompGrid();
+  updateCompTabCount();
+}
+
+function renderCompGrid() {
+  const grid = document.getElementById('compGrid');
+  const empty = document.getElementById('compEmpty');
+  const summaryBar = document.getElementById('compSummaryBar');
+
+  if (!compProducts.length) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    summaryBar.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  summaryBar.style.display = 'flex';
+
+  const threshold = parseFloat(document.getElementById('compThreshold')?.value || 5) / 100;
+  let cheapestCount = 0, mostExpCount = 0, alertCount = 0;
+
+  grid.innerHTML = compProducts.map(item => {
+    const myPrice = item.myPrice || 0;
+    const compEntries = Object.entries(item.competitors || {});
+    const foundPrices = compEntries.filter(([,v]) => v.price).map(([k,v]) => ({key:k, ...v}));
+    const minComp = foundPrices.length ? Math.min(...foundPrices.map(c => c.price)) : null;
+    const maxComp = foundPrices.length ? Math.max(...foundPrices.map(c => c.price)) : null;
+
+    const isCheapest = myPrice > 0 && minComp && myPrice <= minComp;
+    const isMostExp  = myPrice > 0 && maxComp && myPrice > maxComp;
+    const isAlert    = myPrice > 0 && minComp && ((myPrice - minComp) / myPrice) > threshold;
+    if (isCheapest) cheapestCount++;
+    if (isMostExp)  mostExpCount++;
+    if (isAlert)    alertCount++;
+
+    const positionBadge = isCheapest
+      ? `<span style="background:var(--accent2);color:#000;font-family:var(--mono);font-size:8px;font-weight:700;padding:2px 7px">✓ CHEAPEST</span>`
+      : isAlert
+      ? `<span style="background:var(--accent3);color:#fff;font-family:var(--mono);font-size:8px;font-weight:700;padding:2px 7px">⚠ UNDERCUT</span>`
+      : isMostExp
+      ? `<span style="background:var(--accent4);color:#000;font-family:var(--mono);font-size:8px;font-weight:700;padding:2px 7px">▲ MOST EXP</span>`
+      : '';
+
+    const compCols = Object.keys(GARMIN_COMPETITORS).map(key => {
+      const c = item.competitors[key];
+      const comp = GARMIN_COMPETITORS[key];
+      if (!c) return `<td style="padding:10px 12px;text-align:center;opacity:.3;font-family:var(--mono);font-size:9px;color:var(--muted)">—<br><span style="font-size:8px">not checked</span></td>`;
+      if (!c.price) return `<td style="padding:10px 12px;text-align:center;font-family:var(--mono);font-size:9px;color:var(--muted)">—<br><span style="font-size:8px;color:var(--muted)">${c.error ? 'error' : 'not listed'}</span></td>`;
+
+      const diff = myPrice > 0 ? ((myPrice - c.price) / myPrice * 100) : 0;
+      const diffColor = diff > 5 ? 'var(--accent2)' : diff < -5 ? 'var(--accent3)' : 'var(--muted2)';
+      const diffArrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '=';
+      const diffText = diff === 0 ? 'same' : `${diffArrow} ${Math.abs(diff).toFixed(1)}%`;
+      const priceLink = c.url ? `<a href="${c.url}" target="_blank" style="color:inherit;text-decoration:none" title="View on ${comp.name}">${c.price.toLocaleString('en-ZA')}</a>` : c.price.toLocaleString('en-ZA');
+
+      return `<td style="padding:10px 12px;text-align:center">
+        <div style="font-family:var(--cond);font-size:18px;font-weight:700;color:${comp.color}">R${priceLink}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:${diffColor};margin-top:2px">${diffText}</div>
+      </td>`;
+    }).join('');
+
+    const lastChecked = item.lastChecked ? new Date(item.lastChecked).toLocaleString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Never';
+
+    return `<div style="background:var(--surface);border:1px solid var(--border);margin-bottom:6px">
+      <!-- Product header -->
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface2)">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.name}</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">${item.sku || '—'} · Last checked: ${lastChecked}</div>
         </div>
-        <div style="display:flex;gap:6px">
-          ${isAlert?`<span style="font-family:var(--mono);font-size:8px;background:var(--accent3);color:#fff;padding:2px 8px">⚠ UNDERCUT</span>`:''}
-          <button class="btn btn-ghost btn-sm" onclick="removeComp(${idx})">✕</button>
-        </div>
+        ${positionBadge}
+        <div style="font-family:var(--cond);font-size:20px;font-weight:700;color:var(--accent2);flex-shrink:0">R${myPrice.toLocaleString('en-ZA')}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);flex-shrink:0">YOUR PRICE</div>
+        <button class="btn btn-ghost btn-sm" onclick="refreshSingleComp(${item.id})" title="Refresh prices" style="flex-shrink:0">↻</button>
+        <button class="btn btn-danger btn-sm" onclick="removeCompProduct(${item.id})" style="flex-shrink:0">✕</button>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1px;background:var(--border)">
-        ${compEntries.map(([key,c])=>{
-          const diff=c.price&&myPrice?((myPrice-c.price)/myPrice):null;
-          const cheaper=diff!==null&&diff>threshold;
-          return `<div style="background:var(--surface);padding:12px;text-align:center">
-            <div style="font-family:var(--mono);font-size:9px;font-weight:700;color:${COMPETITORS[key]?.color||'var(--muted)'};margin-bottom:6px">${c.name}</div>
-            ${c.price
-              ?`<div style="font-family:var(--cond);font-size:18px;font-weight:700;color:${cheaper?'var(--accent3)':'var(--accent2)'}">R${c.price.toLocaleString()}</div>
-                <div style="font-family:var(--mono);font-size:8px;color:${cheaper?'var(--accent3)':'var(--muted)'};margin-top:3px">${diff!==null?(diff>0?'▲ '+Math.round(diff*100)+'% cheaper':'▼ '+Math.round(Math.abs(diff*100))+'% more'):'—'}</div>`
-              :`<div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:8px">${c.error?'Error':'Not found'}</div>`
-            }
-            <div style="margin-top:8px">
-              <input type="text" placeholder="Paste exact URL..." id="compurl-${idx}-${key}"
-                style="width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:8px;padding:2px 4px;margin-bottom:3px"
-                onclick="event.stopPropagation()" value="${c.manualUrl||''}">
-              <div style="display:flex;gap:3px">
-                <button class="btn btn-sm" style="flex:1;font-size:7px;padding:2px" onclick="fetchManualCompUrl(${idx},'${key}')">↗ Fetch</button>
-                <a href="${c.url}" target="_blank" style="flex:1"><button class="btn btn-ghost btn-sm" style="width:100%;font-size:7px;padding:2px">Search</button></a>
-              </div>
-            </div>
-          </div>`;
-        }).join('')}
-        <div style="background:var(--surface2);padding:12px;text-align:center;border:1px solid rgba(0,180,255,.2)">
-          <div style="font-family:var(--mono);font-size:9px;font-weight:700;color:var(--accent);margin-bottom:6px">SatComms</div>
-          <div style="font-family:var(--cond);font-size:18px;font-weight:700;color:var(--accent2)">R${myPrice?myPrice.toLocaleString():'—'}</div>
-          <div style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:3px">Your price</div>
-          <div style="margin-top:8px"><a href="https://www.satcomms.co.za" target="_blank" style="font-family:var(--mono);font-size:8px;color:var(--accent);text-decoration:none">↗ satcomms.co.za</a></div>
-        </div>
-      </div>
-      <div style="padding:8px 16px;font-family:var(--mono);font-size:8px;color:var(--muted)">Last synced: ${item.lastSynced?new Date(item.lastSynced).toLocaleString('en-ZA'):'Never'}</div>
+      <!-- Competitor prices table -->
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:var(--surface)">
+            ${Object.keys(GARMIN_COMPETITORS).map(key => {
+              const comp = GARMIN_COMPETITORS[key];
+              return `<th style="padding:6px 12px;font-family:var(--mono);font-size:9px;color:${comp.color};text-align:center;border-bottom:1px solid var(--border);border-right:1px solid var(--border)">${comp.icon} ${comp.name}</th>`;
+            }).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border)">${compCols}</tr>
+        </tbody>
+      </table>
     </div>`;
   }).join('');
+
+  // Update summary stats
+  document.getElementById('compStatTotal').textContent = compProducts.length;
+  document.getElementById('compStatCheapest').textContent = cheapestCount + ' products';
+  document.getElementById('compStatExp').textContent = mostExpCount + ' products';
+  document.getElementById('compStatAlerts').textContent = alertCount;
 }
 
-async function fetchManualCompUrl(itemIdx,compKey){
-  const input=document.getElementById(`compurl-${itemIdx}-${compKey}`);
-  const url=input?.value?.trim();
-  if(!url){ alert('Paste a URL first.'); return; }
-  const item=compItems[itemIdx];
-  if(!item) return;
-  const status=document.getElementById('compAddStatus');
-  status.textContent=`Fetching price from ${COMPETITORS[compKey]?.name||compKey}...`; status.style.color='var(--muted2)';
-  try{
-    const data=await callRelay('searchCompetitor',{site:compKey,query:item.productName,searchUrl:url});
-    if(!item.competitors) item.competitors={};
-    item.competitors[compKey]={name:COMPETITORS[compKey]?.name||compKey,price:data.price||null,url,manualUrl:url,found:!!data.price,error:data.price?null:'Could not extract price',lastSynced:new Date().toISOString()};
-    saveComp();
-    status.textContent=data.price?`✓ ${COMPETITORS[compKey]?.name}: R${data.price.toLocaleString()}`:'⚠ Could not extract price — try a direct product page';
-    status.style.color=data.price?'var(--accent2)':'var(--accent4)';
-    renderCompGrid(); updateCompTabCount();
-  }catch(e){ status.textContent='Error: '+e.message; status.style.color='var(--accent3)'; }
+function updateCompTabCount() {
+  const threshold = parseFloat(document.getElementById('compThreshold')?.value || 5) / 100;
+  const alerts = compProducts.filter(item => {
+    const myPrice = item.myPrice || 0;
+    const prices = Object.values(item.competitors || {}).filter(c => c.price).map(c => c.price);
+    const min = prices.length ? Math.min(...prices) : null;
+    return min && myPrice > 0 && ((myPrice - min) / myPrice) > threshold;
+  }).length;
+  const badge = document.getElementById('tc-alerts');
+  if (badge) {
+    badge.textContent = compProducts.length;
+    badge.className = alerts > 0 ? 'tab-count r' : 'tab-count b';
+  }
 }
+
+// Init on load
+updateCompTabCount();
+renderCompGrid();
+
 
 // ─────────────────────────────────────────────────────────────
 // PUBLISH QUEUE
@@ -2135,42 +1641,85 @@ function toZAR(usdPrice){
 
 async function fetchUSDRate(){
   const btn = document.getElementById('usdRefreshBtn');
-  if(btn){ btn.disabled=true; btn.textContent='Fetching...'; }
+  const disp = document.getElementById('usdRateDisplay');
+  const timeEl = document.getElementById('usdRateTime');
+  const summaryEl = document.getElementById('usdRateSummary');
+
+  if(btn){ btn.disabled=true; btn.textContent='⟳ Fetching...'; btn.style.opacity='0.7'; }
+  if(disp){ disp.style.opacity='0.4'; disp.style.transition='opacity 0.2s'; }
+  if(timeEl){ timeEl.textContent='Checking...'; }
+
+  let fetchedRate = null;
+  let source = '';
+
   try{
-    // Try exchangerate-api free endpoint first (no key needed)
-    const r = await fetch('https://open.er-api.com/v6/latest/USD');
+    // Try primary: open.er-api (free, no key) with cache-bust
+    const r = await fetch('https://open.er-api.com/v6/latest/USD?_=' + Date.now());
     const data = await r.json();
-    if(data && data.rates && data.rates.ZAR){
-      liveUSDRate = data.rates.ZAR;
-      rateLastFetched = new Date();
-      updateRateDisplay();
-      recalcAllUSD();
-      const rateEl=document.getElementById('usdRateSummary');
-      if(rateEl) rateEl.textContent=`Live rate: $1 = R${liveUSDRate.toFixed(4)} · Buffer: ${document.getElementById('usdBuffer')?.value||5}% · VAT: ${document.getElementById('usdVAT')?.value||15}% applied`;
-    } else {
-      throw new Error('Rate not found in response');
-    }
+    if(data?.rates?.ZAR){ fetchedRate = data.rates.ZAR; source = 'open.er-api.com'; }
+    else throw new Error('No ZAR in response');
   }catch(e){
-    // Fallback: try alternative free API
     try{
+      // Fallback: frankfurter.app
       const r2 = await fetch('https://api.frankfurter.app/latest?from=USD&to=ZAR');
       const data2 = await r2.json();
-      if(data2&&data2.rates&&data2.rates.ZAR){
-        liveUSDRate = data2.rates.ZAR;
-        rateLastFetched = new Date();
-        updateRateDisplay();
-        recalcAllUSD();
-      } else {
-        throw new Error('Both rate APIs failed');
-      }
+      if(data2?.rates?.ZAR){ fetchedRate = data2.rates.ZAR; source = 'frankfurter.app'; }
+      else throw new Error('No ZAR in fallback');
     }catch(e2){
-      const d=document.getElementById('usdRateSummary');
-      if(d){d.textContent='⚠ Could not fetch live rate. Use Manual Override above.';d.style.color='var(--accent3)';}
-      const disp=document.getElementById('usdRateDisplay');
-      if(disp) disp.textContent='ERR';
+      // Both failed
+      if(btn){ btn.disabled=false; btn.textContent='↻ Refresh Rate'; btn.style.opacity=''; }
+      if(disp){ disp.style.opacity='1'; disp.textContent = liveUSDRate ? 'R'+liveUSDRate.toFixed(2) : 'ERR'; }
+      if(summaryEl){ summaryEl.textContent='⚠ Could not fetch live rate — check connection or use Manual Override.'; summaryEl.style.color='var(--accent3)'; }
+      if(timeEl){ timeEl.textContent = liveUSDRate ? 'Last: '+rateLastFetched?.toLocaleTimeString('en-ZA') : 'Failed'; }
+      return;
     }
   }
-  if(btn){ btn.disabled=false; btn.textContent='↻ Refresh Rate'; }
+
+  // Success — update state
+  const prevRate = liveUSDRate;
+  liveUSDRate = fetchedRate;
+  rateLastFetched = new Date();
+
+  // Visual flash to confirm update happened
+  if(disp){
+    disp.style.opacity='1';
+    disp.textContent = 'R' + liveUSDRate.toFixed(2);
+    disp.style.color = 'var(--accent2)';
+    disp.style.transform = 'scale(1.15)';
+    disp.style.transition = 'all 0.15s ease';
+    setTimeout(() => {
+      disp.style.color = 'var(--accent4)';
+      disp.style.transform = 'scale(1)';
+    }, 600);
+  }
+
+  if(timeEl){
+    timeEl.textContent = 'Updated ' + rateLastFetched.toLocaleTimeString('en-ZA');
+    timeEl.style.color = 'var(--accent2)';
+    setTimeout(() => { timeEl.style.color = ''; }, 2000);
+  }
+
+  if(summaryEl){
+    const changed = prevRate && Math.abs(fetchedRate - prevRate) > 0.001;
+    const changeStr = changed ? ` (${fetchedRate > prevRate ? '▲' : '▼'} ${Math.abs(fetchedRate - prevRate).toFixed(4)} from R${prevRate.toFixed(2)})` : ' (unchanged)';
+    summaryEl.textContent = `Live rate: $1 = R${liveUSDRate.toFixed(4)}${changeStr} · Buffer: ${document.getElementById('usdBuffer')?.value||5}% · VAT: ${document.getElementById('usdVAT')?.value||15}% applied · via ${source}`;
+    summaryEl.style.color = 'var(--accent4)';
+  }
+
+  if(btn){
+    btn.disabled = false;
+    btn.textContent = '✓ Rate Updated';
+    btn.style.opacity = '';
+    btn.style.background = 'var(--accent2)';
+    btn.style.color = '#000';
+    setTimeout(() => {
+      btn.textContent = '↻ Refresh Rate';
+      btn.style.background = '';
+      btn.style.color = '';
+    }, 2500);
+  }
+
+  recalcAllUSD();
 }
 
 function updateRateDisplay(){
