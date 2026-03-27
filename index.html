@@ -1087,6 +1087,7 @@ function switchTab(name) {
   if (panelEl) panelEl.classList.add('active');
   // lazy-load tab content
   if (name === 'usd' && typeof renderUSDTable === 'function') renderUSDTable();
+  if (name === 'usd' && !window.liveUSDRate && typeof fetchUSDRate === 'function') fetchUSDRate();
   if (name === 'alerts' && typeof renderCompGrid === 'function') renderCompGrid();
   if (name === 'publish' && typeof renderQueue === 'function') renderQueue();
   if (name === 'watchlist' && typeof renderWatchlist === 'function') renderWatchlist();
@@ -1142,6 +1143,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof updateRateDisplay === 'function') updateRateDisplay();
   if (typeof renderUSDTable === 'function') renderUSDTable();
   if (typeof updateGarminStats === 'function') updateGarminStats();
+  // Auto-fetch USD rate in background on page load
+  setTimeout(() => { if (typeof fetchUSDRate === 'function') fetchUSDRate(); }, 1000);
   // Show last comparison date
   const lastDate = localStorage.getItem('sc_garmin_prev_date');
   const el = document.getElementById('gs-lastcompare');
