@@ -520,31 +520,14 @@ select option{background:var(--surface2)}
 <!-- ═══════════════════════════════════════════════════════════ -->
 <div class="panel" id="panel-alerts">
   <div class="shdr">
-    <div class="stitle">🇿🇦 Garmin <span>Price Comparison</span></div>
-    <div style="font-family:var(--mono);font-size:9px;color:var(--muted2)">Compare your Garmin prices against SA competitors in real time</div>
+    <div class="stitle">🇿🇦 SA <span>Price Comparison</span></div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted2)">Searches Google Shopping for all SA prices — any retailer, any product</div>
   </div>
 
-  <!-- COMPETITOR TOGGLES & SETTINGS -->
-  <div style="background:var(--surface);border:1px solid var(--border);padding:14px 16px;margin-bottom:14px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end">
+  <!-- SETTINGS BAR -->
+  <div style="background:var(--surface);border:1px solid var(--border);padding:12px 16px;margin-bottom:14px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end">
     <div>
-      <div class="flabel" style="margin-bottom:6px">Competitors to check</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;cursor:pointer">
-          <input type="checkbox" id="comp_navworld" checked style="accent-color:var(--accent)"> 🧭 Navworld
-        </label>
-        <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;cursor:pointer">
-          <input type="checkbox" id="comp_takealot" checked style="accent-color:var(--accent)"> 🛒 Takealot
-        </label>
-        <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;cursor:pointer">
-          <input type="checkbox" id="comp_amazon_coza" checked style="accent-color:var(--accent)"> 📦 Amazon.co.za
-        </label>
-        <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;cursor:pointer">
-          <input type="checkbox" id="comp_wantitall" style="accent-color:var(--accent)"> 🏷 WantItAll
-        </label>
-      </div>
-    </div>
-    <div>
-      <div class="flabel" style="margin-bottom:6px">Alert if competitor is cheaper by more than</div>
+      <div class="flabel" style="margin-bottom:6px">Alert if any price is cheaper by more than</div>
       <select id="compThreshold" style="width:160px">
         <option value="0">Any amount</option>
         <option value="3">3%</option>
@@ -560,49 +543,41 @@ select option{background:var(--surface2)}
         <button class="btn btn-ghost btn-sm" onclick="loadWixForComp()">📦 From Wix</button>
       </div>
     </div>
-  </div>
-
-  <!-- MANUAL ADD -->
-  <div style="background:var(--surface);border:1px solid var(--border2);padding:14px 16px;margin-bottom:14px">
-    <div class="flabel" style="margin-bottom:8px">+ Add product manually</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-      <div style="flex:1;min-width:220px">
-        <div class="flabel">Product name / model</div>
-        <input type="text" id="compProductName" placeholder="e.g. Garmin GPSMAP 67i">
-      </div>
-      <div style="min-width:110px">
-        <div class="flabel">Your Price (R incl VAT)</div>
-        <input type="number" id="compMyPrice" placeholder="15999" min="0">
-      </div>
-      <div style="min-width:110px">
-        <div class="flabel">SKU / Part No.</div>
-        <input type="text" id="compSku" placeholder="010-02812-00">
-      </div>
-      <button class="btn btn-primary" onclick="addCompetitorProduct()" id="compAddBtn">🔍 Check Prices</button>
-    </div>
-    <div id="compAddStatus" style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:8px"></div>
-    <!-- Wix product selector -->
-    <div style="margin-top:8px;display:none" id="compWixWrap">
-      <select id="compWixSelect" style="min-width:260px" onchange="prefillCompFromWix()">
-        <option value="">— Select a product —</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- SUMMARY STATS -->
-  <div id="compSummaryBar" style="display:none;background:var(--surface2);border:1px solid var(--border);padding:10px 16px;margin-bottom:12px;display:flex;gap:20px;flex-wrap:wrap">
-    <div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">PRODUCTS</span><br><span style="font-family:var(--cond);font-size:22px;font-weight:700;color:var(--accent)" id="compStatTotal">0</span></div>
-    <div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">CHEAPEST</span><br><span style="font-family:var(--cond);font-size:22px;font-weight:700;color:var(--accent2)" id="compStatCheapest">—</span></div>
-    <div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">MOST EXPENSIVE</span><br><span style="font-family:var(--cond);font-size:22px;font-weight:700;color:var(--accent3)" id="compStatExp">—</span></div>
-    <div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">ALERTS</span><br><span style="font-family:var(--cond);font-size:22px;font-weight:700;color:var(--accent4)" id="compStatAlerts">0</span></div>
-    <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px">
+    <div style="margin-left:auto;display:flex;gap:6px;align-items:center" id="compSummaryBar" style="display:none">
+      <span id="compStatAlertBadge" style="font-family:var(--mono);font-size:9px"></span>
       <button class="btn btn-primary btn-sm" onclick="refreshAllComp()">↻ Refresh All</button>
       <button class="btn btn-ghost btn-sm" onclick="clearCompProducts()">✕ Clear All</button>
     </div>
   </div>
 
-  <div id="compEmpty" class="empty"><div class="empty-icon">🇿🇦</div><div class="empty-text">No products tracked yet.<br>Add a product above, or load from your Garmin CSV / Wix store.</div></div>
-  <div id="compGrid" style="display:flex;flex-direction:column;gap:8px"></div>
+  <!-- MANUAL ADD -->
+  <div style="background:var(--surface);border:1px solid var(--border2);padding:14px 16px;margin-bottom:14px">
+    <div class="flabel" style="margin-bottom:8px">+ Check a product</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <div style="flex:1;min-width:220px">
+        <div class="flabel">Product name / model</div>
+        <input type="text" id="compProductName" placeholder="e.g. Iridium 9575A Extreme" onkeydown="if(event.key==='Enter')addCompetitorProduct()">
+      </div>
+      <div style="min-width:110px">
+        <div class="flabel">Your Price (R incl VAT)</div>
+        <input type="number" id="compMyPrice" placeholder="18999" min="0">
+      </div>
+      <div style="min-width:110px">
+        <div class="flabel">SKU / Part No.</div>
+        <input type="text" id="compSku" placeholder="010-02812-00">
+      </div>
+      <button class="btn btn-primary" onclick="addCompetitorProduct()" id="compAddBtn">🔍 Search SA Market</button>
+    </div>
+    <div id="compAddStatus" style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:8px"></div>
+    <div style="margin-top:8px;display:none" id="compWixWrap">
+      <select id="compWixSelect" style="min-width:300px" onchange="prefillCompFromWix()">
+        <option value="">— Select a product —</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="compEmpty" class="empty"><div class="empty-icon">🇿🇦</div><div class="empty-text">No products tracked yet.<br>Search a product above, or load from your Garmin CSV / Wix store.</div></div>
+  <div id="compGrid" style="display:flex;flex-direction:column;gap:10px"></div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -1108,25 +1083,10 @@ let watchlist=JSON.parse(localStorage.getItem('sc_wl')||'[]');
 let published=JSON.parse(localStorage.getItem('sc_pub')||'[]');
 let settings=JSON.parse(localStorage.getItem('sc_cfg')||'{}');
 // ─────────────────────────────────────────────────────────────
-// GARMIN COMPETITOR PRICE COMPARISON
+// SA PRICE COMPARISON — Google Shopping broad search
 // ─────────────────────────────────────────────────────────────
 let compProducts = JSON.parse(localStorage.getItem('sc_comp_garmin') || '[]');
-
-const GARMIN_COMPETITORS = {
-  navworld:    { name: 'Navworld',     color: '#00b4ff', icon: '🧭', url: 'https://navworld.co.za',     searchUrl: q => `https://navworld.co.za/?s=${encodeURIComponent(q)}&post_type=product` },
-  takealot:    { name: 'Takealot',     color: '#0077c8', icon: '🛒', url: 'https://www.takealot.com',   searchUrl: q => `https://www.takealot.com/all?search=${encodeURIComponent(q)}` },
-  amazon_coza: { name: 'Amazon.co.za', color: '#ff9900', icon: '📦', url: 'https://www.amazon.co.za',  searchUrl: q => `https://www.amazon.co.za/s?k=${encodeURIComponent(q)}` },
-  wantitall:   { name: 'WantItAll',    color: '#e53935', icon: '🏷',  url: 'https://www.wantitall.co.za', searchUrl: q => `https://www.wantitall.co.za/search/?search=${encodeURIComponent(q)}` },
-};
-
 function saveComp() { localStorage.setItem('sc_comp_garmin', JSON.stringify(compProducts)); }
-
-function getEnabledCompetitors() {
-  return Object.keys(GARMIN_COMPETITORS).filter(k => {
-    const el = document.getElementById('comp_' + k);
-    return el ? el.checked : false;
-  });
-}
 
 // ---- Load from Garmin CSV ----
 function loadGarminForComp() {
@@ -1134,47 +1094,33 @@ function loadGarminForComp() {
     alert('Load your Garmin CSV first (go to the Garmin tab and upload a CSV).');
     return;
   }
-  // Get only published Garmin products so we have real prices
   const pub = JSON.parse(localStorage.getItem('sc_pub') || '[]');
   const pubSkus = new Map(pub.map(p => [p.sku, p]));
-
-  // Show a product picker filtered to only published Garmin items
-  const published = garminProducts.filter(p => pubSkus.has(p.sku));
-  const all = garminProducts;
-  const source = published.length > 0 ? published : all;
-
+  const source = garminProducts.filter(p => pubSkus.has(p.sku));
   const status = document.getElementById('compAddStatus');
-  if (!source.length) { status.textContent = '⚠ No Garmin products found. Upload CSV first.'; return; }
+  if (!source.length) { status.textContent = '⚠ No published Garmin products found. Publish some first.'; return; }
 
-  // Auto-load all published Garmin products
   let added = 0;
-  source.slice(0, 30).forEach(p => { // limit to 30
-    const existing = compProducts.find(c => c.sku === p.sku);
-    if (existing) return;
+  source.slice(0, 25).forEach(p => {
+    if (compProducts.find(c => c.sku === p.sku)) return;
     const pubEntry = pubSkus.get(p.sku);
-    const myPrice = pubEntry?.price || calcGarminPrice(p);
     compProducts.push({
       id: Date.now() + Math.random(),
-      name: p.name,
-      sku: p.sku,
-      myPrice,
-      competitors: {},
-      addedAt: new Date().toISOString(),
-      lastChecked: null,
+      name: p.name, sku: p.sku,
+      myPrice: pubEntry?.price || calcGarminPrice(p),
+      results: [], lastChecked: null, addedAt: new Date().toISOString()
     });
     added++;
   });
-  saveComp();
-  updateCompTabCount();
-  renderCompGrid();
-  status.textContent = added > 0 ? `✓ Added ${added} Garmin product${added!==1?'s':''} to comparison.` : 'ℹ All products already in comparison.';
+  saveComp(); renderCompGrid(); updateCompTabCount();
+  status.textContent = added > 0 ? `✓ Added ${added} products.` : 'ℹ All already tracked.';
   status.style.color = 'var(--accent2)';
 }
 
 // ---- Load from Wix ----
 async function loadWixForComp() {
   const status = document.getElementById('compAddStatus');
-  status.textContent = 'Loading products from Wix...';
+  status.textContent = 'Loading from Wix...';
   try {
     const r = await callRelay('getWixProducts', { limit: 100 });
     const products = r?.products || r?.items || [];
@@ -1182,14 +1128,11 @@ async function loadWixForComp() {
     const wrap = document.getElementById('compWixWrap');
     const sel = document.getElementById('compWixSelect');
     sel.innerHTML = '<option value="">— Select a product —</option>' +
-      products.map(p => `<option value="${p.id}" data-price="${p.price||0}" data-name="${(p.name||'').replace(/"/g,'')}">${(p.name||'').substring(0,60)} — R${p.price?.toLocaleString('en-ZA')||'?'}</option>`).join('');
+      products.map(p => `<option value="${p.id}" data-price="${p.price||0}" data-name="${(p.name||'').replace(/"/g,'')}">${(p.name||'').substring(0,55)} — R${p.price?.toLocaleString('en-ZA')||'?'}</option>`).join('');
     wrap.style.display = 'block';
-    status.textContent = `✓ ${products.length} products loaded from Wix.`;
+    status.textContent = `✓ ${products.length} products loaded.`;
     status.style.color = 'var(--accent2)';
-  } catch(e) {
-    status.textContent = 'Error loading from Wix: ' + e.message;
-    status.style.color = 'var(--accent3)';
-  }
+  } catch(e) { status.textContent = 'Error: ' + e.message; status.style.color = 'var(--accent3)'; }
 }
 
 function prefillCompFromWix() {
@@ -1200,7 +1143,13 @@ function prefillCompFromWix() {
   document.getElementById('compMyPrice').value = opt.dataset.price || '';
 }
 
-// ---- Add product manually ----
+// ---- Search Google Shopping via relay ----
+async function searchGoogleShopping(productName) {
+  const r = await callRelay('searchGoogleShopping', { query: productName + ' south africa' });
+  return r?.results || [];
+}
+
+// ---- Add / search a product ----
 async function addCompetitorProduct() {
   const name = document.getElementById('compProductName').value.trim();
   const price = parseFloat(document.getElementById('compMyPrice').value) || 0;
@@ -1209,50 +1158,29 @@ async function addCompetitorProduct() {
 
   const btn = document.getElementById('compAddBtn');
   const status = document.getElementById('compAddStatus');
-  btn.disabled = true; btn.textContent = 'Searching...';
-  status.textContent = 'Searching competitors...'; status.style.color = 'var(--muted2)';
+  btn.disabled = true; btn.textContent = '🔍 Searching SA market...';
+  status.textContent = 'Searching Google Shopping for all SA prices...';
+  status.style.color = 'var(--muted2)';
 
-  const existing = compProducts.find(c => c.name.toLowerCase() === name.toLowerCase() || (sku && c.sku === sku));
-  const item = existing || {
-    id: Date.now(),
-    name, sku, myPrice: price,
-    competitors: {},
-    addedAt: new Date().toISOString(),
-    lastChecked: null,
-  };
+  let item = compProducts.find(c => c.name.toLowerCase() === name.toLowerCase() || (sku && c.sku === sku));
+  if (!item) {
+    item = { id: Date.now(), name, sku, myPrice: price, results: [], lastChecked: null, addedAt: new Date().toISOString() };
+    compProducts.push(item);
+  } else if (price) { item.myPrice = price; }
 
-  if (!existing) compProducts.push(item);
-  else if (price) item.myPrice = price;
-
-  // Search all enabled competitors
-  const enabled = getEnabledCompetitors();
-  let found = 0;
-  for (const key of enabled) {
-    try {
-      const r = await callRelay('searchCompetitorPrice', { productName: name, sku, competitor: key });
-      item.competitors[key] = {
-        name:  GARMIN_COMPETITORS[key]?.name || key,
-        price: r.price || null,
-        url:   r.url   || null,
-        found: !!r.price,
-        lastSynced: new Date().toISOString(),
-      };
-      if (r.price) found++;
-    } catch(e) {
-      item.competitors[key] = { name: GARMIN_COMPETITORS[key]?.name || key, price: null, found: false, error: e.message, lastSynced: new Date().toISOString() };
-    }
-    await new Promise(r => setTimeout(r, 300));
+  try {
+    const results = await searchGoogleShopping(name);
+    item.results = results;
+    item.lastChecked = new Date().toISOString();
+    saveComp(); renderCompGrid(); updateCompTabCount();
+    const found = results.filter(r => r.price > 0).length;
+    status.textContent = `✓ Found ${found} price${found!==1?'s':''} across SA retailers.`;
+    status.style.color = 'var(--accent2)';
+  } catch(e) {
+    status.textContent = '⚠ Search failed: ' + e.message;
+    status.style.color = 'var(--accent3)';
   }
-
-  item.lastChecked = new Date().toISOString();
-  saveComp();
-  renderCompGrid();
-  updateCompTabCount();
-  btn.disabled = false; btn.textContent = '🔍 Check Prices';
-  status.textContent = `✓ Done — ${found} price${found!==1?'s':''} found across ${enabled.length} competitor${enabled.length!==1?'s':''}.`;
-  status.style.color = found > 0 ? 'var(--accent2)' : 'var(--accent4)';
-
-  // Clear inputs
+  btn.disabled = false; btn.textContent = '🔍 Search SA Market';
   document.getElementById('compProductName').value = '';
   document.getElementById('compMyPrice').value = '';
   if (document.getElementById('compSku')) document.getElementById('compSku').value = '';
@@ -1263,168 +1191,127 @@ async function refreshAllComp() {
   if (!compProducts.length) return;
   const btn = document.querySelector('[onclick="refreshAllComp()"]');
   if (btn) { btn.disabled = true; btn.textContent = 'Refreshing...'; }
-  const enabled = getEnabledCompetitors();
   for (const item of compProducts) {
-    for (const key of enabled) {
-      try {
-        const r = await callRelay('searchCompetitorPrice', { productName: item.name, sku: item.sku || '', competitor: key });
-        item.competitors[key] = {
-          name: GARMIN_COMPETITORS[key]?.name || key,
-          price: r.price || null,
-          url:   r.url   || null,
-          found: !!r.price,
-          lastSynced: new Date().toISOString(),
-        };
-      } catch(e) {
-        item.competitors[key] = { ...(item.competitors[key]||{}), error: e.message, lastSynced: new Date().toISOString() };
-      }
-      await new Promise(r => setTimeout(r, 400));
-    }
-    item.lastChecked = new Date().toISOString();
+    try {
+      item.results = await searchGoogleShopping(item.name);
+      item.lastChecked = new Date().toISOString();
+    } catch(e) {}
+    await new Promise(r => setTimeout(r, 800));
   }
-  saveComp();
-  renderCompGrid();
-  updateCompTabCount();
+  saveComp(); renderCompGrid(); updateCompTabCount();
   if (btn) { btn.disabled = false; btn.textContent = '↻ Refresh All'; }
-}
-
-function clearCompProducts() {
-  if (!confirm(`Remove all ${compProducts.length} tracked products?`)) return;
-  compProducts = [];
-  saveComp();
-  renderCompGrid();
-  updateCompTabCount();
-}
-
-function removeCompProduct(id) {
-  compProducts = compProducts.filter(p => p.id !== id);
-  saveComp();
-  renderCompGrid();
-  updateCompTabCount();
 }
 
 async function refreshSingleComp(id) {
   const item = compProducts.find(p => p.id === id);
   if (!item) return;
-  const enabled = getEnabledCompetitors();
-  for (const key of enabled) {
-    try {
-      const r = await callRelay('searchCompetitorPrice', { productName: item.name, sku: item.sku || '', competitor: key });
-      item.competitors[key] = {
-        name: GARMIN_COMPETITORS[key]?.name || key,
-        price: r.price || null, url: r.url || null,
-        found: !!r.price, lastSynced: new Date().toISOString(),
-      };
-    } catch(e) {}
-    await new Promise(r => setTimeout(r, 300));
-  }
-  item.lastChecked = new Date().toISOString();
-  saveComp();
-  renderCompGrid();
-  updateCompTabCount();
+  try {
+    item.results = await searchGoogleShopping(item.name);
+    item.lastChecked = new Date().toISOString();
+  } catch(e) {}
+  saveComp(); renderCompGrid(); updateCompTabCount();
 }
 
+function removeCompProduct(id) {
+  compProducts = compProducts.filter(p => p.id !== id);
+  saveComp(); renderCompGrid(); updateCompTabCount();
+}
+
+function clearCompProducts() {
+  if (!confirm(`Remove all ${compProducts.length} tracked products?`)) return;
+  compProducts = []; saveComp(); renderCompGrid(); updateCompTabCount();
+}
+
+// ---- Render ----
 function renderCompGrid() {
   const grid = document.getElementById('compGrid');
   const empty = document.getElementById('compEmpty');
   const summaryBar = document.getElementById('compSummaryBar');
-
   if (!compProducts.length) {
-    grid.innerHTML = '';
-    empty.style.display = 'block';
-    summaryBar.style.display = 'none';
+    grid.innerHTML = ''; empty.style.display = 'block';
+    if (summaryBar) summaryBar.style.display = 'none';
     return;
   }
   empty.style.display = 'none';
-  summaryBar.style.display = 'flex';
+  if (summaryBar) summaryBar.style.display = 'flex';
 
   const threshold = parseFloat(document.getElementById('compThreshold')?.value || 5) / 100;
-  let cheapestCount = 0, mostExpCount = 0, alertCount = 0;
+  let alertCount = 0;
 
   grid.innerHTML = compProducts.map(item => {
     const myPrice = item.myPrice || 0;
-    const compEntries = Object.entries(item.competitors || {});
-    const foundPrices = compEntries.filter(([,v]) => v.price).map(([k,v]) => ({key:k, ...v}));
-    const minComp = foundPrices.length ? Math.min(...foundPrices.map(c => c.price)) : null;
-    const maxComp = foundPrices.length ? Math.max(...foundPrices.map(c => c.price)) : null;
+    const validResults = (item.results || []).filter(r => r.price > 0 && r.title);
+    // Deduplicate by price+title
+    const seen = new Set();
+    const deduped = validResults.filter(r => {
+      const key = r.price + '|' + r.title.substring(0,20);
+      if (seen.has(key)) return false;
+      seen.add(key); return true;
+    }).sort((a, b) => a.price - b.price);
 
-    const isCheapest = myPrice > 0 && minComp && myPrice <= minComp;
-    const isMostExp  = myPrice > 0 && maxComp && myPrice > maxComp;
-    const isAlert    = myPrice > 0 && minComp && ((myPrice - minComp) / myPrice) > threshold;
-    if (isCheapest) cheapestCount++;
-    if (isMostExp)  mostExpCount++;
-    if (isAlert)    alertCount++;
+    const minPrice = deduped.length ? deduped[0].price : null;
+    const isCheapest = myPrice > 0 && minPrice && myPrice <= minPrice;
+    const isUndercut  = myPrice > 0 && minPrice && !isCheapest && ((myPrice - minPrice) / myPrice) > threshold;
+    if (isUndercut) alertCount++;
 
-    const positionBadge = isCheapest
-      ? `<span style="background:var(--accent2);color:#000;font-family:var(--mono);font-size:8px;font-weight:700;padding:2px 7px">✓ CHEAPEST</span>`
-      : isAlert
-      ? `<span style="background:var(--accent3);color:#fff;font-family:var(--mono);font-size:8px;font-weight:700;padding:2px 7px">⚠ UNDERCUT</span>`
-      : isMostExp
-      ? `<span style="background:var(--accent4);color:#000;font-family:var(--mono);font-size:8px;font-weight:700;padding:2px 7px">▲ MOST EXP</span>`
+    const badge = isCheapest
+      ? `<span style="background:var(--accent2);color:#000;font-family:var(--mono);font-size:8px;font-weight:700;padding:2px 8px;border-radius:2px">✓ YOUR PRICE IS LOWEST</span>`
+      : isUndercut
+      ? `<span style="background:var(--accent3);color:#fff;font-family:var(--mono);font-size:8px;font-weight:700;padding:2px 8px;border-radius:2px">⚠ UNDERCUT BY ${(((myPrice - minPrice) / myPrice)*100).toFixed(1)}%</span>`
+      : deduped.length > 0
+      ? `<span style="background:var(--surface3);color:var(--muted2);font-family:var(--mono);font-size:8px;padding:2px 8px;border-radius:2px">✓ COMPETITIVE</span>`
       : '';
 
-    const compCols = Object.keys(GARMIN_COMPETITORS).map(key => {
-      const c = item.competitors[key];
-      const comp = GARMIN_COMPETITORS[key];
-      if (!c) return `<td style="padding:10px 12px;text-align:center;opacity:.3;font-family:var(--mono);font-size:9px;color:var(--muted)">—<br><span style="font-size:8px">not checked</span></td>`;
-      if (!c.price) return `<td style="padding:10px 12px;text-align:center;font-family:var(--mono);font-size:9px;color:var(--muted)">—<br><span style="font-size:8px;color:var(--muted)">${c.error ? 'error' : 'not listed'}</span></td>`;
+    const lastChecked = item.lastChecked
+      ? new Date(item.lastChecked).toLocaleString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
+      : 'Never checked';
 
-      const diff = myPrice > 0 ? ((myPrice - c.price) / myPrice * 100) : 0;
-      const diffColor = diff > 5 ? 'var(--accent2)' : diff < -5 ? 'var(--accent3)' : 'var(--muted2)';
-      const diffArrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '=';
-      const diffText = diff === 0 ? 'same' : `${diffArrow} ${Math.abs(diff).toFixed(1)}%`;
-      const priceLink = c.url ? `<a href="${c.url}" target="_blank" style="color:inherit;text-decoration:none" title="View on ${comp.name}">${c.price.toLocaleString('en-ZA')}</a>` : c.price.toLocaleString('en-ZA');
+    const priceRows = deduped.length === 0
+      ? `<div style="padding:16px;text-align:center;color:var(--muted2);font-family:var(--mono);font-size:10px">No prices found — try refreshing or check the product name</div>`
+      : deduped.slice(0, 8).map(r => {
+          const diff = myPrice > 0 ? ((myPrice - r.price) / myPrice * 100) : null;
+          const diffColor = diff === null ? 'var(--muted2)' : diff > 0 ? 'var(--accent2)' : diff < 0 ? 'var(--accent3)' : 'var(--muted2)';
+          const diffStr = diff === null ? '' : diff > 0 ? `▲ ${diff.toFixed(1)}% above` : diff < 0 ? `▼ ${Math.abs(diff).toFixed(1)}% below you` : 'same';
+          const storeColor = r.store?.toLowerCase().includes('satcomm') ? 'var(--accent2)' : 'var(--text)';
+          return `<div style="display:flex;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid var(--border);${r.price===minPrice?'background:rgba(0,180,255,.04)':''}">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.title}">${r.title.substring(0,65)}</div>
+              ${r.store ? `<div style="font-family:var(--mono);font-size:9px;color:${storeColor};margin-top:2px">${r.store}</div>` : ''}
+            </div>
+            <div style="font-family:var(--cond);font-size:20px;font-weight:700;color:${r.price===minPrice?'var(--accent4)':'var(--muted2)'};flex-shrink:0">R${r.price.toLocaleString('en-ZA')}</div>
+            ${diff !== null ? `<div style="font-family:var(--mono);font-size:9px;color:${diffColor};flex-shrink:0;min-width:80px;text-align:right">${diffStr}</div>` : '<div style="min-width:80px"></div>'}
+            ${r.url ? `<a href="${r.url}" target="_blank" style="font-family:var(--mono);font-size:9px;color:var(--accent);flex-shrink:0" title="View listing">↗</a>` : ''}
+          </div>`;
+        }).join('');
 
-      return `<td style="padding:10px 12px;text-align:center">
-        <div style="font-family:var(--cond);font-size:18px;font-weight:700;color:${comp.color}">R${priceLink}</div>
-        <div style="font-family:var(--mono);font-size:9px;color:${diffColor};margin-top:2px">${diffText}</div>
-      </td>`;
-    }).join('');
-
-    const lastChecked = item.lastChecked ? new Date(item.lastChecked).toLocaleString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Never';
-
-    return `<div style="background:var(--surface);border:1px solid var(--border);margin-bottom:6px">
-      <!-- Product header -->
+    return `<div style="background:var(--surface);border:1px solid ${isUndercut?'var(--accent3)':isCheapest?'var(--accent2)':'var(--border)'}">
       <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface2)">
         <div style="flex:1;min-width:0">
-          <div style="font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.name}</div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">${item.sku || '—'} · Last checked: ${lastChecked}</div>
+          <div style="font-weight:600;color:var(--text)">${item.name}</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">${item.sku||'—'} · ${lastChecked} · ${deduped.length} price${deduped.length!==1?'s':''} found</div>
         </div>
-        ${positionBadge}
-        <div style="font-family:var(--cond);font-size:20px;font-weight:700;color:var(--accent2);flex-shrink:0">R${myPrice.toLocaleString('en-ZA')}</div>
-        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);flex-shrink:0">YOUR PRICE</div>
-        <button class="btn btn-ghost btn-sm" onclick="refreshSingleComp(${item.id})" title="Refresh prices" style="flex-shrink:0">↻</button>
-        <button class="btn btn-danger btn-sm" onclick="removeCompProduct(${item.id})" style="flex-shrink:0">✕</button>
+        ${badge}
+        ${myPrice > 0 ? `<div style="text-align:right;flex-shrink:0">
+          <div style="font-family:var(--mono);font-size:8px;color:var(--muted)">YOUR PRICE</div>
+          <div style="font-family:var(--cond);font-size:20px;font-weight:700;color:var(--accent2)">R${myPrice.toLocaleString('en-ZA')}</div>
+        </div>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="refreshSingleComp(${item.id})" title="Refresh">↻</button>
+        <button class="btn btn-danger btn-sm" onclick="removeCompProduct(${item.id})">✕</button>
       </div>
-      <!-- Competitor prices table -->
-      <table style="width:100%;border-collapse:collapse">
-        <thead>
-          <tr style="background:var(--surface)">
-            ${Object.keys(GARMIN_COMPETITORS).map(key => {
-              const comp = GARMIN_COMPETITORS[key];
-              return `<th style="padding:6px 12px;font-family:var(--mono);font-size:9px;color:${comp.color};text-align:center;border-bottom:1px solid var(--border);border-right:1px solid var(--border)">${comp.icon} ${comp.name}</th>`;
-            }).join('')}
-          </tr>
-        </thead>
-        <tbody>
-          <tr style="border-bottom:1px solid var(--border)">${compCols}</tr>
-        </tbody>
-      </table>
+      ${priceRows}
     </div>`;
   }).join('');
 
-  // Update summary stats
-  document.getElementById('compStatTotal').textContent = compProducts.length;
-  document.getElementById('compStatCheapest').textContent = cheapestCount + ' products';
-  document.getElementById('compStatExp').textContent = mostExpCount + ' products';
-  document.getElementById('compStatAlerts').textContent = alertCount;
+  // Update alert badge
+  const badge = document.getElementById('compStatAlertBadge');
+  if (badge) badge.textContent = alertCount > 0 ? `⚠ ${alertCount} alert${alertCount!==1?'s':''}` : '';
 }
 
 function updateCompTabCount() {
   const threshold = parseFloat(document.getElementById('compThreshold')?.value || 5) / 100;
   const alerts = compProducts.filter(item => {
     const myPrice = item.myPrice || 0;
-    const prices = Object.values(item.competitors || {}).filter(c => c.price).map(c => c.price);
+    const prices = (item.results||[]).filter(r=>r.price>0).map(r=>r.price);
     const min = prices.length ? Math.min(...prices) : null;
     return min && myPrice > 0 && ((myPrice - min) / myPrice) > threshold;
   }).length;
@@ -1435,7 +1322,7 @@ function updateCompTabCount() {
   }
 }
 
-// Init on load
+// Init
 updateCompTabCount();
 renderCompGrid();
 
