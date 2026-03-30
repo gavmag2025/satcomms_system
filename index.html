@@ -5,123 +5,355 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SatComms Product Intelligence System</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#080c10;--surface:#0d1219;--surface2:#121820;--surface3:#17202c;
-  --border:#192130;--border2:#1f2d42;
+  /* Core palette — unchanged so all JS colour refs still work */
+  --bg:#05080d;--surface:#0b1018;--surface2:#0f1620;--surface3:#141d28;
+  --border:#1a2535;--border2:#22334a;
   --accent:#00b4ff;--accent2:#00e5b0;--accent3:#ff4d6d;--accent4:#ffc84d;--accent5:#b97fff;
-  --text:#d8eaf8;--muted:#4a6278;--muted2:#6a88a5;
-  --mono:'JetBrains Mono',monospace;--cond:'Barlow Condensed',sans-serif;--body:'Barlow',sans-serif;
+  --text:#d8eaf8;--muted:#3d5570;--muted2:#5a7a9a;
+  --mono:'JetBrains Mono',monospace;
+  --cond:'Syne',sans-serif;
+  --body:'Space Grotesk',sans-serif;
+  --glass:rgba(255,255,255,.03);
+  --glow-accent:rgba(0,180,255,.15);
+  --glow-green:rgba(0,229,176,.12);
+  --radius:6px;
 }
-body{background:var(--bg);color:var(--text);font-family:var(--body);min-height:100vh;overflow-x:hidden}
-.topbar{background:var(--surface);border-bottom:2px solid var(--accent);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:12px}
-.logo{font-family:var(--cond);font-size:22px;font-weight:800;letter-spacing:.06em;color:var(--accent);white-space:nowrap;display:flex;align-items:center;gap:10px}
-.logo span{color:var(--text)}
-.logo-icon{font-size:18px;opacity:.9}
-.sys-badge{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--muted2);background:var(--surface2);border:1px solid var(--border2);padding:3px 10px;white-space:nowrap}
+
+body{
+  background:var(--bg);color:var(--text);font-family:var(--body);
+  min-height:100vh;overflow-x:hidden;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0,180,255,.06) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23192130' fill-opacity='0.35'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:rgba(11,16,24,.92);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border2);
+  padding:0 28px;height:60px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;gap:12px;
+}
+.topbar::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  opacity:.4;
+}
+.logo{
+  font-family:var(--cond);font-size:22px;font-weight:800;letter-spacing:.04em;
+  color:var(--text);white-space:nowrap;display:flex;align-items:center;gap:10px;
+}
+.logo em{color:var(--accent);font-style:normal}
+.logo-icon{font-size:20px}
+.sys-badge{
+  font-family:var(--mono);font-size:8px;letter-spacing:.2em;color:var(--muted2);
+  background:rgba(255,255,255,.04);border:1px solid var(--border2);
+  padding:3px 10px;border-radius:2px;white-space:nowrap;text-transform:uppercase;
+}
 .topbar-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
-.live-badge{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;color:var(--accent2);letter-spacing:.1em;white-space:nowrap}
-.pulse{width:6px;height:6px;background:var(--accent2);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
-@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,229,176,.4)}50%{opacity:.6;box-shadow:0 0 0 6px rgba(0,229,176,0)}}
+.live-badge{
+  display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;
+  color:var(--accent2);letter-spacing:.08em;white-space:nowrap;
+}
+.pulse{
+  width:6px;height:6px;background:var(--accent2);border-radius:50%;
+  animation:pulse 2s infinite;flex-shrink:0;
+  box-shadow:0 0 8px var(--accent2);
+}
+@keyframes pulse{
+  0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,229,176,.5)}
+  50%{opacity:.7;box-shadow:0 0 0 6px rgba(0,229,176,0)}
+}
 #feedTime{font-family:var(--mono);font-size:9px;color:var(--muted);white-space:nowrap}
-.tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 24px;gap:2px;overflow-x:auto}
-.tabs::-webkit-scrollbar{height:2px}.tabs::-webkit-scrollbar-thumb{background:var(--border2)}
-.tab{font-family:var(--cond);font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:14px 18px;color:var(--muted2);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;flex-shrink:0}
-.tab:hover{color:var(--text)}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-.tab-count{background:var(--accent);color:#000;font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:2px;margin-left:5px;font-weight:700}
-.tab-count.g{background:var(--accent2);color:#000}.tab-count.r{background:var(--accent3)}.tab-count.b{background:var(--accent4);color:#000}
-.panel{display:none;padding:24px;max-width:1800px;margin:0 auto}.panel.active{display:block}
-.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:2px;margin-bottom:20px}
-.stat{background:var(--surface);border:1px solid var(--border);padding:14px 18px}
-.stat-label{font-family:var(--mono);font-size:8px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
-.stat-val{font-family:var(--cond);font-size:26px;font-weight:700;line-height:1}
-.stat-sub{font-family:var(--mono);font-size:8px;color:var(--muted2);margin-top:3px}
-.btn{font-family:var(--mono);font-size:11px;letter-spacing:.08em;padding:8px 16px;border:none;cursor:pointer;transition:all .15s;text-transform:uppercase;font-weight:500;display:inline-flex;align-items:center;gap:6px}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-.btn-primary{background:var(--accent);color:#000}.btn-primary:hover:not(:disabled){background:#33c5ff}
-.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--muted2)}.btn-ghost:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
-.btn-success{background:var(--accent2);color:#000}.btn-success:hover:not(:disabled){background:#00ffcc}
-.btn-wix{background:#116dff;color:#fff}.btn-wix:hover:not(:disabled){background:#2b80ff}
-.btn-danger{background:var(--accent3);color:#fff}
-.btn-sat{background:var(--accent);color:#000}.btn-sat:hover:not(:disabled){background:#33c5ff}
-.btn-sm{padding:5px 11px;font-size:10px}
-input,select,textarea{background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--body);font-size:13px;padding:8px 12px;outline:none;transition:border .15s;width:100%}
-input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+
+/* ── TABS ── */
+.tabs{
+  background:rgba(11,16,24,.85);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  display:flex;padding:0 28px;gap:0;overflow-x:auto;
+}
+.tabs::-webkit-scrollbar{height:2px}
+.tabs::-webkit-scrollbar-thumb{background:var(--border2)}
+.tab{
+  font-family:var(--mono);font-size:10px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;
+  padding:16px 18px;color:var(--muted2);cursor:pointer;
+  border-bottom:2px solid transparent;
+  transition:all .2s;white-space:nowrap;flex-shrink:0;
+  position:relative;
+}
+.tab:hover{color:var(--text);background:rgba(255,255,255,.02)}
+.tab.active{
+  color:var(--accent);border-bottom-color:var(--accent);
+  background:rgba(0,180,255,.04);
+}
+.tab.active::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  opacity:.5;
+}
+.tab-count{
+  background:var(--accent);color:#000;font-family:var(--mono);
+  font-size:8px;padding:2px 5px;border-radius:3px;margin-left:5px;font-weight:700;
+}
+.tab-count.g{background:var(--accent2);color:#000}
+.tab-count.r{background:var(--accent3);color:#fff}
+.tab-count.b{background:var(--accent4);color:#000}
+
+/* ── PANELS ── */
+.panel{display:none;padding:28px;max-width:1800px;margin:0 auto;animation:fadeUp .25s ease}
+.panel.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ── STAT CARDS ── */
+.stat-row{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+  gap:1px;margin-bottom:24px;
+  background:var(--border);
+  border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;
+}
+.stat{
+  background:var(--surface);padding:16px 18px;
+  position:relative;transition:background .2s;
+}
+.stat:hover{background:var(--surface2)}
+.stat::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--accent),transparent);
+  opacity:0;transition:opacity .2s;
+}
+.stat:hover::after{opacity:.4}
+.stat-label{
+  font-family:var(--mono);font-size:8px;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:8px;
+}
+.stat-val{font-family:var(--cond);font-size:28px;font-weight:800;line-height:1}
+.stat-sub{font-family:var(--mono);font-size:8px;color:var(--muted2);margin-top:4px}
+
+/* ── BUTTONS ── */
+.btn{
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  padding:8px 16px;border:none;cursor:pointer;
+  transition:all .15s;text-transform:uppercase;font-weight:600;
+  display:inline-flex;align-items:center;gap:6px;
+  border-radius:var(--radius);position:relative;overflow:hidden;
+}
+.btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.08) 0%,transparent 60%);
+  pointer-events:none;
+}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-primary{background:var(--accent);color:#000;box-shadow:0 2px 16px rgba(0,180,255,.25)}
+.btn-primary:hover:not(:disabled){background:#1fc8ff;box-shadow:0 4px 24px rgba(0,180,255,.4);transform:translateY(-1px)}
+.btn-ghost{
+  background:transparent;border:1px solid var(--border2);color:var(--muted2);
+}
+.btn-ghost:hover:not(:disabled){border-color:var(--accent);color:var(--accent);background:rgba(0,180,255,.06)}
+.btn-success{background:var(--accent2);color:#000;box-shadow:0 2px 12px rgba(0,229,176,.2)}
+.btn-success:hover:not(:disabled){background:#00ffc3;transform:translateY(-1px)}
+.btn-wix{background:#116dff;color:#fff;box-shadow:0 2px 12px rgba(17,109,255,.3)}
+.btn-wix:hover:not(:disabled){background:#2b80ff;transform:translateY(-1px)}
+.btn-danger{background:var(--accent3);color:#fff;box-shadow:0 2px 10px rgba(255,77,109,.2)}
+.btn-danger:hover:not(:disabled){background:#ff6b85;transform:translateY(-1px)}
+.btn-sat{background:var(--accent);color:#000}
+.btn-sat:hover:not(:disabled){background:#1fc8ff}
+.btn-sm{padding:5px 11px;font-size:9px}
+.btn:active:not(:disabled){transform:translateY(0) !important}
+
+/* ── INPUTS ── */
+input,select,textarea{
+  background:var(--surface2);border:1px solid var(--border2);
+  color:var(--text);font-family:var(--body);font-size:13px;
+  padding:9px 12px;outline:none;transition:all .15s;width:100%;
+  border-radius:var(--radius);
+}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(0,180,255,.08);
+  background:var(--surface3);
+}
 input::placeholder{color:var(--muted)}
 select option{background:var(--surface2)}
-.shdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
-.stitle{font-family:var(--cond);font-size:15px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2)}
+
+/* ── SECTION HEADERS ── */
+.shdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px}
+.stitle{
+  font-family:var(--cond);font-size:14px;font-weight:800;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--muted2);
+  display:flex;align-items:center;gap:8px;
+}
 .stitle span{color:var(--text)}
-.flabel{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:5px}
-.bulk-bar{background:var(--surface3);border:1px solid var(--accent);padding:12px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.stitle::before{
+  content:'';width:3px;height:16px;background:var(--accent);
+  border-radius:2px;display:inline-block;flex-shrink:0;
+}
+.flabel{
+  font-family:var(--mono);font-size:9px;color:var(--muted);
+  letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:5px;
+}
+
+/* ── SURFACE CARDS (panels, sections) ── */
+.surface-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px 20px;
+  margin-bottom:14px;
+}
+
+/* ── BULK BAR ── */
+.bulk-bar{
+  background:linear-gradient(135deg,rgba(0,180,255,.08),rgba(0,180,255,.04));
+  border:1px solid rgba(0,180,255,.3);border-radius:var(--radius);
+  padding:12px 20px;margin-bottom:16px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  box-shadow:0 0 20px rgba(0,180,255,.05);
+}
 .bulk-info{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.08em}
 .bulk-actions{display:flex;gap:8px;flex-wrap:wrap}
-.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:2px}
-.pcard{background:var(--surface);border:1px solid var(--border);overflow:hidden;transition:border-color .15s;position:relative;cursor:pointer}
-.pcard:hover{border-color:var(--border2)}.pcard.sel{border-color:var(--accent);background:rgba(0,180,255,.04)}
-.pcard.watching{border-top:3px solid var(--accent4)}
-.pcard-sel-box{position:absolute;top:8px;right:8px;width:20px;height:20px;border:1px solid var(--border2);background:rgba(8,12,16,.8);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--accent);z-index:2;transition:all .15s;font-weight:700}
+
+/* ── PRODUCT GRID ── */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1px;background:var(--border)}
+.pcard{
+  background:var(--surface);border:none;overflow:hidden;
+  transition:all .2s;position:relative;cursor:pointer;
+}
+.pcard:hover{background:var(--surface2);z-index:1}
+.pcard.sel{background:rgba(0,180,255,.05);box-shadow:inset 0 0 0 1px var(--accent)}
+.pcard.watching{box-shadow:inset 3px 0 0 var(--accent4)}
+.pcard-sel-box{
+  position:absolute;top:8px;right:8px;width:20px;height:20px;
+  border:1px solid var(--border2);background:rgba(5,8,13,.9);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;color:var(--accent);z-index:2;transition:all .15s;font-weight:700;
+  border-radius:3px;
+}
 .pcard.sel .pcard-sel-box{background:var(--accent);border-color:var(--accent);color:#000}
 .pcard-img{width:100%;height:140px;object-fit:contain;background:var(--surface2);padding:10px;display:block}
 .pcard-img-ph{width:100%;height:140px;background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--muted);font-family:var(--mono);font-size:10px}
-.pcard-body{padding:12px}
-.pcard-sku{font-family:var(--mono);font-size:8px;color:var(--muted);margin-bottom:5px}
-.pcard-name{font-family:var(--cond);font-size:14px;font-weight:700;line-height:1.3;margin-bottom:10px}
+.pcard-body{padding:14px}
+.pcard-sku{font-family:var(--mono);font-size:8px;color:var(--muted);margin-bottom:5px;letter-spacing:.08em}
+.pcard-name{font-family:var(--cond);font-size:15px;font-weight:700;line-height:1.3;margin-bottom:10px}
 .stock-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
-.schip{font-family:var(--mono);font-size:8px;padding:2px 6px;border:1px solid var(--border2);color:var(--muted2)}
+.schip{font-family:var(--mono);font-size:8px;padding:2px 7px;border:1px solid var(--border2);color:var(--muted2);border-radius:2px}
 .schip.g{border-color:var(--accent2);color:var(--accent2)}.schip.r{border-color:var(--accent3);color:var(--accent3)}.schip.y{border-color:var(--accent4);color:var(--accent4)}
-.price-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-bottom:10px}
-.pi{background:var(--surface2);padding:7px 8px}
-.pi-l{font-family:var(--mono);font-size:7px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
-.pi-v{font-family:var(--cond);font-size:15px;font-weight:700}
+.price-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-bottom:10px}
+.pi{background:var(--surface3);padding:8px;border-radius:3px}
+.pi-l{font-family:var(--mono);font-size:7px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px}
+.pi-v{font-family:var(--cond);font-size:16px;font-weight:800}
 .pi-v.cost{color:var(--muted2)}.pi-v.rrp{color:var(--accent4)}.pi-v.yours{color:var(--accent2)}
-.pcard-actions{display:flex;gap:4px;flex-wrap:wrap;padding:0 12px 12px}
+.pcard-actions{display:flex;gap:4px;flex-wrap:wrap;padding:0 14px 14px}
+
+/* ── PILLS ── */
 .pill-grid{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
-.pill{font-family:var(--mono);font-size:9px;padding:4px 10px;border:1px solid var(--border2);color:var(--muted2);cursor:pointer;transition:all .15s;letter-spacing:.04em}
+.pill{
+  font-family:var(--mono);font-size:9px;padding:4px 10px;
+  border:1px solid var(--border2);color:var(--muted2);cursor:pointer;
+  transition:all .15s;letter-spacing:.04em;border-radius:3px;
+}
 .pill:hover{border-color:var(--accent);color:var(--accent)}
 .pill.active{border-color:var(--accent);color:var(--accent);background:rgba(0,180,255,.08)}
 .pill.ba{border-color:var(--accent5);color:var(--accent5);background:rgba(185,127,255,.08)}
+
+/* ── TABLES ── */
 .wtable{width:100%;border-collapse:collapse;font-size:12px}
-.wtable th{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);background:var(--surface);white-space:nowrap}
-.wtable td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
-.wtable tr:hover td{background:var(--surface2)}
+.wtable th{
+  font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);padding:10px 12px;text-align:left;
+  border-bottom:1px solid var(--border);background:var(--surface2);white-space:nowrap;
+}
+.wtable td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.wtable tr:hover td{background:rgba(0,180,255,.03)}
 .sdot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
 .sdot.g{background:var(--accent2)}.sdot.y{background:var(--accent4)}.sdot.r{background:var(--accent3)}
 .chg-up{color:var(--accent3);font-family:var(--mono);font-size:10px}
 .chg-dn{color:var(--accent2);font-family:var(--mono);font-size:10px}
 .chg-nil{color:var(--muted);font-family:var(--mono);font-size:10px}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
-.modal{background:var(--surface);border:1px solid var(--border2);max-width:700px;width:100%;max-height:88vh;overflow-y:auto;padding:28px}
+
+/* ── MODAL ── */
+.modal-overlay{
+  position:fixed;inset:0;
+  background:rgba(2,4,8,.92);
+  backdrop-filter:blur(8px);
+  z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.modal{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:var(--radius);
+  max-width:700px;width:100%;max-height:88vh;overflow-y:auto;padding:32px;
+  box-shadow:0 24px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.04);
+}
 .modal::-webkit-scrollbar{width:4px}.modal::-webkit-scrollbar-thumb{background:var(--border2)}
-.modal-title{font-family:var(--cond);font-size:22px;font-weight:800;margin-bottom:4px}
-.modal-sub{font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:22px}
-.mfield{margin-bottom:14px}
+.modal-title{font-family:var(--cond);font-size:24px;font-weight:800;margin-bottom:4px;letter-spacing:.04em}
+.modal-sub{font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:24px}
+.mfield{margin-bottom:16px}
 .mfield label{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px}
 .mfield-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.mplist{max-height:180px;overflow-y:auto;background:var(--surface2);border:1px solid var(--border);padding:10px}
+.mplist{max-height:180px;overflow-y:auto;background:var(--surface2);border:1px solid var(--border);padding:10px;border-radius:var(--radius)}
 .mplist::-webkit-scrollbar{width:4px}.mplist::-webkit-scrollbar-thumb{background:var(--border2)}
 .mpitem{font-family:var(--mono);font-size:10px;color:var(--muted2);padding:4px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}
 .mpitem:last-child{border-bottom:none}
-.modal-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding-top:14px;border-top:1px solid var(--border);margin-top:16px}
-.prog-wrap{background:var(--surface2);border:1px solid var(--border);height:5px;border-radius:2px;overflow:hidden;margin-top:10px}
-.prog-fill{height:100%;background:var(--accent2);border-radius:2px;transition:width .3s}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding-top:16px;border-top:1px solid var(--border);margin-top:18px}
+
+/* ── PROGRESS ── */
+.prog-wrap{background:var(--surface2);border:1px solid var(--border);height:4px;border-radius:4px;overflow:hidden;margin-top:10px}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;transition:width .3s}
 .prog-text{font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:5px}
-.log-panel{background:var(--bg);border:1px solid var(--border);padding:12px;font-family:var(--mono);font-size:10px;max-height:180px;overflow-y:auto;margin-top:12px}
+
+/* ── LOG PANEL ── */
+.log-panel{
+  background:rgba(0,0,0,.4);border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:12px;font-family:var(--mono);font-size:10px;
+  max-height:180px;overflow-y:auto;margin-top:12px;
+}
 .log-panel::-webkit-scrollbar{width:4px}.log-panel::-webkit-scrollbar-thumb{background:var(--border2)}
-.ll{padding:2px 0;color:var(--muted2);line-height:1.5}.ll.ok{color:var(--accent2)}.ll.err{color:var(--accent3)}.ll.warn{color:var(--accent4)}
-.empty{text-align:center;padding:50px 24px;color:var(--muted)}
-.empty-icon{font-size:42px;margin-bottom:12px;opacity:.4}
-.empty-text{font-family:var(--mono);font-size:11px;letter-spacing:.06em;line-height:1.8}
-.acard{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent3);padding:13px 17px;margin-bottom:6px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.ll{padding:2px 0;color:var(--muted2);line-height:1.5}
+.ll.ok{color:var(--accent2)}.ll.err{color:var(--accent3)}.ll.warn{color:var(--accent4)}
+
+/* ── EMPTY STATES ── */
+.empty{text-align:center;padding:60px 24px;color:var(--muted);display:flex;flex-direction:column;align-items:center}
+.empty-icon{font-size:42px;margin-bottom:14px;opacity:.4}
+.empty-text{font-family:var(--mono);font-size:11px;letter-spacing:.06em;line-height:1.9}
+
+/* ── ALERT CARDS ── */
+.acard{
+  background:var(--surface);border:1px solid var(--border);
+  border-left:3px solid var(--accent3);border-radius:var(--radius);
+  padding:13px 17px;margin-bottom:6px;
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+}
 .acard.warn{border-left-color:var(--accent4)}.acard.info{border-left-color:var(--accent)}
 .acard-type{font-family:var(--mono);font-size:8px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:3px}
 .acard-msg{font-size:13px;line-height:1.5}
 .acard-meta{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:3px}
-/* brand colour chips */
+
+/* ── BRAND CHIPS ── */
 .brand-iridium{color:#00b4ff}.brand-inmarsat{color:#00e5b0}.brand-thuraya{color:#ffc84d}.brand-garmin{color:#76c442}.brand-other{color:#b97fff}
-::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-thumb{background:var(--border2)}
-@media(max-width:640px){.topbar{padding:0 12px}.panel{padding:12px}.pgrid{grid-template-columns:1fr}}
+
+/* ── SCROLLBARS ── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* ── RESPONSIVE ── */
+@media(max-width:640px){
+  .topbar{padding:0 14px}
+  .panel{padding:14px}
+  .pgrid{grid-template-columns:1fr}
+  .tab{padding:12px 12px;font-size:9px}
+}
 </style>
 </head>
 <body>
@@ -129,7 +361,7 @@ select option{background:var(--surface2)}
 <!-- TOP BAR -->
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:14px;min-width:0">
-    <div class="logo"><span class="logo-icon">📡</span>Sat<span>Comms</span></div>
+    <div class="logo"><span class="logo-icon">🛰</span><em>Sat</em>&nbsp;Comms</div>
     <div class="sys-badge">Product Intelligence System</div>
   </div>
   <div class="topbar-right">
@@ -165,27 +397,28 @@ select option{background:var(--surface2)}
   </div>
 
   <!-- STAT ROW -->
-  <div class="stat-row" style="margin-bottom:16px">
-    <div class="stat"><div class="stat-label">Total Products</div><div class="stat-val" id="gs-total" style="color:var(--accent)">0</div></div>
+  <div class="stat-row" id="garminStatRow" style="margin-bottom:16px;opacity:.35;pointer-events:none;transition:opacity .3s">
+    <div class="stat"><div class="stat-label">Total Products</div><div class="stat-val" id="gs-total" style="color:var(--accent)">—</div></div>
     <div class="stat"><div class="stat-label">Available</div><div class="stat-val" id="gs-instock" style="color:var(--accent2)">—</div></div>
-    <div class="stat"><div class="stat-label">Out of Stock</div><div class="stat-val" id="gs-oos" style="color:var(--accent3)">—</div></div>
-    <div class="stat"><div class="stat-label">Selected</div><div class="stat-val" id="gs-selected" style="color:var(--accent4)">0</div></div>
-    <div class="stat"><div class="stat-label">Images Found</div><div class="stat-val" id="gs-images" style="color:var(--accent2)">0</div></div>
+    <div class="stat"><div class="stat-label">Out of Stock</div><div class="stat-val" id="gs-oos" style="color:var(--muted2)">—</div></div>
+    <div class="stat"><div class="stat-label">Selected</div><div class="stat-val" id="gs-selected" style="color:var(--accent4)">—</div></div>
+    <div class="stat"><div class="stat-label">Images Found</div><div class="stat-val" id="gs-images" style="color:var(--accent2)">—</div></div>
     <div class="stat"><div class="stat-label">Price List Expires</div><div class="stat-val" id="gs-expires" style="color:var(--muted2);font-size:14px">—</div></div>
     <div class="stat">
       <div class="stat-label">Last Compared</div>
-      <div class="stat-val" id="gs-lastcompare" style="color:var(--muted2);font-size:12px">—</div>
+      <div class="stat-val" id="gs-lastcompare" style="color:var(--accent);font-size:14px;font-weight:600">—</div>
     </div>
   </div>
 
   <!-- UPLOAD BOX -->
-  <div id="garminUploadBox" style="background:var(--surface);border:2px dashed var(--border2);padding:32px;text-align:center;margin-bottom:16px;cursor:pointer;transition:border-color .2s"
+  <div id="garminUploadBox" style="background:var(--surface);border:2px dashed var(--accent);padding:48px 32px;text-align:center;margin-bottom:16px;cursor:pointer;transition:all .2s;border-radius:4px"
     ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
     ondragleave="this.style.borderColor='var(--border2)'"
     ondrop="event.preventDefault();this.style.borderColor='var(--border2)';handleGarminDrop(event.dataTransfer.files[0])"
     onclick="document.getElementById('garminFileInput').click()">
-    <div style="font-size:32px;margin-bottom:10px;opacity:.5">🗺</div>
-    <div style="font-family:var(--cond);font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px">Drop Garmin CSV here or click to upload</div>
+    <div style="font-size:48px;margin-bottom:14px;opacity:.7">🗺</div>
+    <div style="font-family:var(--cond);font-size:20px;font-weight:700;color:var(--accent);margin-bottom:8px;letter-spacing:.05em">DROP GARMIN CSV HERE</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:4px">or click to browse</div>
     <div style="font-family:var(--mono);font-size:9px;color:var(--muted);line-height:1.9">
       Download from dealers.garmin.com → Tools &amp; Resources → Electronic Price List (.csv)<br>
       Then upload it here — products load instantly, grouped by category
@@ -336,12 +569,12 @@ select option{background:var(--surface2)}
     </div>
   </div>
 
-  <div class="stat-row">
-    <div class="stat"><div class="stat-label">Total Products</div><div class="stat-val" id="sw-total" style="color:var(--accent)">0</div></div>
+  <div class="stat-row" id="wixStatRow" style="opacity:.35;pointer-events:none">
+    <div class="stat"><div class="stat-label">Total Products</div><div class="stat-val" id="sw-total" style="color:var(--accent)">—</div></div>
     <div class="stat"><div class="stat-label">Visible</div><div class="stat-val" id="sw-visible" style="color:var(--accent2)">—</div></div>
     <div class="stat"><div class="stat-label">Hidden</div><div class="stat-val" id="sw-hidden" style="color:var(--accent3)">—</div></div>
     <div class="stat"><div class="stat-label">In Stock</div><div class="stat-val" id="sw-instock" style="color:var(--accent2)">—</div></div>
-    <div class="stat"><div class="stat-label">Selected</div><div class="stat-val" id="sw-selected" style="color:var(--accent4)">0</div></div>
+    <div class="stat"><div class="stat-label">Selected</div><div class="stat-val" id="sw-selected" style="color:var(--accent4)">—</div></div>
     <div class="stat"><div class="stat-label">Avg Price</div><div class="stat-val" id="sw-avgprice" style="color:var(--muted2);font-size:18px">—</div></div>
   </div>
 
@@ -458,7 +691,11 @@ select option{background:var(--surface2)}
   </div>
 
   <div id="wixProductsInfo" style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:10px"></div>
-  <div id="wixProductsEmpty" class="empty"><div class="empty-icon">📡</div><div class="empty-text">Click "Load from satcomms.co.za" to fetch your live products.</div></div>
+  <div id="wixProductsEmpty" class="empty" style="padding:40px 20px">
+    <div class="empty-icon" style="font-size:52px;opacity:.6;margin-bottom:16px">📡</div>
+    <div class="empty-text" style="font-size:12px;margin-bottom:20px;color:var(--muted)">Load your live Wix products to get started.<br>Edit prices, rewrite descriptions with AI, and push back to Wix.</div>
+    <button class="btn btn-primary" onclick="loadMyWixProducts()" style="font-size:13px;padding:10px 24px;letter-spacing:.08em">↻ LOAD FROM SATCOMMS.CO.ZA</button>
+  </div>
   <div class="pgrid" id="wixProductsGrid"></div>
   <div id="wixLoadMoreWrap" style="text-align:center;padding:20px;display:none">
     <button class="btn btn-ghost" onclick="loadMoreWix()">Load More</button>
@@ -576,7 +813,7 @@ select option{background:var(--surface2)}
     </div>
   </div>
 
-  <div id="compEmpty" class="empty"><div class="empty-icon">🇿🇦</div><div class="empty-text">No products tracked yet.<br>Search a product above, or load from your Garmin CSV / Wix store.</div></div>
+  <div id="compEmpty" class="empty" style="padding:40px 20px"><div class="empty-icon" style="font-size:52px;opacity:.6;margin-bottom:16px">🇿🇦</div><div class="empty-text">No products tracked yet.<br>Search a product above, or load from your Garmin CSV / Wix store.</div></div>
   <div id="compGrid" style="display:flex;flex-direction:column;gap:10px"></div>
 </div>
 
@@ -742,8 +979,9 @@ select option{background:var(--surface2)}
   </div>
   <div id="usdEmpty" class="empty"><div class="empty-icon">💱</div><div class="empty-text">No USD-priced products yet.<br>Tag products above to start tracking.</div></div>
   <div id="usdProductsWrap" style="display:none">
-    <table class="wtable" id="usdTable">
-      <thead><tr>
+    <div style="max-height:520px;overflow-y:auto;border:1px solid var(--border)">
+    <table class="wtable" id="usdTable" style="border:none">
+      <thead><tr style="position:sticky;top:0;z-index:10;background:var(--surface2)">
         <th><input type="checkbox" id="usdSelectAll" onchange="toggleAllUSD(this.checked)" style="accent-color:var(--accent)"> All</th>
         <th>Product</th>
         <th>USD $</th>
@@ -757,6 +995,7 @@ select option{background:var(--surface2)}
       </tr></thead>
       <tbody id="usdTableBody"></tbody>
     </table>
+    </div>
     <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <button class="btn btn-success btn-sm" onclick="pushSelectedUSDPrices()">🚀 Push Selected to Wix</button>
       <button class="btn btn-ghost btn-sm" onclick="recalcAllUSD()">↻ Recalculate All ZAR</button>
@@ -1140,6 +1379,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof updateCompTabCount === 'function') updateCompTabCount();
   if (typeof renderCompGrid === 'function') renderCompGrid();
   if (typeof renderQueue === 'function') renderQueue();
+  if (typeof renderWatchlist === 'function') renderWatchlist();
+  if (typeof renderAmazon === 'function') renderAmazon();
   if (typeof updateRateDisplay === 'function') updateRateDisplay();
   if (typeof renderUSDTable === 'function') renderUSDTable();
   if (typeof updateGarminStats === 'function') updateGarminStats();
@@ -2142,6 +2383,286 @@ async function checkRank(i){
 
 
 // ─────────────────────────────────────────────────────────────
+// MY WIX PRODUCTS
+// ─────────────────────────────────────────────────────────────
+async function loadMyWixProducts() {
+  const btn = document.getElementById('loadWixBtn');
+  const empty = document.getElementById('wixProductsEmpty');
+  const grid = document.getElementById('wixProductsGrid');
+  const statRow = document.getElementById('wixStatRow');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Loading...'; }
+  try {
+    let all = [], offset = 0, limit = 100;
+    while (true) {
+      const r = await callRelay('getWixProducts', { limit, offset });
+      const items = r?.products || r?.items || [];
+      all = all.concat(items);
+      if (items.length < limit) break;
+      offset += limit;
+      if (all.length >= 500) break;
+    }
+    wixProducts = all;
+    wixFiltered = [...wixProducts];
+    wixSelected.clear();
+    if (empty) empty.style.display = 'none';
+    if (statRow) { statRow.style.opacity = '1'; statRow.style.pointerEvents = 'auto'; }
+    updateWixStats();
+    populateWixBrandFilter();
+    renderWixGrid();
+    const tc = document.getElementById('tc-mywix');
+    if (tc) tc.textContent = wixProducts.length;
+  } catch(e) {
+    if (empty) { empty.style.display = 'flex'; }
+    alert('Failed to load products: ' + e.message);
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '↻ Load from satcomms.co.za'; }
+}
+
+function updateWixStats() {
+  const visible = wixProducts.filter(p => p.visible !== false).length;
+  const hidden = wixProducts.length - visible;
+  const inStock = wixProducts.filter(p => p.stock?.inStock !== false).length;
+  const prices = wixProducts.map(p => p.price).filter(Boolean);
+  const avg = prices.length ? prices.reduce((a,b)=>a+b,0)/prices.length : 0;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('sw-total', wixProducts.length);
+  set('sw-visible', visible);
+  set('sw-hidden', hidden);
+  set('sw-instock', inStock);
+  set('sw-selected', wixSelected.size);
+  set('sw-avgprice', avg ? 'R' + Math.round(avg).toLocaleString('en-ZA') : '—');
+}
+
+function populateWixBrandFilter() {
+  const brands = [...new Set(wixProducts.map(p => (p.brand||'').toLowerCase()).filter(Boolean))];
+  const sel = document.getElementById('wixBrandFilter');
+  if (!sel) return;
+  const existing = Array.from(sel.options).map(o => o.value);
+  brands.forEach(b => {
+    if (!existing.includes(b)) {
+      const opt = document.createElement('option');
+      opt.value = b; opt.textContent = b.charAt(0).toUpperCase() + b.slice(1);
+      sel.appendChild(opt);
+    }
+  });
+}
+
+function filterWixProducts() {
+  const q = document.getElementById('wixSearchInput')?.value.toLowerCase() || '';
+  const brand = document.getElementById('wixBrandFilter')?.value.toLowerCase() || '';
+  const vis = document.getElementById('wixVisFilter')?.value || '';
+  const sort = document.getElementById('wixSortFilter')?.value || 'name';
+  wixFiltered = wixProducts.filter(p => {
+    if (q && !(p.name||'').toLowerCase().includes(q) && !(p.sku||'').toLowerCase().includes(q)) return false;
+    if (brand && (p.brand||'').toLowerCase() !== brand) return false;
+    if (vis === 'visible' && p.visible === false) return false;
+    if (vis === 'hidden' && p.visible !== false) return false;
+    return true;
+  });
+  wixFiltered.sort((a, b) => {
+    if (sort === 'name') return (a.name||'').localeCompare(b.name||'');
+    if (sort === 'price_asc') return (a.price||0) - (b.price||0);
+    if (sort === 'price_desc') return (b.price||0) - (a.price||0);
+    return 0;
+  });
+  wixVisibleCount = 60;
+  renderWixGrid();
+}
+
+function renderWixGrid() {
+  const grid = document.getElementById('wixProductsGrid');
+  const empty = document.getElementById('wixProductsEmpty');
+  if (!grid) return;
+  if (!wixFiltered.length) {
+    grid.innerHTML = '';
+    if (empty && wixProducts.length) empty.style.display = 'flex';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  const slice = wixFiltered.slice(0, wixVisibleCount);
+  grid.innerHTML = slice.map(p => {
+    const sel = wixSelected.has(p.id);
+    const vis = p.visible !== false;
+    const price = p.price ? 'R' + p.price.toLocaleString('en-ZA') : '—';
+    const stockBadge = p.stock?.inStock === false
+      ? `<span style="font-size:9px;background:var(--accent3);color:#fff;padding:1px 6px;border-radius:2px">OOS</span>`
+      : `<span style="font-size:9px;background:var(--accent2);color:#000;padding:1px 6px;border-radius:2px">IN STOCK</span>`;
+    return `<div class="wix-row${sel?' selected':''}" onclick="toggleWixRow('${p.id}')" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;background:${sel?'rgba(0,180,255,.06)':'transparent'};transition:background .15s">
+      <input type="checkbox" ${sel?'checked':''} onclick="event.stopPropagation();toggleWixRow('${p.id}')" style="accent-color:var(--accent);flex-shrink:0">
+      <div style="width:36px;height:36px;background:var(--surface2);border-radius:3px;overflow:hidden;flex-shrink:0">
+        ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover">` : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:16px">📦</div>'}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name||'Untitled'}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">${p.sku||'—'} · ${!vis?'<span style="color:var(--accent3)">Hidden</span>':'<span style="color:var(--accent2)">Visible</span>'}</div>
+      </div>
+      ${stockBadge}
+      <div style="font-family:var(--cond);font-size:20px;font-weight:700;color:var(--accent2);flex-shrink:0">${price}</div>
+      <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openProductEditor('${p.id}')" title="Edit" style="flex-shrink:0">✏</button>
+    </div>`;
+  }).join('');
+  const loadMore = document.querySelector('[onclick="loadMoreWix()"]');
+  if (loadMore) loadMore.style.display = wixFiltered.length > wixVisibleCount ? 'inline-block' : 'none';
+}
+
+function toggleWixRow(id) {
+  if (wixSelected.has(id)) wixSelected.delete(id); else wixSelected.add(id);
+  updateWixStats();
+  renderWixGrid();
+}
+
+function clearWixSelection() {
+  wixSelected.clear();
+  updateWixStats();
+  renderWixGrid();
+}
+
+function loadMoreWix() {
+  wixVisibleCount += 60;
+  renderWixGrid();
+}
+
+function exportWixCSV() {
+  const rows = [['Name','SKU','Price','Visible','In Stock']];
+  wixProducts.forEach(p => rows.push([p.name||'',p.sku||'',p.price||'',p.visible!==false?'Yes':'No',p.stock?.inStock!==false?'Yes':'No']));
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,\ufeff'+encodeURIComponent(csv);
+  a.download = 'satcomms-products.csv'; a.click();
+}
+
+// Simple product editor modal
+function openProductEditor(id) {
+  const p = wixProducts.find(x => x.id === id);
+  if (!p) return;
+  // Just show a quick inline price/stock edit via prompt for now
+  const newPrice = prompt(`Edit price for:\n${p.name}\n\nCurrent: R${p.price||0}\nNew price (blank to skip):`, p.price||'');
+  if (newPrice !== null && newPrice !== '' && !isNaN(parseFloat(newPrice))) {
+    saveWix(id, { price: parseFloat(newPrice) });
+  }
+}
+
+async function saveWix(id, fields) {
+  try {
+    await callRelay('updateProduct', { productId: id, product: fields });
+    const p = wixProducts.find(x => x.id === id);
+    if (p) Object.assign(p, fields);
+    updateWixStats();
+    renderWixGrid();
+  } catch(e) { alert('Save failed: ' + e.message); }
+}
+
+async function testWix() {
+  try {
+    const r = await callRelay('test', {});
+    alert('Relay OK: ' + JSON.stringify(r).substring(0,120));
+  } catch(e) { alert('Relay error: ' + e.message); }
+}
+
+// Stubs for features referenced in HTML
+function addToWatchFromEditor() {}
+function bulkApplyInfoSections() {}
+function bulkRunSEO() { alert('Select products first, then use the SEO Agent tab.'); }
+function closeProductEditor() {}
+function runEditorAI() {}
+function saveProductEditor() {}
+function showInfoSectionsPanel() {}
+function switchSeoTab(t) {}
+function exportWatch() {}
+function syncWatch() {}
+function addLog() {}
+
+// ─────────────────────────────────────────────────────────────
+// WATCHLIST
+// ─────────────────────────────────────────────────────────────
+function renderWatchlist() {
+  const grid = document.getElementById('watchGrid');
+  const empty = document.getElementById('watchEmpty');
+  if (!grid) return;
+  if (!watchlist.length) { grid.innerHTML = ''; if (empty) empty.style.display = 'flex'; return; }
+  if (empty) empty.style.display = 'none';
+  grid.innerHTML = watchlist.map((p, i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px">${p.name||'—'}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">${p.sku||'—'}</div>
+      </div>
+      <div style="font-family:var(--cond);font-size:20px;font-weight:700;color:var(--accent2)">${p.price?'R'+p.price.toLocaleString('en-ZA'):'—'}</div>
+      <button class="btn btn-danger btn-sm" onclick="removeFromWatch(${i})">✕</button>
+    </div>`).join('');
+  const tc = document.getElementById('tc-watch');
+  if (tc) tc.textContent = watchlist.length;
+}
+
+function removeFromWatch(i) {
+  watchlist.splice(i, 1);
+  localStorage.setItem('sc_wl', JSON.stringify(watchlist));
+  renderWatchlist();
+}
+
+// ─────────────────────────────────────────────────────────────
+// AMAZON MONITOR
+// ─────────────────────────────────────────────────────────────
+let amazonProducts = JSON.parse(localStorage.getItem('sc_amz') || '[]');
+function saveAmazon() { localStorage.setItem('sc_amz', JSON.stringify(amazonProducts)); }
+
+async function fetchAmazonProduct() {
+  const urlEl = document.getElementById('amzUrl');
+  const url = urlEl?.value?.trim();
+  if (!url) { alert('Enter an Amazon.co.za product URL'); return; }
+  const btn = document.getElementById('amzFetchBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Fetching...'; }
+  try {
+    const r = await callRelay('fetchAmazon', { url });
+    if (r) {
+      amazonProducts.push({ ...r, url, addedAt: new Date().toISOString(), lastChecked: new Date().toISOString() });
+      saveAmazon(); renderAmazon();
+      if (urlEl) urlEl.value = '';
+    }
+  } catch(e) { alert('Fetch failed: ' + e.message); }
+  if (btn) { btn.disabled = false; btn.textContent = '+ Add'; }
+}
+
+async function syncAllAmazon() {
+  for (const p of amazonProducts) {
+    try {
+      const r = await callRelay('fetchAmazon', { url: p.url });
+      if (r) { Object.assign(p, r); p.lastChecked = new Date().toISOString(); }
+    } catch(e) {}
+  }
+  saveAmazon(); renderAmazon();
+}
+
+function clearAllAmazon() {
+  if (!confirm('Remove all Amazon products?')) return;
+  amazonProducts = []; saveAmazon(); renderAmazon();
+}
+
+function renderAmazon() {
+  const grid = document.getElementById('amzGrid');
+  const empty = document.getElementById('amzEmpty');
+  if (!grid) return;
+  if (!amazonProducts.length) { grid.innerHTML = ''; if (empty) empty.style.display = 'flex'; return; }
+  if (empty) empty.style.display = 'none';
+  grid.innerHTML = amazonProducts.map((p, i) => `
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border)">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name||p.asin||'—'}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">${p.asin||''} · Last checked: ${p.lastChecked?new Date(p.lastChecked).toLocaleDateString('en-ZA'):'Never'}</div>
+      </div>
+      <div style="font-family:var(--cond);font-size:20px;font-weight:700;color:var(--accent4)">${p.price?'R'+p.price.toLocaleString('en-ZA'):'—'}</div>
+      <a href="${p.url}" target="_blank" class="btn btn-ghost btn-sm">↗</a>
+      <button class="btn btn-danger btn-sm" onclick="removeAmazon(${i})">✕</button>
+    </div>`).join('');
+  const tc = document.getElementById('tc-amz');
+  if (tc) tc.textContent = amazonProducts.length;
+}
+
+function removeAmazon(i) {
+  amazonProducts.splice(i, 1);
+  saveAmazon(); renderAmazon();
+}
+
+// ─────────────────────────────────────────────────────────────
 // GARMIN IMPORTER - CATEGORY BROWSER
 // ─────────────────────────────────────────────────────────────
 let garminProducts = [];
@@ -2292,6 +2813,8 @@ function calcGarminPrice(p) {
 }
 
 function updateGarminStats() {
+  const garminStatRow = document.getElementById('garminStatRow');
+  if (garminStatRow) { garminStatRow.style.opacity = '1'; garminStatRow.style.pointerEvents = 'auto'; }
   document.getElementById('gs-total').textContent    = garminProducts.length.toLocaleString();
   document.getElementById('gs-instock').textContent  = garminProducts.filter(p => p.instock).length.toLocaleString();
   document.getElementById('gs-oos').textContent      = garminProducts.filter(p => !p.instock).length.toLocaleString();
