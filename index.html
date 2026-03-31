@@ -696,8 +696,18 @@ select option{background:var(--surface2)}
     <div class="empty-text" style="font-size:12px;margin-bottom:20px;color:var(--muted)">Load your live Wix products to get started.<br>Edit prices, rewrite descriptions with AI, and push back to Wix.</div>
     <button class="btn btn-primary" onclick="loadMyWixProducts()" style="font-size:13px;padding:10px 24px;letter-spacing:.08em">↻ LOAD FROM SATCOMMS.CO.ZA</button>
   </div>
-  <div class="pgrid" id="wixProductsGrid"></div>
-  <div id="wixLoadMoreWrap" style="text-align:center;padding:20px;display:none">
+  <!-- Column headers -->
+  <div id="wixGridHeader" style="display:none;grid-template-columns:28px 1fr 90px 60px 60px 50px 36px;gap:10px;padding:8px 14px;background:var(--surface2);border:1px solid var(--border);border-bottom:none;font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">
+    <div></div>
+    <div>Product / SKU</div>
+    <div style="text-align:right">Price</div>
+    <div style="text-align:center">Stock</div>
+    <div style="text-align:center">Status</div>
+    <div style="text-align:center">Qty</div>
+    <div></div>
+  </div>
+  <div id="wixProductsGrid" style="border:1px solid var(--border);border-radius:0 0 6px 6px;overflow:hidden"></div>
+  <div id="wixLoadMoreWrap" style="text-align:center;padding:16px;display:none;border:1px solid var(--border);border-top:none">
     <button class="btn btn-ghost" onclick="loadMoreWix()">Load More</button>
   </div>
 </div>
@@ -2422,7 +2432,7 @@ function updateWixStats() {
   const visible = wixProducts.filter(p => p.visible !== false).length;
   const hidden = wixProducts.length - visible;
   const inStock = wixProducts.filter(p => p.stock?.inStock !== false).length;
-  const prices = wixProducts.map(p => p.price).filter(Boolean);
+  const prices = wixProducts.map(p => p.priceData?.price || p.price).filter(Boolean);
   const avg = prices.length ? prices.reduce((a,b)=>a+b,0)/prices.length : 0;
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   set('sw-total', wixProducts.length);
@@ -2475,30 +2485,55 @@ function renderWixGrid() {
   if (!grid) return;
   if (!wixFiltered.length) {
     grid.innerHTML = '';
+    const hdr = document.getElementById('wixGridHeader');
+    if (hdr) hdr.style.display = 'none';
     if (empty && wixProducts.length) empty.style.display = 'flex';
     return;
   }
   if (empty) empty.style.display = 'none';
+  // Show column header
+  const header = document.getElementById('wixGridHeader');
+  if (header) header.style.display = 'grid';
+  const loadMoreWrap = document.getElementById('wixLoadMoreWrap');
+  if (loadMoreWrap) loadMoreWrap.style.display = wixFiltered.length > wixVisibleCount ? 'block' : 'none';
   const slice = wixFiltered.slice(0, wixVisibleCount);
   grid.innerHTML = slice.map(p => {
     const sel = wixSelected.has(p.id);
+    // Real Wix field names: priceData.price, stock.inStock, visible
+    const price = p.priceData?.price || p.price || 0;
+    const priceStr = price ? 'R' + price.toLocaleString('en-ZA') : '—';
+    const inStock = p.stock?.inStock !== false;
     const vis = p.visible !== false;
-    const price = p.price ? 'R' + p.price.toLocaleString('en-ZA') : '—';
-    const stockBadge = p.stock?.inStock === false
-      ? `<span style="font-size:9px;background:var(--accent3);color:#fff;padding:1px 6px;border-radius:2px">OOS</span>`
-      : `<span style="font-size:9px;background:var(--accent2);color:#000;padding:1px 6px;border-radius:2px">IN STOCK</span>`;
-    return `<div class="wix-row${sel?' selected':''}" onclick="toggleWixRow('${p.id}')" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;background:${sel?'rgba(0,180,255,.06)':'transparent'};transition:background .15s">
-      <input type="checkbox" ${sel?'checked':''} onclick="event.stopPropagation();toggleWixRow('${p.id}')" style="accent-color:var(--accent);flex-shrink:0">
-      <div style="width:36px;height:36px;background:var(--surface2);border-radius:3px;overflow:hidden;flex-shrink:0">
-        ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover">` : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:16px">📦</div>'}
+    const qty = p.stock?.quantity ?? '—';
+    return `<div onclick="toggleWixRow('${p.id}')"
+      style="display:grid;grid-template-columns:28px 1fr 90px 60px 60px 50px 36px;
+        align-items:center;gap:10px;padding:9px 14px;
+        border-bottom:1px solid var(--border);cursor:pointer;
+        background:${sel ? 'rgba(0,180,255,.06)' : 'transparent'};
+        transition:background .15s"
+      onmouseover="this.style.background='${sel ? 'rgba(0,180,255,.08)' : 'rgba(255,255,255,.02)'}'"
+      onmouseout="this.style.background='${sel ? 'rgba(0,180,255,.06)' : 'transparent'}'">
+      <input type="checkbox" ${sel ? 'checked' : ''} onclick="event.stopPropagation();toggleWixRow('${p.id}')"
+        style="accent-color:var(--accent);flex-shrink:0;cursor:pointer">
+      <div style="min-width:0">
+        <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+          title="${(p.name||'').replace(/"/g,'&quot;')}">${p.name || 'Untitled'}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">${p.sku || '—'}</div>
       </div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name||'Untitled'}</div>
-        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">${p.sku||'—'} · ${!vis?'<span style="color:var(--accent3)">Hidden</span>':'<span style="color:var(--accent2)">Visible</span>'}</div>
+      <div style="font-family:var(--cond);font-size:18px;font-weight:800;color:var(--accent2);text-align:right">${priceStr}</div>
+      <div style="text-align:center">
+        <span style="font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:3px;border:1px solid ${inStock ? 'var(--accent2)' : 'var(--accent3)'};color:${inStock ? 'var(--accent2)' : 'var(--accent3)'}">
+          ${inStock ? 'IN STOCK' : 'OOS'}
+        </span>
       </div>
-      ${stockBadge}
-      <div style="font-family:var(--cond);font-size:20px;font-weight:700;color:var(--accent2);flex-shrink:0">${price}</div>
-      <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openProductEditor('${p.id}')" title="Edit" style="flex-shrink:0">✏</button>
+      <div style="text-align:center">
+        <span style="font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:3px;border:1px solid ${vis ? 'var(--border2)' : 'var(--accent3)'};color:${vis ? 'var(--muted2)' : 'var(--accent3)'}">
+          ${vis ? 'LIVE' : 'HIDDEN'}
+        </span>
+      </div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center">${qty}</div>
+      <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openProductEditor('${p.id}')"
+        title="Edit price / visibility" style="flex-shrink:0;padding:4px 8px">✏</button>
     </div>`;
   }).join('');
   const loadMore = document.querySelector('[onclick="loadMoreWix()"]');
@@ -2541,7 +2576,7 @@ function openProductEditor(id) {
 
   const vis = p.visible !== false;
   const inStock = p.stock?.inStock !== false;
-  const price = p.price || 0;
+  const price = p.priceData?.price || p.price || 0;
 
   const panel = document.createElement('div');
   panel.id = 'wixEditorPanel';
@@ -2678,7 +2713,12 @@ async function saveProductEditor(id) {
   try {
     await callRelay('updateProduct', { productId: id, product: { price: newPrice, visible: newVis } });
     const p = wixProducts.find(x => x.id === id);
-    if (p) { p.price = newPrice; p.visible = newVis; }
+    if (p) {
+      if (!p.priceData) p.priceData = {};
+      p.priceData.price = newPrice;
+      p.price = newPrice; // keep fallback in sync
+      p.visible = newVis;
+    }
     updateWixStats(); renderWixGrid();
     if (status) { status.textContent = '✓ Saved'; status.style.color = 'var(--accent2)'; }
     setTimeout(closeProductEditor, 800);
