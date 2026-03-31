@@ -2530,41 +2530,190 @@ function exportWixCSV() {
   a.download = 'satcomms-products.csv'; a.click();
 }
 
-// Simple product editor modal
+// Product editor slide-in panel
 function openProductEditor(id) {
   const p = wixProducts.find(x => x.id === id);
   if (!p) return;
-  // Just show a quick inline price/stock edit via prompt for now
-  const newPrice = prompt(`Edit price for:\n${p.name}\n\nCurrent: R${p.price||0}\nNew price (blank to skip):`, p.price||'');
-  if (newPrice !== null && newPrice !== '' && !isNaN(parseFloat(newPrice))) {
-    saveWix(id, { price: parseFloat(newPrice) });
+
+  // Remove existing panel if present
+  const existing = document.getElementById('wixEditorPanel');
+  if (existing) existing.remove();
+
+  const vis = p.visible !== false;
+  const inStock = p.stock?.inStock !== false;
+  const price = p.price || 0;
+
+  const panel = document.createElement('div');
+  panel.id = 'wixEditorPanel';
+  panel.style.cssText = `
+    position:fixed;top:0;right:-480px;width:460px;height:100vh;
+    background:var(--surface);border-left:1px solid var(--border2);
+    z-index:300;display:flex;flex-direction:column;
+    transition:right .3s cubic-bezier(.4,0,.2,1);
+    box-shadow:-20px 0 60px rgba(0,0,0,.5);
+  `;
+
+  panel.innerHTML = `
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0">
+      <div>
+        <div style="font-family:var(--cond);font-size:14px;font-weight:800;letter-spacing:.08em;color:var(--accent)">EDIT PRODUCT</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">${p.sku || 'No SKU'}</div>
+      </div>
+      <button onclick="closeProductEditor()" style="background:none;border:none;cursor:pointer;color:var(--muted2);font-size:20px;padding:4px;transition:color .15s" onmouseover="this.style.color='var(--accent3)'" onmouseout="this.style.color='var(--muted2)'">✕</button>
+    </div>
+
+    <!-- Scrollable body -->
+    <div style="flex:1;overflow-y:auto;padding:20px">
+
+      <!-- Product image -->
+      <div style="width:100%;height:180px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:16px;display:flex;align-items:center;justify-content:center">
+        ${p.image
+          ? `<img src="${p.image}" style="max-width:100%;max-height:180px;object-fit:contain;padding:12px">`
+          : `<div style="text-align:center;color:var(--muted)">
+               <div style="font-size:40px;margin-bottom:8px;opacity:.4">📦</div>
+               <div style="font-family:var(--mono);font-size:9px">No image</div>
+             </div>`}
+      </div>
+
+      <!-- Product name -->
+      <div style="font-family:var(--cond);font-size:18px;font-weight:800;line-height:1.3;margin-bottom:6px">${p.name || 'Untitled'}</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-bottom:20px">${p.sku || '—'}</div>
+
+      <!-- Status badges -->
+      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+        <span style="font-family:var(--mono);font-size:9px;padding:4px 10px;border-radius:3px;border:1px solid ${vis?'var(--accent2)':'var(--border2)'};color:${vis?'var(--accent2)':'var(--muted)'}">
+          ${vis ? '● VISIBLE' : '○ HIDDEN'}
+        </span>
+        <span style="font-family:var(--mono);font-size:9px;padding:4px 10px;border-radius:3px;border:1px solid ${inStock?'var(--accent2)':'var(--accent3)'};color:${inStock?'var(--accent2)':'var(--accent3)'}">
+          ${inStock ? '● IN STOCK' : '○ OUT OF STOCK'}
+        </span>
+      </div>
+
+      <!-- Price editor -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:14px">
+        <div class="flabel" style="margin-bottom:8px">Price (R incl VAT)</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="number" id="editorPrice" value="${price}" min="0" step="1"
+            style="font-family:var(--cond);font-size:24px;font-weight:700;color:var(--accent2);background:var(--surface);border:1px solid var(--border2);padding:10px 14px;border-radius:6px;flex:1"
+            onkeydown="if(event.key==='Enter')saveProductEditor('${id}')">
+        </div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:8px">
+          Current: <span style="color:var(--text)">R${price.toLocaleString('en-ZA')}</span>
+        </div>
+      </div>
+
+      <!-- Visibility toggle -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-family:var(--mono);font-size:10px;font-weight:600;margin-bottom:2px">Visibility</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted)">Show on satcomms.co.za</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <span style="font-family:var(--mono);font-size:9px;color:var(--muted)" id="editorVisLabel">${vis?'ON':'OFF'}</span>
+          <div id="editorVisToggle" onclick="toggleEditorVis()" style="width:38px;height:20px;border-radius:10px;background:${vis?'var(--accent2)':'var(--border2)'};cursor:pointer;position:relative;transition:background .2s">
+            <div style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:${vis?'20':'2'}px;transition:left .2s"></div>
+          </div>
+        </label>
+      </div>
+
+      <!-- Wix link -->
+      ${p.id ? `<div style="font-family:var(--mono);font-size:9px;color:var(--muted);padding:10px 0;border-top:1px solid var(--border)">
+        <span style="color:var(--muted2)">Wix ID:</span> ${p.id.substring(0,24)}...
+      </div>` : ''}
+    </div>
+
+    <!-- Footer actions -->
+    <div style="padding:14px 20px;border-top:1px solid var(--border);background:var(--surface2);display:flex;flex-direction:column;gap:8px;flex-shrink:0">
+      <button class="btn btn-primary" onclick="saveProductEditor('${id}')" style="width:100%;justify-content:center;padding:11px">
+        ✓ SAVE CHANGES
+      </button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="closeProductEditor()" style="flex:1;justify-content:center">Cancel</button>
+      </div>
+      <div id="editorSaveStatus" style="font-family:var(--mono);font-size:9px;text-align:center;min-height:14px"></div>
+    </div>
+  `;
+
+  document.body.appendChild(panel);
+  panel._wixId = id;
+  panel._vis = vis;
+
+  // Slide in
+  requestAnimationFrame(() => { panel.style.right = '0'; });
+
+  // Click outside to close
+  panel._backdrop = document.createElement('div');
+  panel._backdrop.style.cssText = 'position:fixed;inset:0;z-index:299;background:rgba(0,0,0,.4)';
+  panel._backdrop.onclick = closeProductEditor;
+  document.body.appendChild(panel._backdrop);
+}
+
+function toggleEditorVis() {
+  const panel = document.getElementById('wixEditorPanel');
+  if (!panel) return;
+  panel._vis = !panel._vis;
+  const toggle = document.getElementById('editorVisToggle');
+  const label = document.getElementById('editorVisLabel');
+  const dot = toggle.querySelector('div');
+  toggle.style.background = panel._vis ? 'var(--accent2)' : 'var(--border2)';
+  dot.style.left = panel._vis ? '20px' : '2px';
+  label.textContent = panel._vis ? 'ON' : 'OFF';
+}
+
+async function saveProductEditor(id) {
+  const priceEl = document.getElementById('editorPrice');
+  const panel = document.getElementById('wixEditorPanel');
+  const status = document.getElementById('editorSaveStatus');
+  const saveBtn = panel?.querySelector('[onclick*="saveProductEditor"]');
+  if (!priceEl || !panel) return;
+
+  const newPrice = parseFloat(priceEl.value);
+  const newVis = panel._vis;
+  if (isNaN(newPrice) || newPrice < 0) { if(status) { status.textContent = '⚠ Invalid price'; status.style.color='var(--accent3)'; } return; }
+
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ Saving...'; }
+  if (status) { status.textContent = 'Saving to Wix...'; status.style.color = 'var(--muted2)'; }
+
+  try {
+    await callRelay('updateProduct', { productId: id, product: { price: newPrice, visible: newVis } });
+    const p = wixProducts.find(x => x.id === id);
+    if (p) { p.price = newPrice; p.visible = newVis; }
+    updateWixStats(); renderWixGrid();
+    if (status) { status.textContent = '✓ Saved'; status.style.color = 'var(--accent2)'; }
+    setTimeout(closeProductEditor, 800);
+  } catch(e) {
+    if (status) { status.textContent = '⚠ ' + e.message; status.style.color = 'var(--accent3)'; }
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '✓ SAVE CHANGES'; }
   }
 }
 
+function closeProductEditor() {
+  const panel = document.getElementById('wixEditorPanel');
+  if (panel) {
+    panel.style.right = '-480px';
+    setTimeout(() => panel.remove(), 320);
+    if (panel._backdrop) panel._backdrop.remove();
+  }
+}
+
+// Stubs for features referenced in HTML
 async function saveWix(id, fields) {
   try {
     await callRelay('updateProduct', { productId: id, product: fields });
     const p = wixProducts.find(x => x.id === id);
     if (p) Object.assign(p, fields);
-    updateWixStats();
-    renderWixGrid();
+    updateWixStats(); renderWixGrid();
   } catch(e) { alert('Save failed: ' + e.message); }
 }
-
 async function testWix() {
-  try {
-    const r = await callRelay('test', {});
-    alert('Relay OK: ' + JSON.stringify(r).substring(0,120));
-  } catch(e) { alert('Relay error: ' + e.message); }
+  try { const r = await callRelay('test',{}); alert('Relay OK: '+JSON.stringify(r).substring(0,120)); }
+  catch(e) { alert('Relay error: '+e.message); }
 }
-
-// Stubs for features referenced in HTML
 function addToWatchFromEditor() {}
 function bulkApplyInfoSections() {}
 function bulkRunSEO() { alert('Select products first, then use the SEO Agent tab.'); }
-function closeProductEditor() {}
 function runEditorAI() {}
-function saveProductEditor() {}
 function showInfoSectionsPanel() {}
 function switchSeoTab(t) {}
 function exportWatch() {}
@@ -3021,6 +3170,7 @@ function renderGarminSelectionPanel() {
     panel.innerHTML = '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;padding:20px 0">No products selected yet.<br>Browse categories and tick products.</div>';
     return;
   }
+
   // Group selected by category
   const byCat = {};
   selected.forEach(p => {
@@ -3028,20 +3178,36 @@ function renderGarminSelectionPanel() {
     byCat[p.category].push(p);
   });
   const totalValue = selected.reduce((s,p) => s + calcGarminPrice(p), 0);
+
+  // Check which selected products are already on Wix
+  const pub = JSON.parse(localStorage.getItem('sc_pub') || '[]');
+  const pubSkus = new Map(pub.map(p => [p.sku, p]));
+  const onWix = selected.filter(p => pubSkus.has(p.sku)).length;
+
+  // Active tab (default to first)
+  const activeTab = panel._activeTab || 'publish';
+
   panel.innerHTML = `
-    <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
-      ${selected.length} product${selected.length!==1?'s':''} · Total value: <span style="color:var(--accent2)">R${totalValue.toLocaleString('en-ZA')}</span>
+    <!-- Stats row -->
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between">
+      <span>${selected.length} product${selected.length!==1?'s':''}</span>
+      <span style="color:var(--accent2)">R${totalValue.toLocaleString('en-ZA')}</span>
     </div>
+
+    <!-- Product list -->
+    <div style="margin-bottom:12px;max-height:280px;overflow-y:auto">
     ${Object.entries(byCat).map(([cat, prods]) => `
-      <div style="margin-bottom:10px">
-        <div style="font-family:var(--mono);font-size:8px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">
+      <div style="margin-bottom:8px">
+        <div style="font-family:var(--mono);font-size:8px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">
           ${GARMIN_CAT_ICONS[cat]||'📦'} ${cat} <span style="color:var(--muted)">(${prods.length})</span>
         </div>
         ${prods.map(p => {
           const price = calcGarminPrice(p);
-          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);gap:8px">
-            <div style="font-size:11px;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.name}">${p.name.substring(0,38)}</div>
-            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          const isOnWix = pubSkus.has(p.sku);
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);gap:6px">
+            <div style="font-size:11px;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.name}">${p.name.substring(0,32)}</div>
+            <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+              ${isOnWix ? '<span style="font-family:var(--mono);font-size:8px;color:var(--accent2)">✓</span>' : ''}
               <span style="font-family:var(--cond);font-size:13px;color:var(--accent2)">R${price.toLocaleString('en-ZA')}</span>
               <button onclick="toggleGarminRow('${p.sku.replace(/'/g,"\\'")}');event.stopPropagation()" style="background:none;border:none;cursor:pointer;color:var(--accent3);font-size:12px;padding:0 2px" title="Remove">✕</button>
             </div>
@@ -3049,12 +3215,106 @@ function renderGarminSelectionPanel() {
         }).join('')}
       </div>
     `).join('')}
-    <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
-      <button class="btn btn-success btn-sm" onclick="fetchGarminImages()" style="width:100%">🖼 Fetch Images</button>
-      <button class="btn btn-wix btn-sm" onclick="publishGarminToWix()" style="width:100%">🚀 Publish to Wix</button>
-      <button class="btn btn-primary btn-sm" onclick="exportGarminCSV()" style="width:100%">⬇ Export CSV</button>
+    </div>
+
+    <!-- On Wix indicator -->
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:12px">
+      <span style="color:var(--accent2)">✓ ${onWix}</span> already on Wix ·
+      <span style="color:var(--accent4)">${selected.length - onWix}</span> new
+    </div>
+
+    <!-- ACTION TABS -->
+    <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden">
+      <!-- Tab headers -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border)">
+        <button id="garminTab_publish"
+          onclick="setGarminPanelTab('publish')"
+          style="padding:8px 6px;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.06em;border:none;cursor:pointer;transition:all .15s;
+            background:${activeTab==='publish'?'rgba(0,180,255,.1)':'var(--surface2)'};
+            color:${activeTab==='publish'?'var(--accent)':'var(--muted2)'};
+            border-bottom:2px solid ${activeTab==='publish'?'var(--accent)':'transparent'}">
+          🚀 PUBLISH NEW
+        </button>
+        <button id="garminTab_priceonly"
+          onclick="setGarminPanelTab('priceonly')"
+          style="padding:8px 6px;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.06em;border:none;cursor:pointer;transition:all .15s;border-left:1px solid var(--border);
+            background:${activeTab==='priceonly'?'rgba(255,200,77,.08)':'var(--surface2)'};
+            color:${activeTab==='priceonly'?'var(--accent4)':'var(--muted2)'};
+            border-bottom:2px solid ${activeTab==='priceonly'?'var(--accent4)':'transparent'}">
+          💲 PRICE ONLY
+        </button>
+      </div>
+
+      <!-- Tab body -->
+      <div style="padding:12px;background:var(--surface)">
+        ${activeTab === 'publish' ? `
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:10px;line-height:1.7">
+            Creates new Wix listings for <b style="color:var(--text)">${selected.length - onWix} new</b> product${(selected.length-onWix)!==1?'s':''},
+            updates <b style="color:var(--text)">${onWix}</b> existing.
+            Generates AI descriptions from Garmin specs.
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <button class="btn btn-ghost btn-sm" onclick="fetchGarminImages()" style="width:100%;justify-content:center">🖼 Fetch Images First</button>
+            <button class="btn btn-wix btn-sm" onclick="publishGarminToWix()" style="width:100%;justify-content:center">🚀 Publish to Wix</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportGarminCSV()" style="width:100%;justify-content:center">⬇ Export CSV</button>
+          </div>
+        ` : `
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:10px;line-height:1.7">
+            Updates <b style="color:var(--accent4)">${onWix}</b> existing Wix product${onWix!==1?'s':''} with new prices only.
+            Does <b style="color:var(--text)">not</b> change descriptions, images, or stock.
+            ${selected.length - onWix > 0 ? `<br><span style="color:var(--accent3)">${selected.length - onWix} product${(selected.length-onWix)!==1?'s':''} not on Wix will be skipped.</span>` : ''}
+          </div>
+          ${onWix > 0
+            ? `<button class="btn btn-success btn-sm" onclick="updateGarminPricesOnly()" style="width:100%;justify-content:center;background:var(--accent4);color:#000">💲 UPDATE ${onWix} PRICE${onWix!==1?'S':''} ON WIX</button>`
+            : `<div style="font-family:var(--mono);font-size:9px;color:var(--accent3);text-align:center;padding:8px">None of the selected products are on Wix yet.<br>Use Publish to Wix to add them first.</div>`
+          }
+          <div id="garminPriceOnlyLog" style="margin-top:8px;font-family:var(--mono);font-size:9px;color:var(--muted2)"></div>
+        `}
+      </div>
     </div>
   `;
+}
+
+function setGarminPanelTab(tab) {
+  const panel = document.getElementById('garminSelectionPanel');
+  if (panel) { panel._activeTab = tab; renderGarminSelectionPanel(); }
+}
+
+async function updateGarminPricesOnly() {
+  const pub = JSON.parse(localStorage.getItem('sc_pub') || '[]');
+  const pubSkus = new Map(pub.map(p => [p.sku, p]));
+  const selected = [...garminSelected].map(sku => garminProducts.find(p => p.sku === sku)).filter(Boolean);
+  const toUpdate = selected.filter(p => pubSkus.has(p.sku));
+  if (!toUpdate.length) return;
+
+  const log = document.getElementById('garminPriceOnlyLog');
+  const btn = document.querySelector('[onclick="updateGarminPricesOnly()"]');
+  if (btn) { btn.disabled = true; btn.textContent = `⏳ Updating 0/${toUpdate.length}...`; }
+  let done = 0, errors = 0;
+
+  for (const p of toUpdate) {
+    const wixEntry = pubSkus.get(p.sku);
+    const newPrice = calcGarminPrice(p);
+    try {
+      await callRelay('updatePrice', { productId: wixEntry.wixId, price: newPrice });
+      // Update local published record
+      wixEntry.price = newPrice;
+      done++;
+      if (btn) btn.textContent = `⏳ Updating ${done}/${toUpdate.length}...`;
+      if (log) log.innerHTML += `<div style="color:var(--accent2)">✓ ${p.name.substring(0,30)} → R${newPrice.toLocaleString('en-ZA')}</div>`;
+    } catch(e) {
+      errors++;
+      if (log) log.innerHTML += `<div style="color:var(--accent3)">✗ ${p.name.substring(0,30)}: ${e.message}</div>`;
+    }
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  localStorage.setItem('sc_pub', JSON.stringify(pub));
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = errors > 0 ? `⚠ ${done} done, ${errors} errors` : `✓ ${done} price${done!==1?'s':''} updated`;
+    btn.style.background = errors > 0 ? 'var(--accent3)' : 'var(--accent2)';
+  }
 }
 
 function clearGarmin() {
