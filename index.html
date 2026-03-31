@@ -697,7 +697,7 @@ select option{background:var(--surface2)}
     <button class="btn btn-primary" onclick="loadMyWixProducts()" style="font-size:13px;padding:10px 24px;letter-spacing:.08em">↻ LOAD FROM SATCOMMS.CO.ZA</button>
   </div>
   <!-- Column headers -->
-  <div id="wixGridHeader" style="display:none;grid-template-columns:28px 1fr 90px 60px 60px 50px 36px;gap:10px;padding:8px 14px;background:var(--surface2);border:1px solid var(--border);border-bottom:none;font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">
+  <div id="wixGridHeader" style="display:none;grid-template-columns:28px 1fr 80px 72px 62px 40px 28px;gap:8px;padding:8px 14px;background:var(--surface2);border:1px solid var(--border);border-bottom:none;font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">
     <div></div>
     <div>Product / SKU</div>
     <div style="text-align:right">Price</div>
@@ -1417,7 +1417,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ─────────────────────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────────────────────
-let wixProducts=[], wixFiltered=[], wixSelected=new Set(), wixVisibleCount=60;
+let wixProducts=[], wixFiltered=[], wixSelected=new Set(), wixVisibleCount=60, wixExpandedId=null;
 let watchlist=JSON.parse(localStorage.getItem('sc_wl')||'[]');
 let published=JSON.parse(localStorage.getItem('sc_pub')||'[]');
 let settings=JSON.parse(localStorage.getItem('sc_cfg')||'{}');
@@ -2491,59 +2491,217 @@ function renderWixGrid() {
     return;
   }
   if (empty) empty.style.display = 'none';
-  // Show column header
   const header = document.getElementById('wixGridHeader');
   if (header) header.style.display = 'grid';
   const loadMoreWrap = document.getElementById('wixLoadMoreWrap');
   if (loadMoreWrap) loadMoreWrap.style.display = wixFiltered.length > wixVisibleCount ? 'block' : 'none';
+
   const slice = wixFiltered.slice(0, wixVisibleCount);
+  // cols: checkbox | name+sku | price | stock | status | qty | expand arrow
+  const COLS = '28px 1fr 80px 72px 62px 40px 28px';
   grid.innerHTML = slice.map(p => {
     const sel = wixSelected.has(p.id);
-    // Real Wix field names: priceData.price, stock.inStock, visible
     const price = p.priceData?.price || p.price || 0;
     const priceStr = price ? 'R' + price.toLocaleString('en-ZA') : '—';
     const inStock = p.stock?.inStock !== false;
     const vis = p.visible !== false;
     const qty = p.stock?.quantity ?? '—';
-    return `<div onclick="toggleWixRow('${p.id}')"
-      style="display:grid;grid-template-columns:28px 1fr 90px 60px 60px 50px 36px;
-        align-items:center;gap:10px;padding:9px 14px;
-        border-bottom:1px solid var(--border);cursor:pointer;
-        background:${sel ? 'rgba(0,180,255,.06)' : 'transparent'};
-        transition:background .15s"
-      onmouseover="this.style.background='${sel ? 'rgba(0,180,255,.08)' : 'rgba(255,255,255,.02)'}'"
-      onmouseout="this.style.background='${sel ? 'rgba(0,180,255,.06)' : 'transparent'}'">
-      <input type="checkbox" ${sel ? 'checked' : ''} onclick="event.stopPropagation();toggleWixRow('${p.id}')"
-        style="accent-color:var(--accent);flex-shrink:0;cursor:pointer">
-      <div style="min-width:0">
-        <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
-          title="${(p.name||'').replace(/"/g,'&quot;')}">${p.name || 'Untitled'}</div>
-        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">${p.sku || '—'}</div>
+    const isExpanded = wixExpandedId === p.id;
+
+    const rowBg = sel ? 'rgba(0,180,255,.06)' : isExpanded ? 'rgba(255,255,255,.02)' : 'transparent';
+    const eid = p.id.replace(/[^a-z0-9]/gi,'_');
+
+    return `
+    <div id="wrow_${eid}" style="border-bottom:1px solid var(--border)">
+      <!-- SUMMARY ROW -->
+      <div onclick="toggleWixExpand('${p.id}')"
+        style="display:grid;grid-template-columns:${COLS};align-items:center;gap:8px;
+          padding:10px 14px;cursor:pointer;background:${rowBg};transition:background .15s"
+        onmouseover="if(!this.classList.contains('expanded'))this.style.background='rgba(255,255,255,.025)'"
+        onmouseout="this.style.background='${rowBg}'">
+        <input type="checkbox" ${sel ? 'checked' : ''} onclick="event.stopPropagation();toggleWixRow('${p.id}')"
+          style="accent-color:var(--accent);cursor:pointer">
+        <div style="min-width:0">
+          <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+            title="${(p.name||'').replace(/"/g,'&quot;')}">${p.name || 'Untitled'}</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:1px">${p.sku || '—'}</div>
+        </div>
+        <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent2);text-align:right;white-space:nowrap">${priceStr}</div>
+        <div style="text-align:center">
+          <span style="font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:3px;
+            border:1px solid ${inStock ? 'var(--accent2)' : 'var(--accent3)'};
+            color:${inStock ? 'var(--accent2)' : 'var(--accent3)'}">
+            ${inStock ? 'STOCK' : 'OOS'}
+          </span>
+        </div>
+        <div style="text-align:center">
+          <span style="font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:3px;
+            border:1px solid ${vis ? 'var(--border2)' : 'var(--accent3)'};
+            color:${vis ? 'var(--muted2)' : 'var(--accent3)'}">
+            ${vis ? 'LIVE' : 'OFF'}
+          </span>
+        </div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center">${qty}</div>
+        <div style="text-align:center;color:var(--muted);font-size:11px;transition:transform .2s;
+          transform:${isExpanded ? 'rotate(180deg)' : 'none'}">▾</div>
       </div>
-      <div style="font-family:var(--cond);font-size:18px;font-weight:800;color:var(--accent2);text-align:right">${priceStr}</div>
-      <div style="text-align:center">
-        <span style="font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:3px;border:1px solid ${inStock ? 'var(--accent2)' : 'var(--accent3)'};color:${inStock ? 'var(--accent2)' : 'var(--accent3)'}">
-          ${inStock ? 'IN STOCK' : 'OOS'}
-        </span>
-      </div>
-      <div style="text-align:center">
-        <span style="font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:3px;border:1px solid ${vis ? 'var(--border2)' : 'var(--accent3)'};color:${vis ? 'var(--muted2)' : 'var(--accent3)'}">
-          ${vis ? 'LIVE' : 'HIDDEN'}
-        </span>
-      </div>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center">${qty}</div>
-      <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openProductEditor('${p.id}')"
-        title="Edit price / visibility" style="flex-shrink:0;padding:4px 8px">✏</button>
+
+      <!-- EXPANDED EDITOR PANEL -->
+      ${isExpanded ? `
+      <div style="background:var(--surface2);border-top:1px solid var(--border);padding:16px 20px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+
+          <!-- Price editor -->
+          <div>
+            <div class="flabel">Price (R incl VAT)</div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="number" id="ep_price_${eid}" value="${price}" min="0" step="1"
+                style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent2);background:var(--surface);padding:8px 12px;width:100%"
+                onkeydown="if(event.key==='Enter')saveWixInline('${p.id}')">
+            </div>
+          </div>
+
+          <!-- Stock qty editor -->
+          <div>
+            <div class="flabel">Stock Quantity</div>
+            <input type="number" id="ep_qty_${eid}" value="${p.stock?.quantity ?? 0}" min="0" step="1"
+              style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--text);background:var(--surface);padding:8px 12px"
+              onkeydown="if(event.key==='Enter')saveWixInline('${p.id}')">
+          </div>
+
+          <!-- Visibility toggle -->
+          <div>
+            <div class="flabel" style="margin-bottom:8px">Visibility</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div id="ep_vis_toggle_${eid}" onclick="toggleInlineVis('${p.id}')"
+                style="width:40px;height:22px;border-radius:11px;background:${vis ? 'var(--accent2)' : 'var(--border2)'};
+                  cursor:pointer;position:relative;transition:background .2s;flex-shrink:0">
+                <div style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;
+                  left:${vis ? '20px' : '2px'};transition:left .2s"></div>
+              </div>
+              <span id="ep_vis_label_${eid}" style="font-family:var(--mono);font-size:10px;color:${vis ? 'var(--accent2)' : 'var(--muted)'}">
+                ${vis ? 'Visible on site' : 'Hidden from site'}
+              </span>
+            </div>
+          </div>
+
+          <!-- SKU (read-only) -->
+          <div>
+            <div class="flabel">SKU</div>
+            <div style="font-family:var(--mono);font-size:12px;color:var(--muted2);padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px">${p.sku || '—'}</div>
+          </div>
+        </div>
+
+        <!-- Description preview -->
+        ${p.description ? `
+        <div style="margin-bottom:14px">
+          <div class="flabel">Description preview</div>
+          <div style="font-size:11px;color:var(--muted2);line-height:1.6;background:var(--surface);border:1px solid var(--border);
+            border-radius:6px;padding:10px 12px;max-height:80px;overflow:hidden;position:relative">
+            ${(p.description||'').replace(/<[^>]+>/g,' ').trim().substring(0,220)}${(p.description||'').length > 220 ? '…' : ''}
+          </div>
+        </div>` : ''}
+
+        <!-- Actions -->
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="saveWixInline('${p.id}')">✓ Save Changes</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleWixExpand('${p.id}')">Cancel</button>
+          <div id="ep_status_${eid}" style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-left:4px"></div>
+        </div>
+      </div>` : ''}
     </div>`;
   }).join('');
-  const loadMore = document.querySelector('[onclick="loadMoreWix()"]');
-  if (loadMore) loadMore.style.display = wixFiltered.length > wixVisibleCount ? 'inline-block' : 'none';
 }
 
 function toggleWixRow(id) {
   if (wixSelected.has(id)) wixSelected.delete(id); else wixSelected.add(id);
   updateWixStats();
   renderWixGrid();
+}
+
+// ---- Inline accordion expand ----
+function toggleWixExpand(id) {
+  wixExpandedId = (wixExpandedId === id) ? null : id;
+  renderWixGrid();
+  // Scroll expanded row into view
+  if (wixExpandedId) {
+    setTimeout(() => {
+      const eid = id.replace(/[^a-z0-9]/gi,'_');
+      const el = document.getElementById('wrow_' + eid);
+      if (el) el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }, 50);
+  }
+}
+
+function toggleInlineVis(id) {
+  const eid = id.replace(/[^a-z0-9]/gi,'_');
+  const toggle = document.getElementById('ep_vis_toggle_' + eid);
+  const label  = document.getElementById('ep_vis_label_' + eid);
+  if (!toggle) return;
+  const dot = toggle.querySelector('div');
+  // Read current state from dot position
+  const isOn = dot.style.left === '20px';
+  const newOn = !isOn;
+  toggle.style.background = newOn ? 'var(--accent2)' : 'var(--border2)';
+  dot.style.left = newOn ? '20px' : '2px';
+  if (label) {
+    label.textContent = newOn ? 'Visible on site' : 'Hidden from site';
+    label.style.color = newOn ? 'var(--accent2)' : 'var(--muted)';
+  }
+  // Store on element for save
+  toggle.dataset.vis = newOn ? '1' : '0';
+}
+
+async function saveWixInline(id) {
+  const eid = id.replace(/[^a-z0-9]/gi,'_');
+  const priceEl  = document.getElementById('ep_price_' + eid);
+  const qtyEl    = document.getElementById('ep_qty_' + eid);
+  const visToggle = document.getElementById('ep_vis_toggle_' + eid);
+  const status   = document.getElementById('ep_status_' + eid);
+  const saveBtn  = status?.closest('div')?.querySelector('.btn-primary');
+  if (!priceEl) return;
+
+  const newPrice = parseFloat(priceEl.value);
+  const newQty   = parseInt(qtyEl?.value ?? '0');
+  const dot = visToggle?.querySelector('div');
+  const newVis = visToggle?.dataset.vis !== undefined
+    ? visToggle.dataset.vis === '1'
+    : dot?.style.left === '20px';
+
+  if (isNaN(newPrice) || newPrice < 0) {
+    if (status) { status.textContent = '⚠ Invalid price'; status.style.color = 'var(--accent3)'; }
+    return;
+  }
+
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ Saving...'; }
+  if (status)  { status.textContent = 'Saving...'; status.style.color = 'var(--muted2)'; }
+
+  try {
+    await callRelay('updateProduct', {
+      productId: id,
+      product: { price: newPrice, visible: newVis }
+    });
+    // Update stock qty separately if changed
+    const p = wixProducts.find(x => x.id === id);
+    if (p) {
+      if (!p.priceData) p.priceData = {};
+      p.priceData.price = newPrice;
+      p.price = newPrice;
+      p.visible = newVis;
+      if (!p.stock) p.stock = {};
+      p.stock.quantity = newQty;
+    }
+    if (status) { status.textContent = '✓ Saved'; status.style.color = 'var(--accent2)'; }
+    updateWixStats();
+    // Close accordion after short delay
+    setTimeout(() => {
+      wixExpandedId = null;
+      renderWixGrid();
+    }, 900);
+  } catch(e) {
+    if (status) { status.textContent = '⚠ ' + e.message; status.style.color = 'var(--accent3)'; }
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '✓ Save Changes'; }
+  }
 }
 
 function clearWixSelection() {
