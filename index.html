@@ -4238,15 +4238,12 @@ function buildTopupEmail(d) {
     '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:24px 0">' +
     '<tr><td align="center">' +
     '<table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)">' +
-    // Header
     '<tr><td style="background:#0b1018;padding:28px 32px;text-align:center">' +
       '<div style="font-size:11px;letter-spacing:3px;color:#00b4ff;text-transform:uppercase;margin-bottom:6px">Satellite Communications</div>' +
       '<div style="font-size:24px;font-weight:bold;color:#fff">Airtime Topup Request</div>' +
       (d.invoice ? '<div style="margin-top:8px;display:inline-block;background:#00b4ff;color:#000;font-size:12px;font-weight:bold;padding:4px 14px;border-radius:12px">' + d.invoice + '</div>' : '') +
     '</td></tr>' +
-    // Date row
     (d.date ? '<tr><td style="background:#f8f9fa;padding:12px 32px;border-bottom:1px solid #e0e0e0;font-size:12px;color:#666">Date: ' + d.date + '</td></tr>' : '') +
-    // Customer
     '<tr><td style="padding:24px 32px 0">' +
       '<div style="font-size:11px;font-weight:bold;letter-spacing:2px;color:#00b4ff;text-transform:uppercase;margin-bottom:12px">Customer Details</div>' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e8e8e8;border-radius:6px;overflow:hidden">' +
@@ -4255,7 +4252,6 @@ function buildTopupEmail(d) {
         row('Phone', d.custPhone, true) +
       '</table>' +
     '</td></tr>' +
-    // Airtime
     '<tr><td style="padding:24px 32px 0">' +
       '<div style="font-size:11px;font-weight:bold;letter-spacing:2px;color:#00b4ff;text-transform:uppercase;margin-bottom:12px">Airtime Requested</div>' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e8e8e8;border-radius:6px;overflow:hidden">' +
@@ -4266,13 +4262,10 @@ function buildTopupEmail(d) {
         '<td style="font-size:16px;font-weight:bold;color:#00b4ff;padding:8px">' + (d.amount || '—') + '</td></tr>' +
       '</table>' +
     '</td></tr>' +
-    // Notes
     (d.notes ? '<tr><td style="padding:20px 32px 0"><div style="background:#fff8e1;border-left:3px solid #ffc84d;padding:12px 16px;font-size:13px;color:#555">' + d.notes + '</div></td></tr>' : '') +
-    // Button
     '<tr><td style="padding:28px 32px;text-align:center">' +
       (d.custEmail ? '<a href="mailto:' + d.custEmail + '" style="display:inline-block;background:#00e5b0;color:#000;font-size:13px;font-weight:bold;padding:12px 28px;border-radius:6px;text-decoration:none">Reply to Customer</a>' : '') +
     '</td></tr>' +
-    // Footer
     '<tr><td style="background:#f8f9fa;border-top:1px solid #e0e0e0;padding:16px 32px;text-align:center">' +
       '<div style="font-size:11px;color:#aaa">Sent via SatComms Product Intelligence System &middot; satcomms.co.za</div>' +
       '<div style="font-size:11px;color:#aaa;margin-top:4px">084 514 1652 &middot; sales@satcomms.co.za</div>' +
