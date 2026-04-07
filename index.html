@@ -4240,3 +4240,10 @@ function resendTopupEmail(id) {
     r.tel   ? 'TEL / IMEI:    ' + r.tel   : '',
     r.sim   ? 'SIM / ICCID:   ' + r.sim   : '',
     r.amount ? '\nInvoice Total: R' + r.amount.toLocaleString('en-ZA', {minimumFractionDigits:2}) : '',
+    r.notes  ? '\nNotes: ' + r.notes : '',
+  ].filter(Boolean).join('\n');
+  window.open(`mailto:sales@satcomms.co.za?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+}
+</script>
+</body>
+</html>
