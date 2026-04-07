@@ -1213,7 +1213,7 @@ select option{background:var(--surface2)}
   <div class="shdr">
     <div class="stitle">📶 Airtime <span>Topup Requests</span></div>
     <div style="display:flex;gap:8px;align-items:center">
-      <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Upload invoice → AI extracts details → email to sales@satcomms.co.za</span>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Upload invoice → AI extracts details → email to <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="b2c1d3ded7c1f2c1d3c6d1dddfdfc19cd1dd9cc8d3">[email&#160;protected]</a></span>
     </div>
   </div>
 
@@ -1412,7 +1412,7 @@ select option{background:var(--surface2)}
 </div>
 
 <!-- ============================================================ -->
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ─────────────────────────────────────────────────────────────
 // CORE — switchTab, callRelay, settings, init
 // ─────────────────────────────────────────────────────────────
@@ -4064,24 +4064,8 @@ async function processTopupFile(file) {
     const isPDF = file.type === 'application/pdf';
     const mediaType = isPDF ? 'application/pdf' : file.type || 'image/jpeg';
     if (msg) msg.textContent = 'Sending to AI for extraction...';
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: 'You are an invoice parser for a South African satellite communications company. Extract invoice details and return ONLY valid JSON, no markdown, no explanation. Start with { and end with }.',
-        messages: [{ role: 'user', content: [
-          { type: isPDF ? 'document' : 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-          { type: 'text', text: 'Extract all details from this invoice and return ONLY this JSON structure:\n{\n  "invoiceNumber": "INV-001",\n  "date": "YYYY-MM-DD",\n  "customerName": "Full Name",\n  "customerEmail": "email@example.com",\n  "customerPhone": "+27...",\n  "amount": 1234.56,\n  "tel": "TEL/IMEI number (digits only, from TEL: prefix in line items)",\n  "sim": "SIM/ICCID number (digits only, from SIM: prefix in line items)",\n  "airtimeProduct": "Description of airtime product(s), units, quantities",\n  "notes": "Any other relevant info"\n}\nIf a field cannot be found, use empty string or 0. For airtimeProduct, list ALL line items with quantities. TEL and SIM appear in line items prefixed with TEL: and SIM:.' }
-        ]}]
-      })
-    });
-    const data = await response.json();
-    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-    const js = text.indexOf('{'), je = text.lastIndexOf('}');
-    if (js < 0 || je < js) throw new Error('Could not parse AI response');
-    const parsed = JSON.parse(text.substring(js, je + 1));
+    // Route through GAS relay to avoid CORS block on GitHub Pages
+    const parsed = await callRelay('parseInvoice', { base64, mediaType, isPDF });
     const set = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
     set('tp_invoice', parsed.invoiceNumber);
     set('tp_date',    parsed.date);
@@ -4256,11 +4240,3 @@ function resendTopupEmail(id) {
     r.tel   ? 'TEL / IMEI:    ' + r.tel   : '',
     r.sim   ? 'SIM / ICCID:   ' + r.sim   : '',
     r.amount ? '\nInvoice Total: R' + r.amount.toLocaleString('en-ZA', {minimumFractionDigits:2}) : '',
-    r.notes  ? '\nNotes: ' + r.notes : '',
-  ].filter(Boolean).join('\n');
-  window.open(`mailto:sales@satcomms.co.za?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
-}
-
-</script>
-</body>
-</html>
