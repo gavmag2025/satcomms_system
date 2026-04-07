@@ -4208,7 +4208,7 @@ function renderTopupQueue() {
   }).join('');
 }
 
-function resendTopupEmail(id) {
+async function resendTopupEmail(id) {
   const r = topupRequests.find(x => x.id === id);
   if (!r) return;
   const subject = `📶 Airtime Topup Request${r.invoice?' — '+r.invoice:''} — ${r.custName||'Customer'}`;
