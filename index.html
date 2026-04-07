@@ -4106,26 +4106,74 @@ async function sendTopupRequest() {
   const status = document.getElementById('topupSendStatus');
   btn.disabled = true; btn.textContent = '⏳ Sending...';
   status.textContent = ''; status.style.color = 'var(--muted2)';
-  const subject = `Airtime Topup Request${invoice ? ' — ' + invoice : ''} — ${custName || 'Customer'}`;
-  const body = [
-    '=== AIRTIME TOPUP REQUEST ===', '',
-    invoice  ? 'Invoice No:    ' + invoice  : '',
-    date     ? 'Invoice Date:  ' + date     : '', '',
-    '--- CUSTOMER DETAILS ---',
-    custName  ? 'Name:    ' + custName  : '',
-    custEmail ? 'Email:   ' + custEmail : '',
-    custPhone ? 'Phone:   ' + custPhone : '', '',
-    '--- AIRTIME REQUESTED ---',
-    product, '',
-    tel    ? 'TEL / IMEI:    ' + tel    : '',
-    sim    ? 'SIM / ICCID:   ' + sim    : '',
-    amount ? 'Invoice Total: R' + parseFloat(amount).toLocaleString('en-ZA', {minimumFractionDigits:2}) : '',
-    notes  ? '\nNotes: ' + notes : '', '',
-    '---', 'Submitted via SatComms Product Intelligence System',
-    new Date().toLocaleString('en-ZA')
-  ].filter(Boolean).join('\n');
+  const subject = `📶 Airtime Topup Request${invoice ? ' — ' + invoice : ''} — ${custName || 'Customer'}`;
+  const amountFmt = amount ? 'R' + parseFloat(amount).toLocaleString('en-ZA', {minimumFractionDigits:2}) : '—';
+  const htmlBody = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:24px 0">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
+
+  <!-- HEADER -->
+  <tr><td style="background:#0b1018;padding:28px 32px;text-align:center">
+    <div style="font-size:11px;letter-spacing:3px;color:#00b4ff;text-transform:uppercase;margin-bottom:6px">Satellite Communications</div>
+    <div style="font-size:26px;font-weight:bold;color:#ffffff">📶 Airtime Topup Request</div>
+    ${invoice ? `<div style="margin-top:8px;display:inline-block;background:#00b4ff;color:#000;font-size:12px;font-weight:bold;padding:4px 14px;border-radius:12px">${invoice}</div>` : ''}
+  </td></tr>
+
+  <!-- INVOICE META -->
+  <tr><td style="background:#f8f9fa;padding:16px 32px;border-bottom:1px solid #e0e0e0">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        ${date ? `<td style="font-size:12px;color:#666">📅 <strong>Date:</strong> ${date}</td>` : '<td></td>'}
+        <td style="font-size:12px;color:#666;text-align:right">🕐 ${new Date().toLocaleString('en-ZA')}</td>
+      </tr>
+    </table>
+  </td></tr>
+
+  <!-- CUSTOMER DETAILS -->
+  <tr><td style="padding:24px 32px 0">
+    <div style="font-size:11px;font-weight:bold;letter-spacing:2px;color:#00b4ff;text-transform:uppercase;margin-bottom:12px">Customer Details</div>
+    <table width="100%" cellpadding="8" cellspacing="0" style="border:1px solid #e8e8e8;border-radius:6px;overflow:hidden">
+      ${custName  ? `<tr style="background:#fafafa"><td style="font-size:12px;color:#888;width:130px;border-bottom:1px solid #f0f0f0">Full Name</td><td style="font-size:14px;font-weight:bold;color:#222;border-bottom:1px solid #f0f0f0">${custName}</td></tr>` : ''}
+      ${custEmail ? `<tr><td style="font-size:12px;color:#888;width:130px;border-bottom:1px solid #f0f0f0">Email</td><td style="font-size:13px;color:#222;border-bottom:1px solid #f0f0f0"><a href="mailto:${custEmail}" style="color:#00b4ff">${custEmail}</a></td></tr>` : ''}
+      ${custPhone ? `<tr style="background:#fafafa"><td style="font-size:12px;color:#888;width:130px">Phone</td><td style="font-size:13px;color:#222">${custPhone}</td></tr>` : ''}
+    </table>
+  </td></tr>
+
+  <!-- AIRTIME DETAILS -->
+  <tr><td style="padding:24px 32px 0">
+    <div style="font-size:11px;font-weight:bold;letter-spacing:2px;color:#00b4ff;text-transform:uppercase;margin-bottom:12px">Airtime Requested</div>
+    <table width="100%" cellpadding="8" cellspacing="0" style="border:1px solid #e8e8e8;border-radius:6px;overflow:hidden">
+      <tr style="background:#0b1018"><td colspan="2" style="font-size:13px;color:#ffffff;font-weight:bold">${product || '—'}</td></tr>
+      ${tel ? `<tr style="background:#fafafa"><td style="font-size:12px;color:#888;width:130px;border-bottom:1px solid #f0f0f0">TEL / IMEI</td><td style="font-size:13px;font-family:monospace;color:#222;border-bottom:1px solid #f0f0f0">${tel}</td></tr>` : ''}
+      ${sim ? `<tr><td style="font-size:12px;color:#888;width:130px;border-bottom:1px solid #f0f0f0">SIM / ICCID</td><td style="font-size:13px;font-family:monospace;color:#222;border-bottom:1px solid #f0f0f0">${sim}</td></tr>` : ''}
+      <tr style="${tel||sim?'':'background:#fafafa'}"><td style="font-size:12px;color:#888;width:130px">Invoice Total</td><td style="font-size:16px;font-weight:bold;color:#00b4ff">${amountFmt}</td></tr>
+    </table>
+  </td></tr>
+
+  <!-- NOTES -->
+  ${notes ? `<tr><td style="padding:20px 32px 0">
+    <div style="font-size:11px;font-weight:bold;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:8px">Notes</div>
+    <div style="background:#fff8e1;border-left:3px solid #ffc84d;padding:12px 16px;font-size:13px;color:#555;border-radius:0 4px 4px 0">${notes}</div>
+  </td></tr>` : ''}
+
+  <!-- ACTION BUTTON -->
+  <tr><td style="padding:28px 32px;text-align:center">
+    <a href="mailto:${custEmail || ''}" style="display:inline-block;background:#00e5b0;color:#000;font-size:13px;font-weight:bold;padding:12px 28px;border-radius:6px;text-decoration:none">✉ Reply to Customer</a>
+  </td></tr>
+
+  <!-- FOOTER -->
+  <tr><td style="background:#f8f9fa;border-top:1px solid #e0e0e0;padding:16px 32px;text-align:center">
+    <div style="font-size:11px;color:#aaa">Sent via SatComms Product Intelligence System · satcomms.co.za</div>
+    <div style="font-size:11px;color:#aaa;margin-top:4px">084 514 1652 · sales@satcomms.co.za</div>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body></html>`;
   try {
-    await callRelay('sendEmail', { to: 'sales@satcomms.co.za', subject, body, from: 'noreply@satcomms.co.za' });
+    await callRelay('sendEmail', { to: 'sales@satcomms.co.za', subject, body: htmlBody, isHtml: true });
     status.textContent = '✓ Email sent to sales@satcomms.co.za';
     status.style.color = 'var(--accent2)';
   } catch(e) {
@@ -4226,23 +4274,48 @@ function renderTopupQueue() {
 function resendTopupEmail(id) {
   const r = topupRequests.find(x => x.id === id);
   if (!r) return;
-  const subject = `Airtime Topup Request${r.invoice?' — '+r.invoice:''} — ${r.custName||'Customer'}`;
-  const body = [
-    '=== AIRTIME TOPUP REQUEST (RESEND) ===', '',
-    r.invoice  ? 'Invoice No:    ' + r.invoice  : '',
-    r.date     ? 'Invoice Date:  ' + r.date     : '', '',
-    '--- CUSTOMER DETAILS ---',
-    r.custName  ? 'Name:    ' + r.custName  : '',
-    r.custEmail ? 'Email:   ' + r.custEmail : '',
-    r.custPhone ? 'Phone:   ' + r.custPhone : '', '',
-    '--- AIRTIME REQUESTED ---',
-    r.product, '',
-    r.tel   ? 'TEL / IMEI:    ' + r.tel   : '',
-    r.sim   ? 'SIM / ICCID:   ' + r.sim   : '',
-    r.amount ? '\nInvoice Total: R' + r.amount.toLocaleString('en-ZA', {minimumFractionDigits:2}) : '',
-    r.notes  ? '\nNotes: ' + r.notes : '',
-  ].filter(Boolean).join('\n');
-  window.open(`mailto:sales@satcomms.co.za?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+  const subject = `📶 Airtime Topup Request${r.invoice?' — '+r.invoice:''} — ${r.custName||'Customer'}`;
+  const amountFmt = r.amount ? 'R' + r.amount.toLocaleString('en-ZA', {minimumFractionDigits:2}) : '—';
+  const htmlBody = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:24px 0">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
+  <tr><td style="background:#0b1018;padding:28px 32px;text-align:center">
+    <div style="font-size:11px;letter-spacing:3px;color:#00b4ff;text-transform:uppercase;margin-bottom:6px">Satellite Communications</div>
+    <div style="font-size:26px;font-weight:bold;color:#ffffff">📶 Airtime Topup Request</div>
+    <div style="margin-top:6px;font-size:11px;color:#ffc84d">RESEND</div>
+    ${r.invoice ? `<div style="margin-top:8px;display:inline-block;background:#00b4ff;color:#000;font-size:12px;font-weight:bold;padding:4px 14px;border-radius:12px">${r.invoice}</div>` : ''}
+  </td></tr>
+  <tr><td style="padding:24px 32px 0">
+    <div style="font-size:11px;font-weight:bold;letter-spacing:2px;color:#00b4ff;text-transform:uppercase;margin-bottom:12px">Customer Details</div>
+    <table width="100%" cellpadding="8" cellspacing="0" style="border:1px solid #e8e8e8;border-radius:6px;overflow:hidden">
+      ${r.custName  ? `<tr style="background:#fafafa"><td style="font-size:12px;color:#888;width:130px;border-bottom:1px solid #f0f0f0">Full Name</td><td style="font-size:14px;font-weight:bold;color:#222;border-bottom:1px solid #f0f0f0">${r.custName}</td></tr>` : ''}
+      ${r.custEmail ? `<tr><td style="font-size:12px;color:#888;width:130px;border-bottom:1px solid #f0f0f0">Email</td><td style="font-size:13px;color:#222;border-bottom:1px solid #f0f0f0"><a href="mailto:${r.custEmail}" style="color:#00b4ff">${r.custEmail}</a></td></tr>` : ''}
+      ${r.custPhone ? `<tr style="background:#fafafa"><td style="font-size:12px;color:#888;width:130px">Phone</td><td style="font-size:13px;color:#222">${r.custPhone}</td></tr>` : ''}
+    </table>
+  </td></tr>
+  <tr><td style="padding:24px 32px 0">
+    <div style="font-size:11px;font-weight:bold;letter-spacing:2px;color:#00b4ff;text-transform:uppercase;margin-bottom:12px">Airtime Requested</div>
+    <table width="100%" cellpadding="8" cellspacing="0" style="border:1px solid #e8e8e8;border-radius:6px;overflow:hidden">
+      <tr style="background:#0b1018"><td colspan="2" style="font-size:13px;color:#ffffff;font-weight:bold">${r.product||'—'}</td></tr>
+      ${r.tel ? `<tr style="background:#fafafa"><td style="font-size:12px;color:#888;width:130px;border-bottom:1px solid #f0f0f0">TEL / IMEI</td><td style="font-size:13px;font-family:monospace;color:#222;border-bottom:1px solid #f0f0f0">${r.tel}</td></tr>` : ''}
+      ${r.sim ? `<tr><td style="font-size:12px;color:#888;width:130px;border-bottom:1px solid #f0f0f0">SIM / ICCID</td><td style="font-size:13px;font-family:monospace;color:#222;border-bottom:1px solid #f0f0f0">${r.sim}</td></tr>` : ''}
+      <tr><td style="font-size:12px;color:#888;width:130px">Invoice Total</td><td style="font-size:16px;font-weight:bold;color:#00b4ff">${amountFmt}</td></tr>
+    </table>
+  </td></tr>
+  ${r.notes ? `<tr><td style="padding:20px 32px 0"><div style="background:#fff8e1;border-left:3px solid #ffc84d;padding:12px 16px;font-size:13px;color:#555">${r.notes}</div></td></tr>` : ''}
+  <tr><td style="padding:28px 32px;text-align:center">
+    <a href="mailto:${r.custEmail||''}" style="display:inline-block;background:#00e5b0;color:#000;font-size:13px;font-weight:bold;padding:12px 28px;border-radius:6px;text-decoration:none">✉ Reply to Customer</a>
+  </td></tr>
+  <tr><td style="background:#f8f9fa;border-top:1px solid #e0e0e0;padding:16px 32px;text-align:center">
+    <div style="font-size:11px;color:#aaa">Sent via SatComms Product Intelligence System · satcomms.co.za</div>
+  </td></tr>
+</table></td></tr></table></body></html>`;
+  try {
+    await callRelay('sendEmail', { to: 'sales@satcomms.co.za', subject, body: htmlBody, isHtml: true });
+  } catch(e) {
+    window.open(`mailto:sales@satcomms.co.za?subject=${encodeURIComponent(subject)}`, '_blank');
+  }
 }
 </script>
 </body>
