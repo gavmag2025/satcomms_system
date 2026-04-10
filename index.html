@@ -382,7 +382,6 @@ select option{background:var(--surface2)}
   <div class="tab" onclick="switchTab('topup')">📶 Topups <span class="tab-count r" id="tc-topup" style="display:none">0</span></div>
   <div class="tab" onclick="switchTab('seo')">🔍 SEO Agent</div>
   <div class="tab" onclick="switchTab('publish')">🚀 Publish to Wix</div>
-  <div class="tab" onclick="switchTab('vat')">🧾 VAT Manager</div>
   <div class="tab" onclick="switchTab('settings')">⚙ Settings</div>
 </div>
 
@@ -557,6 +556,72 @@ select option{background:var(--surface2)}
   </div>
 
   <div id="garminEmpty" class="empty" style="display:none"><div class="empty-icon">🔍</div><div class="empty-text">No products match your filters.</div></div>
+
+  <!-- ── GARMIN COMPETITOR PRICE WATCH ── -->
+  <div style="margin-top:20px;border-top:2px solid var(--border2);padding-top:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <div>
+        <div style="font-family:var(--cond);font-size:16px;font-weight:700;letter-spacing:.06em;color:var(--accent4)">🎯 GARMIN COMPETITOR PRICE WATCH</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-top:2px">Track Takealot · Amazon.co.za · Outdoor Warehouse · Easybike · Navworld vs your prices</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="gcwAddFromGarminCSV()">+ From Garmin CSV</button>
+        <button class="btn btn-ghost btn-sm" onclick="gcwAddFromWix()">+ From Wix</button>
+        <button class="btn btn-primary btn-sm" onclick="gcwRefreshAll()" id="gcwRefreshBtn">↻ Check All Prices</button>
+        <button class="btn btn-ghost btn-sm" onclick="gcwClearAll()">✕ Clear</button>
+      </div>
+    </div>
+
+    <!-- COMPETITORS TOGGLE -->
+    <div style="background:var(--surface);border:1px solid var(--border);padding:12px 16px;margin-bottom:10px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);letter-spacing:.08em">COMPETITORS:</div>
+      <label style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text);cursor:pointer"><input type="checkbox" id="gcw_takealot" checked> Takealot</label>
+      <label style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text);cursor:pointer"><input type="checkbox" id="gcw_amazon" checked> Amazon.co.za</label>
+      <label style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text);cursor:pointer"><input type="checkbox" id="gcw_outdoorwarehouse" checked> Outdoor Warehouse</label>
+      <label style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text);cursor:pointer"><input type="checkbox" id="gcw_easybike" checked> Easybike</label>
+      <label style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text);cursor:pointer"><input type="checkbox" id="gcw_navworld" checked> Navworld</label>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted2)">Alert threshold:</div>
+        <select id="gcwThreshold" style="font-family:var(--mono);font-size:10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:var(--radius)">
+          <option value="0">Any cheaper</option>
+          <option value="3">3% cheaper</option>
+          <option value="5" selected>5% cheaper</option>
+          <option value="10">10% cheaper</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- MANUAL ADD ROW -->
+    <div style="background:var(--surface);border:1px solid var(--border2);padding:12px 16px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <div style="flex:2;min-width:200px">
+        <div class="flabel" style="margin-bottom:4px">Product name or model</div>
+        <input type="text" id="gcwName" placeholder="e.g. Garmin GPSMAP 67i" style="width:100%" onkeydown="if(event.key==='Enter')gcwAddManual()">
+      </div>
+      <div style="flex:1;min-width:130px">
+        <div class="flabel" style="margin-bottom:4px">SKU / Part No.</div>
+        <input type="text" id="gcwSku" placeholder="010-02812-00" style="width:100%">
+      </div>
+      <div style="flex:1;min-width:120px">
+        <div class="flabel" style="margin-bottom:4px">Your Price (R)</div>
+        <input type="number" id="gcwMyPrice" placeholder="14999" min="0" style="width:100%">
+      </div>
+      <button class="btn btn-success btn-sm" onclick="gcwAddManual()" id="gcwAddBtn">+ Watch</button>
+    </div>
+    <div id="gcwAddStatus" style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:8px;min-height:16px"></div>
+
+    <!-- PROGRESS -->
+    <div id="gcwProgress" style="display:none;background:var(--surface);border:1px solid var(--border);padding:12px 16px;margin-bottom:10px">
+      <div id="gcwProgressText" style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:6px">Checking prices...</div>
+      <div style="background:var(--surface2);border-radius:2px;height:4px;overflow:hidden"><div id="gcwProgressFill" style="height:4px;background:var(--accent4);width:0%;transition:width .3s"></div></div>
+    </div>
+
+    <!-- RESULTS GRID -->
+    <div id="gcwGrid"></div>
+    <div id="gcwEmpty" style="padding:40px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted2)">
+      No products being watched.<br>Add products above or load from Garmin CSV / Wix.
+    </div>
+  </div>
+
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -1294,67 +1359,6 @@ select option{background:var(--surface2)}
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- VAT MANAGER -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<div class="panel" id="panel-vat">
-  <div class="shdr">
-    <div class="stitle">🧾 VAT <span>Manager</span></div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <button class="btn btn-ghost btn-sm" onclick="vatLoadProducts()">📦 Load Products</button>
-      <button class="btn btn-primary btn-sm" onclick="vatConvertAll('excl')">→ Convert All to Excl VAT</button>
-      <button class="btn btn-success btn-sm" onclick="vatConvertAll('incl')">→ Convert All to Incl VAT</button>
-      <button class="btn btn-wix btn-sm" onclick="vatPushAll()" id="vatPushBtn" style="display:none">🚀 Push All to Wix</button>
-    </div>
-  </div>
-
-  <div style="display:flex;gap:2px;margin-bottom:2px">
-    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 20px;flex:1">
-      <div class="flabel" style="margin-bottom:6px">VAT Rate</div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <input type="number" id="vatMgrRate" value="15" min="0" max="30" style="width:70px;font-family:var(--mono);font-size:14px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:6px 10px;border-radius:var(--radius)">
-        <span style="font-family:var(--mono);font-size:11px;color:var(--muted2)">%</span>
-      </div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 20px;flex:1">
-      <div class="flabel" style="margin-bottom:4px">Current Mode</div>
-      <div id="vatCurrentMode" style="font-family:var(--mono);font-size:12px;color:var(--muted2)">Load products to detect</div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 20px;flex:1">
-      <div class="flabel" style="margin-bottom:4px">Products Loaded</div>
-      <div id="vatProductCount" style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent)">—</div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 20px;flex:2">
-      <div class="flabel" style="margin-bottom:4px">Pending Changes</div>
-      <div id="vatPendingCount" style="font-family:var(--mono);font-size:12px;color:var(--muted2)">No changes pending</div>
-    </div>
-  </div>
-
-  <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent4);padding:16px 20px;margin-bottom:2px">
-    <div style="font-family:var(--mono);font-size:10px;color:var(--accent4);letter-spacing:.1em;margin-bottom:8px">HOW IT WORKS</div>
-    <div style="font-size:12px;color:var(--muted2);line-height:1.8">
-      <b style="color:var(--text)">Convert to Excl VAT</b> — divides every product price by 1+VAT% (strips VAT out). Customers see the ex-VAT price. Set Wix Tax to "Tax should be added at checkout".<br>
-      <b style="color:var(--text)">Convert to Incl VAT</b> — multiplies every product price by 1+VAT% (adds VAT back in). Full VAT-inclusive price shown on store.<br>
-      <span style="color:var(--accent4)">⚠ Make sure your Wix Tax setting matches the mode you choose.</span>
-    </div>
-  </div>
-
-  <div id="vatProgressWrap" style="display:none;background:var(--surface);border:1px solid var(--border);padding:14px 20px;margin-bottom:2px">
-    <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:6px" id="vatProgressText">Updating...</div>
-    <div style="background:var(--surface2);border-radius:2px;height:4px;overflow:hidden">
-      <div id="vatProgressFill" style="height:4px;background:var(--accent);width:0%;transition:width .3s"></div>
-    </div>
-  </div>
-
-  <div id="vatProductList" style="background:var(--surface);border:1px solid var(--border)">
-    <div style="display:flex;align-items:center;justify-content:center;padding:60px;flex-direction:column;gap:12px">
-      <div style="font-size:32px">🧾</div>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--muted2)">Load products to manage VAT pricing</div>
-      <button class="btn btn-primary" onclick="vatLoadProducts()">📦 Load from satcomms.co.za</button>
-    </div>
-  </div>
-</div>
-
 <div class="panel" id="panel-settings">
   <div class="shdr"><div class="stitle">System <span>Settings</span></div></div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:2px">
@@ -1493,7 +1497,6 @@ function switchTab(name) {
   if (name === 'watchlist' && typeof renderWatchlist === 'function') renderWatchlist();
   if (name === 'mywix' && typeof loadWixProducts === 'function' && !wixProducts.length) loadWixProducts();
   if (name === 'topup' && typeof renderTopupQueue === 'function') renderTopupQueue();
-  if (name === 'vat' && typeof vatLoadProducts === 'function' && !window.vatProducts?.length) vatLoadProducts();
 }
 
 async function callRelay(action, body) {
@@ -1538,7 +1541,6 @@ function saveSettings() {
 
 // ─────────────────────────────────────────────────────────────
 // CLOUD CONFIG — fetch config.json from GitHub on every load
-// Merges remote values into localStorage so all PCs stay in sync
 // ─────────────────────────────────────────────────────────────
 async function fetchConfig() {
   try {
@@ -1547,23 +1549,23 @@ async function fetchConfig() {
     if (!resp.ok) return;
     const remote = await resp.json();
     const local = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
-    // Merge remote into local — remote always wins for these keys
     const merged = Object.assign(local, remote);
     localStorage.setItem('sc_cfg', JSON.stringify(merged));
-    // Update any visible input fields
     if (remote.relayUrl) {
       const el = document.getElementById('relayUrl');
       if (el) el.value = remote.relayUrl;
     }
     console.log('[SatComms] Config loaded from config.json ✓');
   } catch(e) {
-    console.warn('[SatComms] config.json fetch failed (offline or missing):', e.message);
+    console.warn('[SatComms] config.json fetch failed:', e.message);
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  fetchConfig(); // pulls relay URL + settings from GitHub on every load
+  restoreGarminData(); // restore last uploaded Garmin CSV from localStorage
   loadSettings();
+  // After config loads, sync all cloud data
+  fetchConfig().then(() => syncCloudToLocal()).catch(() => {});
   if (typeof initAutoToggle === 'function') initAutoToggle();
   if (typeof updateCompTabCount === 'function') updateCompTabCount();
   if (typeof renderCompGrid === 'function') renderCompGrid();
@@ -1599,6 +1601,69 @@ document.addEventListener('DOMContentLoaded', () => {
 // STATE
 // ─────────────────────────────────────────────────────────────
 let wixProducts=[], wixFiltered=[], wixSelected=new Set(), wixVisibleCount=60, wixExpandedId=null;
+// ─────────────────────────────────────────────────────────────
+// CLOUD STORE — wraps GAS PropertiesService via relay
+// localStorage used as fast cache; cloud is source of truth
+// ─────────────────────────────────────────────────────────────
+async function cloudSave(key, value) {
+  // Always write to localStorage immediately as cache
+  localStorage.setItem(key, JSON.stringify(value));
+  // Then push to cloud in background (don't await in callers)
+  try { await callRelay('saveData', { key, value }); }
+  catch(e) { console.warn('[Cloud] Save failed for', key, e.message); }
+}
+
+async function cloudLoad(key, fallback) {
+  // Try cloud first
+  try {
+    const r = await callRelay('loadData', { key });
+    if (r && r.found && r.value !== null) {
+      localStorage.setItem(key, JSON.stringify(r.value)); // update cache
+      return r.value;
+    }
+  } catch(e) { console.warn('[Cloud] Load failed for', key, '— using cache:', e.message); }
+  // Fall back to localStorage cache
+  try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback; }
+  catch(e) { return fallback; }
+}
+
+// On page load: sync all cloud data into local state
+async function syncCloudToLocal() {
+  const status = document.getElementById('feedTime');
+  if (status) status.textContent = 'Syncing cloud data...';
+  try {
+    const keys = ['sc_wl','sc_pub','sc_comp_garmin','sc_usd','sc_amz','sc_gcw','sc_garmin_data','sc_garmin_prev','sc_topups'];
+    await Promise.all(keys.map(async k => {
+      try {
+        const r = await callRelay('loadData', { key: k });
+        if (r && r.found && r.value !== null) localStorage.setItem(k, JSON.stringify(r.value));
+      } catch(e) {}
+    }));
+    // Reload state from freshly synced localStorage
+    watchlist = JSON.parse(localStorage.getItem('sc_wl') || '[]');
+    published = JSON.parse(localStorage.getItem('sc_pub') || '[]');
+    compProducts = JSON.parse(localStorage.getItem('sc_comp_garmin') || '[]');
+    usdProducts = JSON.parse(localStorage.getItem('sc_usd') || '[]');
+    amazonProducts = JSON.parse(localStorage.getItem('sc_amz') || '[]');
+    gcwProducts = JSON.parse(localStorage.getItem('sc_gcw') || '[]');
+    // Re-render affected tabs
+    if (typeof renderWatchlist === 'function') renderWatchlist();
+    if (typeof renderQueue === 'function') renderQueue();
+    if (typeof renderCompGrid === 'function') renderCompGrid();
+    if (typeof renderUSDTable === 'function') renderUSDTable();
+    if (typeof renderAmazon === 'function') renderAmazon();
+    if (typeof gcwRender === 'function') gcwRender();
+    if (typeof renderTopupQueue === 'function') renderTopupQueue();
+    // Restore Garmin CSV
+    restoreGarminData();
+    if (status) status.textContent = '✓ Cloud sync done';
+    setTimeout(() => { if (status) status.textContent = ''; }, 3000);
+  } catch(e) {
+    if (status) status.textContent = '⚠ Cloud sync failed — using local cache';
+    setTimeout(() => { if (status) status.textContent = ''; }, 4000);
+  }
+}
+
 let watchlist=JSON.parse(localStorage.getItem('sc_wl')||'[]');
 let published=JSON.parse(localStorage.getItem('sc_pub')||'[]');
 let settings=JSON.parse(localStorage.getItem('sc_cfg')||'{}');
@@ -1606,7 +1671,7 @@ let settings=JSON.parse(localStorage.getItem('sc_cfg')||'{}');
 // SA PRICE COMPARISON — Google Shopping broad search
 // ─────────────────────────────────────────────────────────────
 let compProducts = JSON.parse(localStorage.getItem('sc_comp_garmin') || '[]');
-function saveComp() { localStorage.setItem('sc_comp_garmin', JSON.stringify(compProducts)); }
+function saveComp() { localStorage.setItem('sc_comp_garmin', JSON.stringify(compProducts)); cloudSave('sc_comp_garmin', compProducts); }
 
 // ---- Load from Garmin CSV ----
 function loadGarminForComp() {
@@ -1867,7 +1932,7 @@ function renderQueue(){
   </tbody></table>`;
 }
 
-function remQ(sku){ published=published.filter(q=>q.sku!==sku); localStorage.setItem('sc_pub',JSON.stringify(published)); renderQueue(); }
+function remQ(sku){ published=published.filter(q=>q.sku!==sku); localStorage.setItem('sc_pub',JSON.stringify(published)); cloudSave('sc_pub',published); renderQueue(); }
 
 function closePublishModal(){ if(isPublishing) return; document.getElementById('publishModal').style.display='none'; }
 
@@ -1916,6 +1981,7 @@ async function submitPublish(){
       addLog(`✓ Published! Wix ID: ${result.product.id}`,'ok');
       published.push({sku,name:finalName,wixId:result.product.id,price,publishedAt:new Date().toISOString()});
       localStorage.setItem('sc_pub',JSON.stringify(published));
+      cloudSave('sc_pub',published);
       pf.style.width='100%';
       pt.textContent='Published successfully';
       setTimeout(()=>{closePublishModal();renderQueue();loadMyWixProducts();},1500);
@@ -2020,7 +2086,7 @@ let liveUSDRate = null;
 let rateLastFetched = null;
 let usdSelected = new Set();
 
-function saveUSD(){ localStorage.setItem('sc_usd',JSON.stringify(usdProducts)); }
+function saveUSD(){ localStorage.setItem('sc_usd',JSON.stringify(usdProducts)); cloudSave('sc_usd', usdProducts); }
 
 function getEffectiveRate(){
   const src = document.getElementById('usdRateSource')?.value;
@@ -3124,6 +3190,7 @@ function renderWatchlist() {
 function removeFromWatch(i) {
   watchlist.splice(i, 1);
   localStorage.setItem('sc_wl', JSON.stringify(watchlist));
+  cloudSave('sc_wl', watchlist);
   renderWatchlist();
 }
 
@@ -3131,7 +3198,7 @@ function removeFromWatch(i) {
 // AMAZON MONITOR
 // ─────────────────────────────────────────────────────────────
 let amazonProducts = JSON.parse(localStorage.getItem('sc_amz') || '[]');
-function saveAmazon() { localStorage.setItem('sc_amz', JSON.stringify(amazonProducts)); }
+function saveAmazon() { localStorage.setItem('sc_amz', JSON.stringify(amazonProducts)); cloudSave('sc_amz', amazonProducts); }
 
 async function fetchAmazonProduct() {
   const urlEl = document.getElementById('amzUrl');
@@ -3245,6 +3312,48 @@ function garminSmartCat(name, group) {
 
 function handleGarminDrop(file) { if (file) handleGarminFile(file); }
 
+// ---- Restore last Garmin CSV from cloud/localStorage on page load ----
+async function restoreGarminData() {
+  // Try cloud first, fall back to localStorage cache
+  let saved = null;
+  try {
+    const r = await callRelay('loadData', { key: 'sc_garmin_data' });
+    if (r && r.found && r.value) {
+      saved = r.value;
+      localStorage.setItem('sc_garmin_data', JSON.stringify(saved));
+    }
+  } catch(e) {}
+  if (!saved) {
+    const local = localStorage.getItem('sc_garmin_data');
+    if (local) { try { saved = JSON.parse(local); } catch(e) {} }
+  }
+  if (!saved || !saved.products || !saved.products.length) return;
+  try {
+    garminProducts = saved.products;
+    document.getElementById('garminUploadBox').style.display = 'none';
+    document.getElementById('garminControls').style.display = 'block';
+    if (saved.expiry) document.getElementById('gs-expires').textContent = saved.expiry;
+    const savedDate = new Date(saved.savedAt);
+    const dateStr = savedDate.toLocaleDateString('en-ZA', { day:'numeric', month:'short', year:'numeric' });
+    document.getElementById('garminFileInfo').textContent = `Restored from ${dateStr}`;
+    // Also restore prev snapshot from cloud for price change detection
+    try {
+      const rp = await callRelay('loadData', { key: 'sc_garmin_prev' });
+      if (rp && rp.found && rp.value) localStorage.setItem('sc_garmin_prev', JSON.stringify(rp.value));
+    } catch(e) {}
+    updateGarminStats();
+    renderGarminCategories();
+    const tc = document.getElementById('tc-garmin');
+    if (tc) tc.textContent = garminProducts.length;
+    // Load Wix products in background so Wix badges show on rows
+    if (!wixProducts.length) {
+      loadMyWixProducts().then(() => renderGarminCategories()).catch(() => {});
+    }
+  } catch(e) {
+    console.warn('[SatComms] Could not restore Garmin data:', e.message);
+  }
+}
+
 function handleGarminFile(file) {
   if (!file) return;
   const reader = new FileReader();
@@ -3315,6 +3424,16 @@ function parseGarminCSV(text) {
   // Save new snapshot
   localStorage.setItem('sc_garmin_prev', JSON.stringify(newSnapshot));
   localStorage.setItem('sc_garmin_prev_date', new Date().toISOString());
+  cloudSave('sc_garmin_prev', newSnapshot);
+
+  // Persist full product list so it survives page reload on any PC
+  const garminDataObj = {
+    products: garminProducts,
+    expiry: dateMatch ? dateMatch[1] : '',
+    savedAt: new Date().toISOString()
+  };
+  localStorage.setItem('sc_garmin_data', JSON.stringify(garminDataObj));
+  cloudSave('sc_garmin_data', garminDataObj);
 }
 
 function parseCSVLine(line) {
@@ -3440,6 +3559,7 @@ function renderGarminCategories() {
               <th style="width:90px;padding:6px 8px;font-family:var(--mono);font-size:8px;color:var(--muted);text-align:right;border-bottom:1px solid var(--border)">Dealer</th>
               <th style="width:100px;padding:6px 8px;font-family:var(--mono);font-size:8px;color:var(--muted);text-align:right;border-bottom:1px solid var(--border)">Your Price</th>
               <th style="width:80px;padding:6px 8px;font-family:var(--mono);font-size:8px;color:var(--muted);text-align:center;border-bottom:1px solid var(--border)">Stock</th>
+              <th style="width:60px;padding:6px 8px;font-family:var(--mono);font-size:8px;color:var(--muted);text-align:center;border-bottom:1px solid var(--border)">Wix</th>
               <th style="width:24px;padding:6px 8px;border-bottom:1px solid var(--border)"></th>
             </tr>
           </thead>
@@ -3467,6 +3587,13 @@ function renderGarminCategories() {
                 </td>
                 <td style="text-align:center;padding:7px 8px">
                   <span class="schip ${p.instock ? 'g' : 'r'}" style="font-size:8px">${p.instock ? '✓ Avail' : '✗ OOS'}</span>
+                </td>
+                <td style="text-align:center;padding:7px 8px">
+                  ${(()=>{
+                    const wp = wixProducts.find(w => w.sku === p.sku || (w.name||'').toLowerCase() === p.name.toLowerCase());
+                    if (wp) return `<span title="On Wix — R${(wp.priceData?.price||wp.price||0).toLocaleString('en-ZA')} · ${wp.visible!==false?'Visible':'Hidden'}" style="font-family:var(--mono);font-size:8px;font-weight:700;color:#000;background:var(--accent2);padding:2px 6px;border-radius:2px;cursor:default">WIX</span>`;
+                    return `<span style="font-family:var(--mono);font-size:8px;color:var(--muted);padding:2px 6px">—</span>`;
+                  })()}
                 </td>
                 <td style="padding:7px 4px;text-align:center">
                   ${p.imageUrl ? `<img src="${p.imageUrl}" style="width:32px;height:32px;object-fit:contain;background:var(--surface2)" onerror="this.style.display='none'">` : ''}
@@ -3688,7 +3815,7 @@ async function updateGarminPricesOnly() {
     await new Promise(r => setTimeout(r, 300));
   }
 
-  localStorage.setItem('sc_pub', JSON.stringify(pub));
+  localStorage.setItem('sc_pub', JSON.stringify(pub)); cloudSave('sc_pub', pub);
   if (btn) {
     btn.disabled = false;
     btn.textContent = errors > 0 ? `⚠ ${done} done, ${errors} errors` : `✓ ${done} price${done!==1?'s':''} updated`;
@@ -3704,6 +3831,8 @@ function clearGarmin() {
       localStorage.removeItem('sc_garmin_prev_date');
     }
   }
+  localStorage.removeItem('sc_garmin_data'); // clear persisted CSV data
+  cloudSave('sc_garmin_data', null); // clear from cloud too
   garminProducts = [];
   garminSelected.clear();
   garminCatExpanded.clear();
@@ -3881,7 +4010,7 @@ async function pushGarminPriceUpdates() {
         const pub = JSON.parse(localStorage.getItem('sc_pub') || '[]');
         const entry = pub.find(p => p.wixId === c.wixId);
         if (entry) { entry.price = newPrice; entry.updatedAt = new Date().toISOString(); }
-        localStorage.setItem('sc_pub', JSON.stringify(pub));
+        localStorage.setItem('sc_pub', JSON.stringify(pub)); cloudSave('sc_pub', pub);
       } else {
         errs++;
         addLog(`✗ ${c.name.substring(0,40)}: ${r?.error || 'failed'}`, 'var(--accent3)');
@@ -3985,7 +4114,7 @@ async function publishGarminToWix() {
       }});
       if (result && result.product) {
         published.push({sku:p.sku, name, wixId:result.product.id, price, publishedAt:new Date().toISOString()});
-        localStorage.setItem('sc_pub', JSON.stringify(published));
+        localStorage.setItem('sc_pub', JSON.stringify(published)); cloudSave('sc_pub', published);
         done++;
       }
     } catch(e) { errs++; }
@@ -4132,7 +4261,7 @@ function logAuto(msg, type=''){
 // AIRTIME TOPUP REQUESTS
 // ─────────────────────────────────────────────────────────────
 let topupRequests = JSON.parse(localStorage.getItem('sc_topups') || '[]');
-function saveTopups() { localStorage.setItem('sc_topups', JSON.stringify(topupRequests)); }
+function saveTopups() { localStorage.setItem('sc_topups', JSON.stringify(topupRequests)); cloudSave('sc_topups', topupRequests); }
 
 function handleTopupDrop(file) { if (file) processTopupFile(file); }
 function handleTopupFile(file) { if (file) processTopupFile(file); }
@@ -4363,150 +4492,248 @@ function buildTopupEmail(d) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// VAT MANAGER
+// GARMIN COMPETITOR PRICE WATCH
 // ─────────────────────────────────────────────────────────────
-window.vatProducts = [];
-window.vatPendingChanges = []; // [{id, name, oldPrice, newPrice}]
+const GCW_COMPETITORS = [
+  { id: 'takealot',        name: 'Takealot',          url: 'https://www.takealot.com',              searchUrl: q => `https://www.takealot.com/all?qsearch=${encodeURIComponent(q)}` },
+  { id: 'amazon',          name: 'Amazon.co.za',      url: 'https://www.amazon.co.za',              searchUrl: q => `https://www.amazon.co.za/s?k=${encodeURIComponent(q)}` },
+  { id: 'outdoorwarehouse', name: 'Outdoor Warehouse', url: 'https://www.outdoorwarehouse.co.za',   searchUrl: q => `https://www.outdoorwarehouse.co.za/search?q=${encodeURIComponent(q)}` },
+  { id: 'easybike',        name: 'Easybike',           url: 'https://easybike.co.za',               searchUrl: q => `https://easybike.co.za/?s=${encodeURIComponent(q)}` },
+  { id: 'navworld',        name: 'Navworld',           url: 'https://navworld.co.za',               searchUrl: q => `https://navworld.co.za/?s=${encodeURIComponent(q)}` },
+];
 
-function vatGetRate() {
-  return (parseFloat(document.getElementById('vatMgrRate')?.value) || 15) / 100;
+let gcwProducts = JSON.parse(localStorage.getItem('sc_gcw') || '[]');
+function gcwSave() { localStorage.setItem('sc_gcw', JSON.stringify(gcwProducts)); cloudSave('sc_gcw', gcwProducts); }
+
+function gcwActiveCompetitors() {
+  return GCW_COMPETITORS.filter(c => document.getElementById('gcw_' + c.id)?.checked);
 }
 
-async function vatLoadProducts() {
-  const listEl = document.getElementById('vatProductList');
-  const countEl = document.getElementById('vatProductCount');
-  const modeEl = document.getElementById('vatCurrentMode');
-  listEl.innerHTML = '<div style="padding:30px;font-family:var(--mono);font-size:11px;color:var(--muted2);text-align:center">⏳ Loading products...</div>';
-
-  try {
-    // Re-use existing wixProducts if already loaded, else fetch fresh
-    if (!wixProducts || !wixProducts.length) {
-      await loadMyWixProducts();
-    }
-    window.vatProducts = wixProducts.map(p => ({
-      id: p.id,
-      name: p.name || 'Unnamed',
-      price: parseFloat(p.priceData?.price || p.price || 0),
-      originalPrice: parseFloat(p.priceData?.price || p.price || 0),
-      newPrice: null,
-      changed: false
-    }));
-    window.vatPendingChanges = [];
-    countEl.textContent = window.vatProducts.length;
-    modeEl.innerHTML = '<span style="color:var(--accent4)">Prices loaded — choose a conversion</span>';
-    vatRenderTable();
-    document.getElementById('vatPushBtn').style.display = 'none';
-    document.getElementById('vatPendingCount').textContent = 'No changes pending';
-  } catch(e) {
-    listEl.innerHTML = '<div style="padding:30px;font-family:var(--mono);font-size:11px;color:var(--accent3);text-align:center">⚠ ' + e.message + '</div>';
-  }
+// ---- Add manually ----
+function gcwAddManual() {
+  const name = document.getElementById('gcwName')?.value.trim();
+  const sku  = document.getElementById('gcwSku')?.value.trim();
+  const price = parseFloat(document.getElementById('gcwMyPrice')?.value) || 0;
+  const status = document.getElementById('gcwAddStatus');
+  if (!name && !sku) { status.textContent = '⚠ Enter a product name or SKU.'; status.style.color = 'var(--accent3)'; return; }
+  const exists = gcwProducts.find(p => (name && p.name.toLowerCase() === name.toLowerCase()) || (sku && p.sku === sku));
+  if (exists) { status.textContent = 'ℹ Already watching this product.'; status.style.color = 'var(--accent4)'; return; }
+  gcwProducts.push({ id: Date.now(), name: name || sku, sku: sku || '', myPrice: price, results: {}, lastChecked: null, addedAt: new Date().toISOString() });
+  gcwSave(); gcwRender();
+  document.getElementById('gcwName').value = '';
+  document.getElementById('gcwSku').value = '';
+  document.getElementById('gcwMyPrice').value = '';
+  status.textContent = '✓ Added to watch list.'; status.style.color = 'var(--accent2)';
 }
 
-function vatConvertAll(direction) {
-  if (!window.vatProducts.length) { alert('Load products first.'); return; }
-  const rate = vatGetRate();
-  const factor = direction === 'excl' ? 1 / (1 + rate) : (1 + rate);
-  const label = direction === 'excl' ? '÷ ' + (1+rate).toFixed(2) + ' (excl VAT)' : '× ' + (1+rate).toFixed(2) + ' (incl VAT)';
-
-  window.vatProducts.forEach(p => {
-    const np = Math.round(p.originalPrice * factor * 100) / 100;
-    p.newPrice = np;
-    p.changed = Math.abs(np - p.originalPrice) > 0.01;
+// ---- Add from Garmin CSV ----
+function gcwAddFromGarminCSV() {
+  const status = document.getElementById('gcwAddStatus');
+  if (!garminProducts || !garminProducts.length) { status.textContent = '⚠ Load a Garmin CSV first.'; status.style.color = 'var(--accent3)'; return; }
+  let added = 0;
+  garminProducts.slice(0, 50).forEach(p => {
+    if (gcwProducts.find(x => x.sku === p.sku)) return;
+    gcwProducts.push({ id: Date.now() + Math.random(), name: p.name, sku: p.sku || '', myPrice: calcGarminPrice(p) || 0, results: {}, lastChecked: null, addedAt: new Date().toISOString() });
+    added++;
   });
-
-  window.vatPendingChanges = window.vatProducts.filter(p => p.changed);
-  const modeEl = document.getElementById('vatCurrentMode');
-  modeEl.innerHTML = direction === 'excl'
-    ? '<span style="color:var(--accent2)">→ Excl VAT preview (not yet pushed)</span>'
-    : '<span style="color:var(--accent5)">→ Incl VAT preview (not yet pushed)</span>';
-
-  document.getElementById('vatPendingCount').innerHTML =
-    '<span style="color:var(--accent4)">' + window.vatPendingChanges.length + ' products will be updated (' + label + ')</span>';
-  document.getElementById('vatPushBtn').style.display = 'inline-flex';
-  vatRenderTable();
+  gcwSave(); gcwRender();
+  status.textContent = added ? `✓ Added ${added} Garmin products to watch list.` : 'ℹ All already being watched.';
+  status.style.color = added ? 'var(--accent2)' : 'var(--accent4)';
 }
 
-function vatRenderTable() {
-  const listEl = document.getElementById('vatProductList');
-  if (!window.vatProducts.length) { listEl.innerHTML = '<div style="padding:40px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted2)">No products loaded</div>'; return; }
-
-  const rows = window.vatProducts.map(p => {
-    const hasChange = p.newPrice !== null && p.changed;
-    const displayNew = p.newPrice !== null ? 'R ' + p.newPrice.toFixed(2) : '—';
-    const arrow = hasChange ? (p.newPrice < p.originalPrice ? '↓' : '↑') : '';
-    const arrowColor = hasChange ? (p.newPrice < p.originalPrice ? 'var(--accent2)' : 'var(--accent5)') : 'transparent';
-    const rowBg = hasChange ? 'rgba(0,180,255,.04)' : 'transparent';
-    return `<tr style="border-bottom:1px solid var(--border);background:${rowBg}">
-      <td style="padding:10px 16px;font-size:12px;color:var(--text);max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</td>
-      <td style="padding:10px 16px;font-family:var(--mono);font-size:12px;color:var(--muted2);text-align:right">R ${p.originalPrice.toFixed(2)}</td>
-      <td style="padding:10px 16px;font-family:var(--mono);font-size:16px;color:${arrowColor};text-align:center">${arrow}</td>
-      <td style="padding:10px 16px;font-family:var(--mono);font-size:12px;color:${hasChange ? 'var(--accent)' : 'var(--muted)'};text-align:right;font-weight:${hasChange ? '700' : '400'}">${displayNew}</td>
-      <td style="padding:10px 16px;text-align:center">
-        ${hasChange ? '<span style="font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--accent4);background:rgba(255,200,77,.08);border:1px solid rgba(255,200,77,.2);padding:2px 8px;border-radius:2px">PENDING</span>' : '<span style="font-family:var(--mono);font-size:9px;color:var(--muted)">—</span>'}
-      </td>
-    </tr>`;
-  }).join('');
-
-  listEl.innerHTML = `
-    <div style="overflow-x:auto">
-    <table style="width:100%;border-collapse:collapse">
-      <thead>
-        <tr style="border-bottom:1px solid var(--border2)">
-          <th style="padding:10px 16px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted2);text-align:left;text-transform:uppercase">Product</th>
-          <th style="padding:10px 16px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted2);text-align:right;text-transform:uppercase">Current Price</th>
-          <th style="padding:10px 16px;width:30px"></th>
-          <th style="padding:10px 16px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted2);text-align:right;text-transform:uppercase">New Price</th>
-          <th style="padding:10px 16px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted2);text-align:center;text-transform:uppercase">Status</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
-    </div>`;
+// ---- Add from Wix ----
+async function gcwAddFromWix() {
+  const status = document.getElementById('gcwAddStatus');
+  status.textContent = 'Loading from Wix...'; status.style.color = 'var(--muted2)';
+  try {
+    if (!wixProducts.length) await loadMyWixProducts();
+    const garminWix = wixProducts.filter(p => (p.name || '').toLowerCase().includes('garmin'));
+    let added = 0;
+    garminWix.forEach(p => {
+      if (gcwProducts.find(x => x.sku === p.sku || x.name.toLowerCase() === (p.name||'').toLowerCase())) return;
+      gcwProducts.push({ id: Date.now() + Math.random(), name: p.name || p.sku, sku: p.sku || '', myPrice: p.priceData?.price || p.price || 0, results: {}, lastChecked: null, addedAt: new Date().toISOString() });
+      added++;
+    });
+    gcwSave(); gcwRender();
+    status.textContent = added ? `✓ Added ${added} Garmin products from Wix.` : `ℹ All Garmin products already watched (${garminWix.length} found).`;
+    status.style.color = added ? 'var(--accent2)' : 'var(--accent4)';
+  } catch(e) { status.textContent = '⚠ ' + e.message; status.style.color = 'var(--accent3)'; }
 }
 
-async function vatPushAll() {
-  const pending = window.vatPendingChanges;
-  if (!pending.length) { alert('No pending changes to push.'); return; }
-  if (!confirm(`Push ${pending.length} price changes to satcomms.co.za?`)) return;
-
-  const progressWrap = document.getElementById('vatProgressWrap');
-  const progressFill = document.getElementById('vatProgressFill');
-  const progressText = document.getElementById('vatProgressText');
-  const pushBtn = document.getElementById('vatPushBtn');
-  progressWrap.style.display = 'block';
-  pushBtn.disabled = true;
-  pushBtn.textContent = '⏳ Pushing...';
-
-  let done = 0, errors = 0;
-  for (const p of pending) {
-    try {
-      await callRelay('updateProduct', { productId: p.id, product: { price: p.newPrice } });
-      // Update local wixProducts array too
-      const wp = wixProducts.find(x => x.id === p.id);
-      if (wp) { if (!wp.priceData) wp.priceData = {}; wp.priceData.price = p.newPrice; wp.price = p.newPrice; }
-      // Update vatProducts original price to new price (so table shows correctly)
-      const vp = window.vatProducts.find(x => x.id === p.id);
-      if (vp) { vp.originalPrice = p.newPrice; vp.newPrice = null; vp.changed = false; }
-      done++;
-    } catch(e) {
-      errors++;
-      console.warn('VAT push failed for', p.name, e.message);
-    }
-    const pct = Math.round((done + errors) / pending.length * 100);
-    progressFill.style.width = pct + '%';
-    progressText.textContent = `Updated ${done + errors} / ${pending.length}${errors ? ' (' + errors + ' errors)' : ''}`;
+// ---- Fetch price from a single competitor via relay ----
+async function gcwFetchCompetitor(competitor, product) {
+  // Build search query: prefer SKU for precision, fall back to name
+  const query = product.sku
+    ? `Garmin ${product.sku} ${product.name.split(' ').slice(0,3).join(' ')}`
+    : `Garmin ${product.name}`;
+  try {
+    const r = await callRelay('searchGoogleShopping', {
+      query: `site:${competitor.url.replace('https://','').replace('http://','')} ${query}`
+    });
+    const results = r?.results || [];
+    // Filter to only results from this competitor domain
+    const domain = competitor.url.replace('https://','').replace('http://','').replace('www.','');
+    const filtered = results.filter(res =>
+      (res.url || '').includes(domain) || (res.store || '').toLowerCase().includes(domain.split('.')[0])
+    );
+    // If no domain-specific results, use all results (Google Shopping may not return domain-filtered)
+    const best = (filtered.length ? filtered : results)
+      .filter(r => r.price > 0)
+      .sort((a,b) => a.price - b.price)[0] || null;
+    return best ? { price: best.price, url: best.url || competitor.searchUrl(query), title: best.title || product.name, found: true } : { price: null, url: competitor.searchUrl(query), found: false };
+  } catch(e) {
+    return { price: null, url: competitor.searchUrl(query), found: false, error: e.message };
   }
+}
 
-  window.vatPendingChanges = [];
-  document.getElementById('vatPendingCount').textContent = 'No changes pending';
-  document.getElementById('vatCurrentMode').innerHTML =
-    '<span style="color:var(--accent2)">✓ All changes pushed to Wix</span>';
-  pushBtn.style.display = 'none';
-  pushBtn.disabled = false;
-  pushBtn.textContent = '🚀 Push All to Wix';
-  progressText.textContent = `✓ Done — ${done} updated${errors ? ', ' + errors + ' failed' : ''}`;
-  setTimeout(() => { progressWrap.style.display = 'none'; }, 4000);
-  vatRenderTable();
+// ---- Refresh single product ----
+async function gcwRefreshOne(id) {
+  const product = gcwProducts.find(p => p.id === id);
+  if (!product) return;
+  const competitors = gcwActiveCompetitors();
+  const progressWrap = document.getElementById('gcwProgress');
+  const progressText = document.getElementById('gcwProgressText');
+  const progressFill = document.getElementById('gcwProgressFill');
+  progressWrap.style.display = 'block';
+  product.results = {};
+  let done = 0;
+  for (const comp of competitors) {
+    progressText.textContent = `Checking ${comp.name} for "${product.name}"...`;
+    progressFill.style.width = Math.round((done / competitors.length) * 100) + '%';
+    product.results[comp.id] = await gcwFetchCompetitor(comp, product);
+    await new Promise(r => setTimeout(r, 600));
+    done++;
+  }
+  product.lastChecked = new Date().toISOString();
+  gcwSave(); gcwRender();
+  progressFill.style.width = '100%';
+  setTimeout(() => { progressWrap.style.display = 'none'; }, 2000);
+}
+
+// ---- Refresh all ----
+async function gcwRefreshAll() {
+  if (!gcwProducts.length) { alert('Add products to watch first.'); return; }
+  const btn = document.getElementById('gcwRefreshBtn');
+  const progressWrap = document.getElementById('gcwProgress');
+  const progressText = document.getElementById('gcwProgressText');
+  const progressFill = document.getElementById('gcwProgressFill');
+  const competitors = gcwActiveCompetitors();
+  if (!competitors.length) { alert('Enable at least one competitor above.'); return; }
+  btn.disabled = true; btn.textContent = '⏳ Checking...';
+  progressWrap.style.display = 'block';
+  const total = gcwProducts.length * competitors.length;
+  let done = 0;
+  for (const product of gcwProducts) {
+    product.results = product.results || {};
+    for (const comp of competitors) {
+      progressText.textContent = `${product.name} → ${comp.name} (${done+1}/${total})`;
+      progressFill.style.width = Math.round((done / total) * 100) + '%';
+      product.results[comp.id] = await gcwFetchCompetitor(comp, product);
+      await new Promise(r => setTimeout(r, 700));
+      done++;
+    }
+    product.lastChecked = new Date().toISOString();
+  }
+  gcwSave(); gcwRender();
+  btn.disabled = false; btn.textContent = '↻ Check All Prices';
+  progressFill.style.width = '100%';
+  progressText.textContent = `✓ All done — ${gcwProducts.length} products checked across ${competitors.length} competitors`;
+  setTimeout(() => { progressWrap.style.display = 'none'; }, 3000);
+}
+
+function gcwRemove(id) {
+  gcwProducts = gcwProducts.filter(p => p.id !== id);
+  gcwSave(); gcwRender();
+}
+
+function gcwClearAll() {
+  if (!gcwProducts.length || !confirm('Remove all watched products?')) return;
+  gcwProducts = []; gcwSave(); gcwRender();
+}
+
+// ---- Render ----
+function gcwRender() {
+  const grid = document.getElementById('gcwGrid');
+  const empty = document.getElementById('gcwEmpty');
+  if (!grid) return;
+  if (!gcwProducts.length) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  const threshold = parseFloat(document.getElementById('gcwThreshold')?.value || 5) / 100;
+
+  grid.innerHTML = gcwProducts.map(product => {
+    const myPrice = product.myPrice || 0;
+    const results = product.results || {};
+    const lastChecked = product.lastChecked
+      ? new Date(product.lastChecked).toLocaleString('en-ZA', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
+      : 'Never';
+
+    // Build competitor rows
+    const compRows = GCW_COMPETITORS.map(comp => {
+      const r = results[comp.id];
+      if (!r) return `<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border)">
+        <div style="width:120px;font-family:var(--mono);font-size:10px;color:var(--muted2)">${comp.name}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted)">Not checked yet</div>
+      </div>`;
+
+      const price = r.price;
+      const found = r.found && price > 0;
+      const diff = (found && myPrice > 0) ? ((myPrice - price) / myPrice) : null;
+      const isAlert = diff !== null && diff < -threshold; // competitor is cheaper by more than threshold
+      const isCheaper = diff !== null && diff < 0;
+      const diffColor = diff === null ? 'var(--muted)' : diff > 0 ? 'var(--accent2)' : isCheaper ? 'var(--accent3)' : 'var(--muted2)';
+      const diffText = diff === null ? '' : diff > 0
+        ? `▲ you're R${Math.abs(myPrice - price).toLocaleString('en-ZA')} cheaper (${(diff*100).toFixed(1)}%)`
+        : isCheaper
+        ? `▼ ${Math.abs((diff*100)).toFixed(1)}% CHEAPER — R${Math.abs(myPrice - price).toLocaleString('en-ZA')} less`
+        : 'Same price';
+      const rowBg = isAlert ? 'rgba(255,77,109,.06)' : '';
+
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);background:${rowBg}">
+        <div style="width:130px;flex-shrink:0">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text);font-weight:${isAlert?'700':'400'}">${comp.name}</div>
+        </div>
+        <div style="width:110px;flex-shrink:0;font-family:var(--cond);font-size:${found?'18':'13'}px;font-weight:700;color:${found?(isCheaper?'var(--accent3)':'var(--muted2)'):'var(--muted)'}">
+          ${found ? 'R' + price.toLocaleString('en-ZA') : '—'}
+        </div>
+        <div style="flex:1;font-family:var(--mono);font-size:9px;color:${diffColor}">
+          ${found ? diffText : '<span style="color:var(--muted)">Not found on this site</span>'}
+          ${isAlert ? ' ⚠' : ''}
+        </div>
+        ${r.url ? `<a href="${r.url}" target="_blank" style="font-family:var(--mono);font-size:9px;color:var(--accent);flex-shrink:0" title="View on ${comp.name}">↗ View</a>` : ''}
+      </div>`;
+    }).join('');
+
+    // Overall alert status
+    const allPrices = GCW_COMPETITORS.map(c => results[c.id]?.price).filter(p => p > 0);
+    const minComp = allPrices.length ? Math.min(...allPrices) : null;
+    const hasAlert = minComp && myPrice > 0 && ((myPrice - minComp) / myPrice) < -threshold;
+    const isLowest = minComp && myPrice > 0 && myPrice <= minComp;
+    const headerBorder = hasAlert ? 'var(--accent3)' : isLowest ? 'var(--accent2)' : 'var(--border)';
+    const statusBadge = hasAlert
+      ? `<span style="background:var(--accent3);color:#fff;font-family:var(--mono);font-size:8px;font-weight:700;padding:2px 8px;border-radius:2px">⚠ UNDERCUT</span>`
+      : isLowest && allPrices.length
+      ? `<span style="background:var(--accent2);color:#000;font-family:var(--mono);font-size:8px;font-weight:700;padding:2px 8px;border-radius:2px">✓ LOWEST PRICE</span>`
+      : allPrices.length
+      ? `<span style="background:var(--surface3);color:var(--muted2);font-family:var(--mono);font-size:8px;padding:2px 8px;border-radius:2px">✓ COMPETITIVE</span>`
+      : `<span style="background:var(--surface3);color:var(--muted);font-family:var(--mono);font-size:8px;padding:2px 8px;border-radius:2px">NOT CHECKED</span>`;
+
+    return `<div style="background:var(--surface);border:1px solid ${headerBorder};margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;color:var(--text);font-size:13px">${product.name}</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">${product.sku || '—'} · Last checked: ${lastChecked}</div>
+        </div>
+        ${statusBadge}
+        ${myPrice > 0 ? `<div style="text-align:right;flex-shrink:0">
+          <div style="font-family:var(--mono);font-size:8px;color:var(--muted)">YOUR PRICE</div>
+          <div style="font-family:var(--cond);font-size:20px;font-weight:700;color:var(--accent2)">R${myPrice.toLocaleString('en-ZA')}</div>
+        </div>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="gcwRefreshOne(${product.id})" title="Refresh this product">↻</button>
+        <button class="btn btn-danger btn-sm" onclick="gcwRemove(${product.id})">✕</button>
+      </div>
+      ${compRows}
+    </div>`;
+  }).join('');
 }
 
 </script>
