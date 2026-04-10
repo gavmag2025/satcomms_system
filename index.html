@@ -382,6 +382,7 @@ select option{background:var(--surface2)}
   <div class="tab" onclick="switchTab('topup')">📶 Topups <span class="tab-count r" id="tc-topup" style="display:none">0</span></div>
   <div class="tab" onclick="switchTab('seo')">🔍 SEO Agent</div>
   <div class="tab" onclick="switchTab('publish')">🚀 Publish to Wix</div>
+  <div class="tab" onclick="switchTab('vat')">🧾 VAT Manager</div>
   <div class="tab" onclick="switchTab('settings')">⚙ Settings</div>
 </div>
 
@@ -1293,6 +1294,67 @@ select option{background:var(--surface2)}
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- VAT MANAGER -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-vat">
+  <div class="shdr">
+    <div class="stitle">🧾 VAT <span>Manager</span></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="vatLoadProducts()">📦 Load Products</button>
+      <button class="btn btn-primary btn-sm" onclick="vatConvertAll('excl')">→ Convert All to Excl VAT</button>
+      <button class="btn btn-success btn-sm" onclick="vatConvertAll('incl')">→ Convert All to Incl VAT</button>
+      <button class="btn btn-wix btn-sm" onclick="vatPushAll()" id="vatPushBtn" style="display:none">🚀 Push All to Wix</button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:2px;margin-bottom:2px">
+    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 20px;flex:1">
+      <div class="flabel" style="margin-bottom:6px">VAT Rate</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="number" id="vatMgrRate" value="15" min="0" max="30" style="width:70px;font-family:var(--mono);font-size:14px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:6px 10px;border-radius:var(--radius)">
+        <span style="font-family:var(--mono);font-size:11px;color:var(--muted2)">%</span>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 20px;flex:1">
+      <div class="flabel" style="margin-bottom:4px">Current Mode</div>
+      <div id="vatCurrentMode" style="font-family:var(--mono);font-size:12px;color:var(--muted2)">Load products to detect</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 20px;flex:1">
+      <div class="flabel" style="margin-bottom:4px">Products Loaded</div>
+      <div id="vatProductCount" style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent)">—</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 20px;flex:2">
+      <div class="flabel" style="margin-bottom:4px">Pending Changes</div>
+      <div id="vatPendingCount" style="font-family:var(--mono);font-size:12px;color:var(--muted2)">No changes pending</div>
+    </div>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent4);padding:16px 20px;margin-bottom:2px">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--accent4);letter-spacing:.1em;margin-bottom:8px">HOW IT WORKS</div>
+    <div style="font-size:12px;color:var(--muted2);line-height:1.8">
+      <b style="color:var(--text)">Convert to Excl VAT</b> — divides every product price by 1+VAT% (strips VAT out). Customers see the ex-VAT price. Set Wix Tax to "Tax should be added at checkout".<br>
+      <b style="color:var(--text)">Convert to Incl VAT</b> — multiplies every product price by 1+VAT% (adds VAT back in). Full VAT-inclusive price shown on store.<br>
+      <span style="color:var(--accent4)">⚠ Make sure your Wix Tax setting matches the mode you choose.</span>
+    </div>
+  </div>
+
+  <div id="vatProgressWrap" style="display:none;background:var(--surface);border:1px solid var(--border);padding:14px 20px;margin-bottom:2px">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:6px" id="vatProgressText">Updating...</div>
+    <div style="background:var(--surface2);border-radius:2px;height:4px;overflow:hidden">
+      <div id="vatProgressFill" style="height:4px;background:var(--accent);width:0%;transition:width .3s"></div>
+    </div>
+  </div>
+
+  <div id="vatProductList" style="background:var(--surface);border:1px solid var(--border)">
+    <div style="display:flex;align-items:center;justify-content:center;padding:60px;flex-direction:column;gap:12px">
+      <div style="font-size:32px">🧾</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--muted2)">Load products to manage VAT pricing</div>
+      <button class="btn btn-primary" onclick="vatLoadProducts()">📦 Load from satcomms.co.za</button>
+    </div>
+  </div>
+</div>
+
 <div class="panel" id="panel-settings">
   <div class="shdr"><div class="stitle">System <span>Settings</span></div></div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:2px">
@@ -1431,6 +1493,7 @@ function switchTab(name) {
   if (name === 'watchlist' && typeof renderWatchlist === 'function') renderWatchlist();
   if (name === 'mywix' && typeof loadWixProducts === 'function' && !wixProducts.length) loadWixProducts();
   if (name === 'topup' && typeof renderTopupQueue === 'function') renderTopupQueue();
+  if (name === 'vat' && typeof vatLoadProducts === 'function' && !window.vatProducts?.length) vatLoadProducts();
 }
 
 async function callRelay(action, body) {
@@ -4271,6 +4334,153 @@ function buildTopupEmail(d) {
       '<div style="font-size:11px;color:#aaa;margin-top:4px">084 514 1652 &middot; sales@satcomms.co.za</div>' +
     '</td></tr>' +
     '</table></td></tr></table></body></html>';
+}
+
+// ─────────────────────────────────────────────────────────────
+// VAT MANAGER
+// ─────────────────────────────────────────────────────────────
+window.vatProducts = [];
+window.vatPendingChanges = []; // [{id, name, oldPrice, newPrice}]
+
+function vatGetRate() {
+  return (parseFloat(document.getElementById('vatMgrRate')?.value) || 15) / 100;
+}
+
+async function vatLoadProducts() {
+  const listEl = document.getElementById('vatProductList');
+  const countEl = document.getElementById('vatProductCount');
+  const modeEl = document.getElementById('vatCurrentMode');
+  listEl.innerHTML = '<div style="padding:30px;font-family:var(--mono);font-size:11px;color:var(--muted2);text-align:center">⏳ Loading products...</div>';
+
+  try {
+    // Re-use existing wixProducts if already loaded, else fetch fresh
+    if (!wixProducts || !wixProducts.length) {
+      await loadMyWixProducts();
+    }
+    window.vatProducts = wixProducts.map(p => ({
+      id: p.id,
+      name: p.name || 'Unnamed',
+      price: parseFloat(p.priceData?.price || p.price || 0),
+      originalPrice: parseFloat(p.priceData?.price || p.price || 0),
+      newPrice: null,
+      changed: false
+    }));
+    window.vatPendingChanges = [];
+    countEl.textContent = window.vatProducts.length;
+    modeEl.innerHTML = '<span style="color:var(--accent4)">Prices loaded — choose a conversion</span>';
+    vatRenderTable();
+    document.getElementById('vatPushBtn').style.display = 'none';
+    document.getElementById('vatPendingCount').textContent = 'No changes pending';
+  } catch(e) {
+    listEl.innerHTML = '<div style="padding:30px;font-family:var(--mono);font-size:11px;color:var(--accent3);text-align:center">⚠ ' + e.message + '</div>';
+  }
+}
+
+function vatConvertAll(direction) {
+  if (!window.vatProducts.length) { alert('Load products first.'); return; }
+  const rate = vatGetRate();
+  const factor = direction === 'excl' ? 1 / (1 + rate) : (1 + rate);
+  const label = direction === 'excl' ? '÷ ' + (1+rate).toFixed(2) + ' (excl VAT)' : '× ' + (1+rate).toFixed(2) + ' (incl VAT)';
+
+  window.vatProducts.forEach(p => {
+    const np = Math.round(p.originalPrice * factor * 100) / 100;
+    p.newPrice = np;
+    p.changed = Math.abs(np - p.originalPrice) > 0.01;
+  });
+
+  window.vatPendingChanges = window.vatProducts.filter(p => p.changed);
+  const modeEl = document.getElementById('vatCurrentMode');
+  modeEl.innerHTML = direction === 'excl'
+    ? '<span style="color:var(--accent2)">→ Excl VAT preview (not yet pushed)</span>'
+    : '<span style="color:var(--accent5)">→ Incl VAT preview (not yet pushed)</span>';
+
+  document.getElementById('vatPendingCount').innerHTML =
+    '<span style="color:var(--accent4)">' + window.vatPendingChanges.length + ' products will be updated (' + label + ')</span>';
+  document.getElementById('vatPushBtn').style.display = 'inline-flex';
+  vatRenderTable();
+}
+
+function vatRenderTable() {
+  const listEl = document.getElementById('vatProductList');
+  if (!window.vatProducts.length) { listEl.innerHTML = '<div style="padding:40px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted2)">No products loaded</div>'; return; }
+
+  const rows = window.vatProducts.map(p => {
+    const hasChange = p.newPrice !== null && p.changed;
+    const displayNew = p.newPrice !== null ? 'R ' + p.newPrice.toFixed(2) : '—';
+    const arrow = hasChange ? (p.newPrice < p.originalPrice ? '↓' : '↑') : '';
+    const arrowColor = hasChange ? (p.newPrice < p.originalPrice ? 'var(--accent2)' : 'var(--accent5)') : 'transparent';
+    const rowBg = hasChange ? 'rgba(0,180,255,.04)' : 'transparent';
+    return `<tr style="border-bottom:1px solid var(--border);background:${rowBg}">
+      <td style="padding:10px 16px;font-size:12px;color:var(--text);max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</td>
+      <td style="padding:10px 16px;font-family:var(--mono);font-size:12px;color:var(--muted2);text-align:right">R ${p.originalPrice.toFixed(2)}</td>
+      <td style="padding:10px 16px;font-family:var(--mono);font-size:16px;color:${arrowColor};text-align:center">${arrow}</td>
+      <td style="padding:10px 16px;font-family:var(--mono);font-size:12px;color:${hasChange ? 'var(--accent)' : 'var(--muted)'};text-align:right;font-weight:${hasChange ? '700' : '400'}">${displayNew}</td>
+      <td style="padding:10px 16px;text-align:center">
+        ${hasChange ? '<span style="font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--accent4);background:rgba(255,200,77,.08);border:1px solid rgba(255,200,77,.2);padding:2px 8px;border-radius:2px">PENDING</span>' : '<span style="font-family:var(--mono);font-size:9px;color:var(--muted)">—</span>'}
+      </td>
+    </tr>`;
+  }).join('');
+
+  listEl.innerHTML = `
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border2)">
+          <th style="padding:10px 16px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted2);text-align:left;text-transform:uppercase">Product</th>
+          <th style="padding:10px 16px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted2);text-align:right;text-transform:uppercase">Current Price</th>
+          <th style="padding:10px 16px;width:30px"></th>
+          <th style="padding:10px 16px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted2);text-align:right;text-transform:uppercase">New Price</th>
+          <th style="padding:10px 16px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted2);text-align:center;text-transform:uppercase">Status</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>`;
+}
+
+async function vatPushAll() {
+  const pending = window.vatPendingChanges;
+  if (!pending.length) { alert('No pending changes to push.'); return; }
+  if (!confirm(`Push ${pending.length} price changes to satcomms.co.za?`)) return;
+
+  const progressWrap = document.getElementById('vatProgressWrap');
+  const progressFill = document.getElementById('vatProgressFill');
+  const progressText = document.getElementById('vatProgressText');
+  const pushBtn = document.getElementById('vatPushBtn');
+  progressWrap.style.display = 'block';
+  pushBtn.disabled = true;
+  pushBtn.textContent = '⏳ Pushing...';
+
+  let done = 0, errors = 0;
+  for (const p of pending) {
+    try {
+      await callRelay('updateProduct', { productId: p.id, product: { price: p.newPrice } });
+      // Update local wixProducts array too
+      const wp = wixProducts.find(x => x.id === p.id);
+      if (wp) { if (!wp.priceData) wp.priceData = {}; wp.priceData.price = p.newPrice; wp.price = p.newPrice; }
+      // Update vatProducts original price to new price (so table shows correctly)
+      const vp = window.vatProducts.find(x => x.id === p.id);
+      if (vp) { vp.originalPrice = p.newPrice; vp.newPrice = null; vp.changed = false; }
+      done++;
+    } catch(e) {
+      errors++;
+      console.warn('VAT push failed for', p.name, e.message);
+    }
+    const pct = Math.round((done + errors) / pending.length * 100);
+    progressFill.style.width = pct + '%';
+    progressText.textContent = `Updated ${done + errors} / ${pending.length}${errors ? ' (' + errors + ' errors)' : ''}`;
+  }
+
+  window.vatPendingChanges = [];
+  document.getElementById('vatPendingCount').textContent = 'No changes pending';
+  document.getElementById('vatCurrentMode').innerHTML =
+    '<span style="color:var(--accent2)">✓ All changes pushed to Wix</span>';
+  pushBtn.style.display = 'none';
+  pushBtn.disabled = false;
+  pushBtn.textContent = '🚀 Push All to Wix';
+  progressText.textContent = `✓ Done — ${done} updated${errors ? ', ' + errors + ' failed' : ''}`;
+  setTimeout(() => { progressWrap.style.display = 'none'; }, 4000);
+  vatRenderTable();
 }
 
 </script>
