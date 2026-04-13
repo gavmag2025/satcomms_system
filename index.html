@@ -435,11 +435,11 @@ select option{background:var(--surface2)}
     <div style="background:var(--surface);border:1px solid var(--border);padding:12px 16px;margin-bottom:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
       <div>
         <div class="flabel" style="margin-bottom:4px">Markup %</div>
-        <input type="number" id="garminMarkup" value="35" min="0" max="500" style="width:80px" oninput="refreshGarminPrices()">
+        <input type="number" id="garminMarkup" value="12" min="0" max="500" style="width:80px" oninput="refreshGarminPrices()">
       </div>
       <div>
-        <div class="flabel" style="margin-bottom:4px">VAT %</div>
-        <input type="number" id="garminVAT" value="15" min="0" max="30" style="width:65px" oninput="refreshGarminPrices()">
+        <div class="flabel" style="margin-bottom:4px">VAT % <span style="color:var(--muted);font-weight:400">(display only)</span></div>
+        <input type="number" id="garminVAT" value="15" min="0" max="30" style="width:65px;opacity:.6" title="VAT is added by Wix at checkout — not included in Wix price">
       </div>
       <div>
         <div class="flabel" style="margin-bottom:4px">Rounding</div>
@@ -469,7 +469,7 @@ select option{background:var(--surface2)}
         </select>
       </div>
       <div style="font-family:var(--mono);font-size:9px;color:var(--muted);padding:6px 10px;background:var(--surface2);border:1px solid var(--border)">
-        <span style="color:var(--accent4)">dealer × (1+markup%) × (1+VAT%) → rounded</span>
+        <span style="color:var(--accent4)">dealer × (1+markup%) → rounded → pushed to Wix excl VAT</span>
       </div>
     </div>
 
@@ -989,7 +989,7 @@ select option{background:var(--surface2)}
           </div>
         </div>
         <div style="margin-top:10px;font-family:var(--mono);font-size:9px;color:var(--muted);line-height:1.9;background:var(--bg);border:1px solid var(--border);padding:8px 12px">
-          Formula: <span style="color:var(--accent4)">USD × ZAR rate × (1 + buffer%) × (1 + VAT%) → rounded</span>
+          Formula: <span style="color:var(--accent4)">USD × ZAR rate × (1 + buffer%) → rounded → Wix excl VAT · VAT added at checkout</span>
         </div>
       </div>
     </div>
@@ -1003,7 +1003,7 @@ select option{background:var(--surface2)}
         </div>
         <div style="font-family:var(--cond);font-size:24px;color:var(--muted2);padding-bottom:6px">=</div>
         <div style="flex:1">
-          <div class="flabel">ZAR incl VAT</div>
+          <div class="flabel">ZAR excl VAT → Wix</div>
           <input type="text" id="calcZARResult" readonly style="background:var(--surface3);color:var(--accent2);font-family:var(--cond);font-size:18px;font-weight:700">
         </div>
       </div>
@@ -1065,9 +1065,9 @@ select option{background:var(--surface2)}
         <th>USD $</th>
         <th>Rate</th>
         <th>Buffer</th>
-        <th>Excl VAT</th>
-        <th>VAT</th>
-        <th>Incl VAT (Wix)</th>
+        <th>Excl VAT → Wix</th>
+        <th>VAT ref</th>
+        <th>Incl VAT (display)</th>
         <th>Last Pushed</th>
         <th></th>
       </tr></thead>
@@ -2089,10 +2089,10 @@ function toZAR(usdPrice){
   if(!rate||!usdPrice) return null;
   const base = usdPrice * rate;
   const withBuffer = base * (1 + getBuffer());
-  const withVAT = withBuffer * (1 + getVAT());
+  // Return excl VAT — Wix adds VAT at checkout
   const round = getRounding();
-  if(round===0) return Math.round(withVAT*100)/100;
-  return Math.ceil(withVAT/round)*round;
+  if(round===0) return Math.round(withBuffer*100)/100;
+  return Math.ceil(withBuffer/round)*round;
 }
 
 async function fetchUSDRate(){
@@ -2212,14 +2212,16 @@ function calcZAR(){
   const withBuffer=base*(1+buffer);
   const withVAT=withBuffer*(1+vat);
   const round=getRounding();
-  const final=round===0?Math.round(withVAT*100)/100:Math.ceil(withVAT/round)*round;
-  res.value=final?'R'+final.toLocaleString('en-ZA'):'—';
+  // Wix price = excl VAT (rounded)
+  const wixPrice=round===0?Math.round(withBuffer*100)/100:Math.ceil(withBuffer/round)*round;
+  const inclVATPrice=round===0?Math.round(withVAT*100)/100:Math.ceil(withVAT/round)*round;
+  res.value=wixPrice?'R'+wixPrice.toLocaleString('en-ZA'):'—';
   if(breakdown){
     breakdown.style.display='block';
     document.getElementById('calcStep1').textContent=`$${usd} × R${rate.toFixed(2)} = R${base.toFixed(2)} (base ZAR)`;
-    document.getElementById('calcStep2').textContent=`+ ${Math.round(buffer*100)}% buffer = R${withBuffer.toFixed(2)}`;
-    document.getElementById('calcStep3').textContent=`+ ${Math.round(vat*100)}% VAT = R${withVAT.toFixed(2)}`;
-    document.getElementById('calcStep4').textContent=`→ Rounded: R${final.toLocaleString('en-ZA')} (excl VAT: R${(withBuffer).toFixed(2)})`;
+    document.getElementById('calcStep2').textContent=`+ ${Math.round(buffer*100)}% buffer = R${withBuffer.toFixed(2)} (excl VAT)`;
+    document.getElementById('calcStep3').textContent=`→ Rounded Wix price: R${wixPrice.toLocaleString('en-ZA')} excl VAT`;
+    document.getElementById('calcStep4').textContent=`Customer pays at checkout: R${inclVATPrice.toLocaleString('en-ZA')} incl ${Math.round(vat*100)}% VAT`;
   }
 }
 
@@ -2281,7 +2283,7 @@ function addUSDProductManual(){
   document.getElementById('usdProdName').value='';
   document.getElementById('usdProdUSD').value='';
   document.getElementById('usdProdZARPreview').value='';
-  document.getElementById('usdAddStatus').textContent=`✓ "${name.substring(0,40)}" added — R${b.zarPrice?.toLocaleString('en-ZA')||'?'} incl VAT.`;
+  document.getElementById('usdAddStatus').textContent=`✓ "${name.substring(0,40)}" tagged. Review the USD price in the table below.`;
   document.getElementById('usdAddStatus').style.color='var(--accent2)';
   document.getElementById('tc-usd').textContent=usdProducts.length;
   document.getElementById('tc-usd2').textContent=usdProducts.length;
@@ -2370,7 +2372,7 @@ function applyUSDPrice(i){
   renderUSDTable();
   const status = document.getElementById('usdPushStatus');
   if(status){
-    status.textContent = `✓ $${newUSD} → R${usdProducts[i].zarPrice?.toLocaleString('en-ZA')||'?'} incl VAT — click ↑ Push to send to Wix`;
+    status.textContent = `✓ $${newUSD} → R${usdProducts[i].zarExclVAT?.toLocaleString('en-ZA')||'?'} excl VAT — click ↑ Push to send to Wix`;
     status.style.color = 'var(--accent2)';
   }
 }
@@ -2388,7 +2390,7 @@ function applyUSDBuffer(i){
   renderUSDTable();
   const status = document.getElementById('usdPushStatus');
   if(status){
-    status.textContent = `✓ Buffer updated to ${newBuf}% → R${usdProducts[i].zarPrice?.toLocaleString('en-ZA')||'?'} incl VAT`;
+    status.textContent = `✓ Buffer updated to ${newBuf}% → R${usdProducts[i].zarExclVAT?.toLocaleString('en-ZA')||'?'} excl VAT`;
     status.style.color = 'var(--accent2)';
   }
 }
@@ -2473,14 +2475,15 @@ function renderUSDTable(){
       <td style="font-family:var(--mono);font-size:10px;color:var(--muted2)">
         ${u.zarExclVAT?'R'+u.zarExclVAT.toLocaleString('en-ZA'):'—'}
       </td>
-      <td style="font-family:var(--mono);font-size:10px;color:var(--accent4)">
+      <td style="font-family:var(--mono);font-size:10px;color:var(--muted2)">
         ${u.vatAmount?'R'+u.vatAmount.toLocaleString('en-ZA'):'—'}
         ${u.vatUsed!=null?`<div style="font-size:8px;color:var(--muted)">${Math.round(u.vatUsed*100)}%</div>`:''}
       </td>
       <td>
         <span style="font-family:var(--cond);font-size:17px;font-weight:700;color:var(--accent2)">
-          ${u.zarPrice?'R'+u.zarPrice.toLocaleString('en-ZA'):'—'}
+          ${u.zarExclVAT?'R'+u.zarExclVAT.toLocaleString('en-ZA'):'—'}
         </span>
+        ${u.zarPrice?`<div style="font-family:var(--mono);font-size:8px;color:var(--muted)">incl: R${u.zarPrice.toLocaleString('en-ZA')}</div>`:''}
       </td>
       <td style="font-family:var(--mono);font-size:9px;color:var(--muted)">${u.lastPushed?new Date(u.lastPushed).toLocaleString('en-ZA'):'Never'}</td>
       <td style="display:flex;gap:4px">
@@ -2494,28 +2497,26 @@ function renderUSDTable(){
 async function pushSingleUSD(i){
   const u = usdProducts[i];
   if(!u || !u.wixId){ alert('No Wix ID linked. Paste the Wix Product ID first.'); return; }
-  if(!u.zarPrice){ alert('No ZAR price calculated. Fetch the live rate then click ✓ to apply.'); return; }
+  if(!u.zarExclVAT){ alert('No ZAR price calculated. Fetch the live rate then click ✓ to apply.'); return; }
   const status = document.getElementById('usdPushStatus');
-  const price = parseFloat(u.zarPrice.toFixed(2));
-  status.textContent = `Pushing R${price.toLocaleString('en-ZA')} for "${u.name.substring(0,30)}"...`;
+  const price = parseFloat(u.zarExclVAT.toFixed(2)); // excl VAT — Wix adds VAT at checkout
+  status.textContent = `Pushing R${price.toLocaleString('en-ZA')} excl VAT for "${u.name.substring(0,30)}"...`;
   status.style.color = 'var(--muted2)';
   try{
-    // Mirror saveWixPrice exactly — same action and payload that works in My Products tab
     await callRelay('updateProduct', {productId: u.wixId, product: {priceData: {price}}});
     u.lastPushed = new Date().toISOString();
     saveUSD();
-    status.textContent = `✓ R${price.toLocaleString('en-ZA')} pushed to Wix — "${u.name.substring(0,30)}"`;
+    status.textContent = `✓ R${price.toLocaleString('en-ZA')} excl VAT pushed to Wix — "${u.name.substring(0,30)}"`;
     status.style.color = 'var(--accent2)';
     renderUSDTable();
   }catch(e){
     status.textContent = `✗ ${e.message}`;
     status.style.color = 'var(--accent3)';
-    // If priceData fails, try top-level price field (older relay versions)
     try{
       await callRelay('updateProduct', {productId: u.wixId, product: {price: price.toString()}});
       u.lastPushed = new Date().toISOString();
       saveUSD();
-      status.textContent = `✓ R${price.toLocaleString('en-ZA')} pushed (legacy format)`;
+      status.textContent = `✓ R${price.toLocaleString('en-ZA')} excl VAT pushed (legacy format)`;
       status.style.color = 'var(--accent2)';
       renderUSDTable();
     }catch(e2){
@@ -2526,13 +2527,13 @@ async function pushSingleUSD(i){
 }
 
 async function pushSelectedUSDPrices(){
-  const toProcess=[...usdSelected].map(i=>({i,u:usdProducts[i]})).filter(({u})=>u&&u.wixId&&u.zarPrice);
+  const toProcess=[...usdSelected].map(i=>({i,u:usdProducts[i]})).filter(({u})=>u&&u.wixId&&u.zarExclVAT);
   if(!toProcess.length){ alert('Select products with Wix IDs and calculated ZAR prices.'); return; }
   const status=document.getElementById('usdPushStatus');
-  status.textContent=`Pushing ${toProcess.length} products...`; status.style.color='var(--muted2)';
+  status.textContent=`Pushing ${toProcess.length} products (excl VAT)...`; status.style.color='var(--muted2)';
   let done=0, errs=0, errMsgs=[];
   for(const {i,u} of toProcess){
-    const priceToSend = parseFloat(u.zarPrice.toFixed(2));
+    const priceToSend = parseFloat(u.zarExclVAT.toFixed(2)); // excl VAT — Wix adds VAT at checkout
     try{
       await callRelay('updateProduct',{productId:u.wixId, product:{priceData:{price: priceToSend}}});
       u.lastPushed=new Date().toISOString();
@@ -2552,10 +2553,10 @@ async function pushSelectedUSDPrices(){
 }
 
 async function pushAllUSDPrices(){
-  const all=usdProducts.filter(u=>u.wixId&&u.zarPrice);
+  const all=usdProducts.filter(u=>u.wixId&&u.zarExclVAT);
   if(!all.length){ alert('No products with Wix IDs linked. Link products first.'); return; }
-  if(!confirm(`Push updated ZAR prices for all ${all.length} USD-priced products to Wix?`)) return;
-  usdSelected=new Set(usdProducts.filter(u=>u.wixId&&u.zarPrice).map((_,i)=>i));
+  if(!confirm(`Push excl VAT ZAR prices for all ${all.length} USD-priced products to Wix?`)) return;
+  usdSelected=new Set(usdProducts.filter(u=>u.wixId&&u.zarExclVAT).map((_,i)=>i));
   await pushSelectedUSDPrices();
 }
 
@@ -3417,10 +3418,10 @@ function parseCSVLine(line) {
 function calcGarminPrice(p) {
   const basis = document.getElementById('garminPriceBasis')?.value || 'dealer';
   if (basis === 'list') return p.list;
-  const markup = parseFloat(document.getElementById('garminMarkup')?.value || 35) / 100;
-  const vat    = parseFloat(document.getElementById('garminVAT')?.value || 15) / 100;
+  const markup = parseFloat(document.getElementById('garminMarkup')?.value || 12) / 100;
   const round  = parseInt(document.getElementById('garminRounding')?.value || 10);
-  const raw = p.dealer * (1 + markup) * (1 + vat);
+  // Price stored in Wix = excl VAT (Wix adds VAT at checkout)
+  const raw = p.dealer * (1 + markup);
   if (round === 0) return Math.round(raw * 100) / 100;
   return Math.ceil(raw / round) * round;
 }
@@ -3523,7 +3524,7 @@ function renderGarminCategories() {
               <th style="width:32px;padding:6px 8px;font-family:var(--mono);font-size:8px;color:var(--muted);text-align:center;border-bottom:1px solid var(--border)">✓</th>
               <th style="padding:6px 8px;font-family:var(--mono);font-size:8px;color:var(--muted);text-align:left;border-bottom:1px solid var(--border)">Product</th>
               <th style="width:90px;padding:6px 8px;font-family:var(--mono);font-size:8px;color:var(--muted);text-align:right;border-bottom:1px solid var(--border)">Dealer</th>
-              <th style="width:100px;padding:6px 8px;font-family:var(--mono);font-size:8px;color:var(--muted);text-align:right;border-bottom:1px solid var(--border)">Your Price</th>
+              <th style="width:100px;padding:6px 8px;font-family:var(--mono);font-size:8px;color:var(--muted);text-align:right;border-bottom:1px solid var(--border)">Excl VAT → Wix</th>
               <th style="width:80px;padding:6px 8px;font-family:var(--mono);font-size:8px;color:var(--muted);text-align:center;border-bottom:1px solid var(--border)">Stock</th>
               <th style="width:60px;padding:6px 8px;font-family:var(--mono);font-size:8px;color:var(--muted);text-align:center;border-bottom:1px solid var(--border)">Wix</th>
               <th style="width:24px;padding:6px 8px;border-bottom:1px solid var(--border)"></th>
@@ -3532,7 +3533,7 @@ function renderGarminCategories() {
           <tbody>
             ${prods.map(p => {
               const price = calcGarminPrice(p);
-              const margin = p.dealer > 0 ? Math.round(((price / (1 + parseFloat(document.getElementById('garminVAT')?.value||15)/100) - p.dealer) / p.dealer) * 100) : 0;
+              const margin = p.dealer > 0 ? Math.round(((price - p.dealer) / p.dealer) * 100) : 0;
               const isSel = garminSelected.has(p.sku);
               return `<tr id="grow-${p.sku.replace(/[^a-z0-9]/gi,'_')}"
                 style="background:${isSel ? 'rgba(0,180,255,.06)' : 'var(--surface)'};cursor:pointer;border-bottom:1px solid var(--border)"
@@ -3549,7 +3550,9 @@ function renderGarminCategories() {
                 <td style="text-align:right;padding:7px 8px;font-family:var(--mono);font-size:11px;color:var(--muted2)">R${p.dealer.toLocaleString('en-ZA')}</td>
                 <td style="text-align:right;padding:7px 8px">
                   <div style="font-family:var(--cond);font-size:15px;font-weight:700;color:var(--accent2)">R${price.toLocaleString('en-ZA')}</div>
-                  <div style="font-family:var(--mono);font-size:8px;color:${margin>30?'var(--accent2)':margin>15?'var(--accent4)':'var(--accent3)'}">+${margin}%</div>
+                  <div style="font-family:var(--mono);font-size:8px;color:var(--muted)">excl VAT → Wix</div>
+                  <div style="font-family:var(--mono);font-size:8px;color:var(--muted2)">incl: R${Math.round(price*(1+(parseFloat(document.getElementById('garminVAT')?.value||15)/100))).toLocaleString('en-ZA')}</div>
+                  <div style="font-family:var(--mono);font-size:8px;color:${margin>20?'var(--accent2)':margin>10?'var(--accent4)':'var(--accent3)'}">+${margin}% on dealer</div>
                 </td>
                 <td style="text-align:center;padding:7px 8px">
                   <span class="schip ${p.instock ? 'g' : 'r'}" style="font-size:8px">${p.instock ? '✓ Avail' : '✗ OOS'}</span>
@@ -3650,6 +3653,8 @@ function renderGarminSelectionPanel() {
     byCat[p.category].push(p);
   });
   const totalValue = selected.reduce((s,p) => s + calcGarminPrice(p), 0);
+  const vatRate = parseFloat(document.getElementById('garminVAT')?.value || 15) / 100;
+  const totalInclVAT = Math.round(totalValue * (1 + vatRate));
 
   // Check which selected products are already on Wix
   const pub = JSON.parse(localStorage.getItem('sc_pub') || '[]');
@@ -3661,9 +3666,19 @@ function renderGarminSelectionPanel() {
 
   panel.innerHTML = `
     <!-- Stats row -->
-    <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between">
-      <span>${selected.length} product${selected.length!==1?'s':''}</span>
-      <span style="color:var(--accent2)">R${totalValue.toLocaleString('en-ZA')}</span>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span>${selected.length} product${selected.length!==1?'s':''}</span>
+        <span style="color:var(--muted2)">excl VAT</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="color:var(--accent2);font-size:13px;font-weight:700">R${totalValue.toLocaleString('en-ZA')}</span>
+        <span style="color:var(--accent2);font-size:13px;font-weight:700">→ Wix price</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:3px;margin-top:3px">
+        <span style="color:var(--muted2)">incl VAT (${Math.round(vatRate*100)}%)</span>
+        <span style="color:var(--accent)">R${totalInclVAT.toLocaleString('en-ZA')}</span>
+      </div>
     </div>
 
     <!-- Product list -->
@@ -3899,7 +3914,7 @@ function detectGarminPriceChanges(prevSnapshot, newSnapshot) {
   document.getElementById('garminPriceReportSummary').textContent =
     `${changes.length} changes — ${increases} up · ${decreases} down · ${onWixCount} on Wix`;
 
-  const markup = parseFloat(document.getElementById('garminMarkup')?.value || 35) / 100;
+  const markup = parseFloat(document.getElementById('garminMarkup')?.value || 12) / 100;
   const vat    = parseFloat(document.getElementById('garminVAT')?.value || 15) / 100;
   const round  = parseInt(document.getElementById('garminRounding')?.value || 10);
 
@@ -3943,7 +3958,7 @@ async function pushGarminPriceUpdates() {
   const changes = (window._garminPriceChanges || []).filter(c => c.onWix && c.wixId);
   if (!changes.length) { alert('No published Wix products to update.'); return; }
 
-  const markup = parseFloat(document.getElementById('garminMarkup')?.value || 35) / 100;
+  const markup = parseFloat(document.getElementById('garminMarkup')?.value || 12) / 100;
   const vat    = parseFloat(document.getElementById('garminVAT')?.value || 15) / 100;
   const round  = parseInt(document.getElementById('garminRounding')?.value || 10);
   const calcRetail = (dealer) => {
@@ -4013,7 +4028,7 @@ async function publishGarminToWix() {
   if (!prods.length) { alert('Select products first.'); return; }
   if (!confirm(`Publish ${prods.length} Garmin product${prods.length!==1?'s':''} to satcomms.co.za?`)) return;
   const defCtx = document.getElementById('defaultAiContext')?.value?.trim() || '';
-  const markup = parseFloat(document.getElementById('garminMarkup')?.value || 35);
+  const markup = parseFloat(document.getElementById('garminMarkup')?.value || 12);
   let done=0, errs=0;
   document.getElementById('garminBulkInfo').textContent = `Publishing 0/${prods.length}...`;
   for (const p of prods) {
@@ -4187,15 +4202,15 @@ async function runAutoPricing(){
   logAuto(`✓ Rate: $1 = R${liveUSDRate.toFixed(2)}`);
   // 2. Recalc all products
   recalcAllUSD();
-  // 3. Push each to Wix
+  // 3. Push each to Wix (excl VAT — Wix adds VAT at checkout)
   let done = 0, errs = 0;
   for(const u of products){
-    const price = parseFloat(u.zarPrice.toFixed(2));
+    const price = parseFloat((u.zarExclVAT || u.zarPrice).toFixed(2));
     try{
       await callRelay('updateProduct', {productId: u.wixId, product: {priceData: {price}}});
       u.lastPushed = new Date().toISOString();
       done++;
-      logAuto(`✓ ${u.name.substring(0,35)} → R${price.toLocaleString('en-ZA')}`);
+      logAuto(`✓ ${u.name.substring(0,35)} → R${price.toLocaleString('en-ZA')} excl VAT`);
     }catch(e){
       errs++;
       logAuto(`✗ ${u.name.substring(0,35)}: ${e.message}`, 'err');
