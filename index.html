@@ -3601,7 +3601,12 @@ function renderGarminCategories() {
                 </td>
                 <td style="text-align:center;padding:7px 8px">
                   ${(()=>{
-                    const wp = wixProducts.find(w => w.sku === p.sku || (w.name||'').toLowerCase() === p.name.toLowerCase());
+                    const wp = wixProducts.find(w => {
+                      if (p.sku && w.sku && w.sku.toLowerCase() === p.sku.toLowerCase()) return true;
+                      if (p.sku && w.variantSkus && w.variantSkus.some(v => v.sku && v.sku.toLowerCase() === p.sku.toLowerCase())) return true;
+                      if ((w.name||'').toLowerCase().trim() === p.name.toLowerCase().trim()) return true;
+                      return false;
+                    });
                     if (wp) return `<span title="On Wix — R${(wp.priceData?.price||wp.price||0).toLocaleString('en-ZA')} · ${wp.visible!==false?'Visible':'Hidden'}" style="font-family:var(--mono);font-size:8px;font-weight:700;color:#000;background:var(--accent2);padding:2px 6px;border-radius:2px;cursor:default">WIX</span>`;
                     return `<span style="font-family:var(--mono);font-size:8px;color:var(--muted);padding:2px 6px">—</span>`;
                   })()}
@@ -4990,20 +4995,32 @@ function gViewSwitch(view) {
   }
 }
 
+// Shared helper — match a CSV garmin product against all wix products
+// Checks: 1) top-level SKU, 2) variant SKUs, 3) product name
+function findWixProductForGarmin(garminProduct) {
+  if (!wixProducts.length) return null;
+  const csvSku  = (garminProduct.sku || '').toLowerCase().trim();
+  const csvName = (garminProduct.name || '').toLowerCase().trim();
+  return wixProducts.find(w => {
+    if (csvSku && w.sku && w.sku.toLowerCase().trim() === csvSku) return true;
+    if (csvSku && w.variantSkus) {
+      if (w.variantSkus.some(v => v.sku && v.sku.toLowerCase().trim() === csvSku)) return true;
+    }
+    if (csvName && (w.name||'').toLowerCase().trim() === csvName) return true;
+    return false;
+  }) || null;
+}
+
 async function gWixCompLoad() {
   const tableEl = document.getElementById('gWixCompTable');
   if (!garminProducts.length) { tableEl.innerHTML = '<div style="padding:30px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--accent3)">⚠ Load a Garmin CSV first</div>'; return; }
   tableEl.innerHTML = '<div style="padding:30px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted2)">⏳ Loading Wix products...</div>';
   try {
     if (!wixProducts.length) await loadMyWixProducts();
-    // Build SKU + name lookup from Wix
-    const wixBySku  = new Map(wixProducts.filter(p => p.sku).map(p => [p.sku.trim().toLowerCase(), p]));
-    const wixByName = new Map(wixProducts.map(p => [(p.name||'').toLowerCase().trim(), p]));
 
     gWixCompData = garminProducts.map(p => {
       const csvPrice = calcGarminPrice(p); // excl VAT
-      // Try match by SKU first, then name
-      const wp = wixBySku.get((p.sku||'').toLowerCase()) || wixByName.get(p.name.toLowerCase().trim()) || null;
+      const wp = findWixProductForGarmin(p);
       const wixPrice = wp ? parseFloat(wp.priceData?.price || wp.price || 0) : null;
       const diff = (wp && wixPrice !== null) ? parseFloat((csvPrice - wixPrice).toFixed(2)) : null;
       const pctDiff = (wp && wixPrice > 0 && diff !== null) ? (diff / wixPrice * 100) : null;
