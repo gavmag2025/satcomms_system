@@ -534,25 +534,67 @@ select option{background:var(--surface2)}
     </div>
 
     <!-- TWO-COLUMN LAYOUT: CATEGORIES LEFT, SELECTION SUMMARY RIGHT -->
-    <div style="display:grid;grid-template-columns:1fr 320px;gap:12px;align-items:start">
+    <!-- WIX PRICE COMPARISON TAB SWITCHER -->
+    <div style="display:flex;gap:0;margin-bottom:0;border-bottom:2px solid var(--border2)">
+      <div id="gview-tab-browse" onclick="gViewSwitch('browse')"
+        style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:10px 20px;cursor:pointer;color:var(--accent);border-bottom:2px solid var(--accent);margin-bottom:-2px;background:rgba(0,180,255,.04)">
+        📋 Product Browser
+      </div>
+      <div id="gview-tab-wix" onclick="gViewSwitch('wix')"
+        style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:10px 20px;cursor:pointer;color:var(--muted2);border-bottom:2px solid transparent;margin-bottom:-2px">
+        🔄 Wix Price Comparison <span id="gview-wix-badge" style="display:none;background:var(--accent4);color:#000;font-size:8px;font-weight:700;padding:1px 6px;border-radius:2px;margin-left:6px">0 diffs</span>
+      </div>
+    </div>
 
-      <!-- LEFT: CATEGORY BROWSER -->
-      <div id="garminCategoryBrowser"></div>
+    <!-- BROWSER VIEW (existing) -->
+    <div id="gview-browse">
+      <div style="display:grid;grid-template-columns:1fr 320px;gap:12px;align-items:start">
 
-      <!-- RIGHT: SELECTION SUMMARY -->
-      <div style="position:sticky;top:70px">
-        <div style="background:var(--surface);border:1px solid var(--border2);padding:0">
-          <div style="background:var(--surface2);border-bottom:1px solid var(--border2);padding:10px 14px;font-family:var(--cond);font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--accent)">
-            SELECTION SUMMARY
-          </div>
-          <div id="garminSelectionPanel" style="padding:12px;max-height:600px;overflow-y:auto">
-            <div style="font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;padding:20px 0">
-              No products selected yet.<br>Browse categories and tick products.
+        <!-- LEFT: CATEGORY BROWSER -->
+        <div id="garminCategoryBrowser"></div>
+
+        <!-- RIGHT: SELECTION SUMMARY -->
+        <div style="position:sticky;top:70px">
+          <div style="background:var(--surface);border:1px solid var(--border2);padding:0">
+            <div style="background:var(--surface2);border-bottom:1px solid var(--border2);padding:10px 14px;font-family:var(--cond);font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--accent)">
+              SELECTION SUMMARY
+            </div>
+            <div id="garminSelectionPanel" style="padding:12px;max-height:600px;overflow-y:auto">
+              <div style="font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;padding:20px 0">
+                No products selected yet.<br>Browse categories and tick products.
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
+      </div>
+    </div>
+
+    <!-- WIX COMPARISON VIEW (new) -->
+    <div id="gview-wix" style="display:none">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 0">
+        <button class="btn btn-primary btn-sm" onclick="gWixCompLoad()">↻ Load / Refresh Wix Prices</button>
+        <button class="btn btn-success btn-sm" onclick="gWixCompPushAll()" id="gWixPushAllBtn" style="display:none">🚀 Push All Price Updates to Wix</button>
+        <button class="btn btn-ghost btn-sm" onclick="gWixCompPushSelected()" id="gWixPushSelBtn" style="display:none">↑ Push Selected</button>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+          <input type="text" id="gWixSearch" placeholder="Filter by name or SKU..." style="width:220px;font-size:11px" oninput="gWixCompRender()">
+          <select id="gWixFilter" onchange="gWixCompRender()" style="font-family:var(--mono);font-size:10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:var(--radius)">
+            <option value="all">All products</option>
+            <option value="onwix">On Wix only</option>
+            <option value="diff">Price differs</option>
+            <option value="notwix">Not on Wix</option>
+          </select>
+        </div>
+      </div>
+      <div id="gWixProgressWrap" style="display:none;background:var(--surface);border:1px solid var(--border);padding:10px 16px;margin-bottom:8px">
+        <div id="gWixProgressText" style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:4px">Pushing...</div>
+        <div style="background:var(--surface2);border-radius:2px;height:3px;overflow:hidden"><div id="gWixProgressFill" style="height:3px;background:var(--accent);width:0%;transition:width .3s"></div></div>
+      </div>
+      <div id="gWixCompTable">
+        <div style="padding:40px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted2)">
+          Click "↻ Load / Refresh Wix Prices" to compare CSV prices against live Wix catalogue
+        </div>
+      </div>
     </div>
   </div>
 
@@ -4923,6 +4965,232 @@ async function pricingPushAll() {
   progressText.textContent = `✓ Done — ${done} updated${errors ? ', ' + errors + ' failed' : ''}`;
   setTimeout(() => { progressWrap.style.display = 'none'; }, 4000);
   pricingRender();
+}
+
+// ─────────────────────────────────────────────────────────────
+// GARMIN TAB — WIX PRICE COMPARISON VIEW
+// ─────────────────────────────────────────────────────────────
+let gWixCompData = []; // [{sku, name, csvPrice, wixPrice, wixId, wixVisible, diff, pctDiff, selected}]
+
+function gViewSwitch(view) {
+  const browseEl = document.getElementById('gview-browse');
+  const wixEl    = document.getElementById('gview-wix');
+  const browseTab = document.getElementById('gview-tab-browse');
+  const wixTab    = document.getElementById('gview-tab-wix');
+  if (!browseEl || !wixEl) return;
+  if (view === 'browse') {
+    browseEl.style.display = 'block'; wixEl.style.display = 'none';
+    browseTab.style.color = 'var(--accent)'; browseTab.style.borderBottomColor = 'var(--accent)'; browseTab.style.background = 'rgba(0,180,255,.04)';
+    wixTab.style.color = 'var(--muted2)'; wixTab.style.borderBottomColor = 'transparent'; wixTab.style.background = 'transparent';
+  } else {
+    browseEl.style.display = 'none'; wixEl.style.display = 'block';
+    wixTab.style.color = 'var(--accent)'; wixTab.style.borderBottomColor = 'var(--accent)'; wixTab.style.background = 'rgba(0,180,255,.04)';
+    browseTab.style.color = 'var(--muted2)'; browseTab.style.borderBottomColor = 'transparent'; browseTab.style.background = 'transparent';
+    if (!gWixCompData.length) gWixCompLoad();
+  }
+}
+
+async function gWixCompLoad() {
+  const tableEl = document.getElementById('gWixCompTable');
+  if (!garminProducts.length) { tableEl.innerHTML = '<div style="padding:30px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--accent3)">⚠ Load a Garmin CSV first</div>'; return; }
+  tableEl.innerHTML = '<div style="padding:30px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted2)">⏳ Loading Wix products...</div>';
+  try {
+    if (!wixProducts.length) await loadMyWixProducts();
+    // Build SKU + name lookup from Wix
+    const wixBySku  = new Map(wixProducts.filter(p => p.sku).map(p => [p.sku.trim().toLowerCase(), p]));
+    const wixByName = new Map(wixProducts.map(p => [(p.name||'').toLowerCase().trim(), p]));
+
+    gWixCompData = garminProducts.map(p => {
+      const csvPrice = calcGarminPrice(p); // excl VAT
+      // Try match by SKU first, then name
+      const wp = wixBySku.get((p.sku||'').toLowerCase()) || wixByName.get(p.name.toLowerCase().trim()) || null;
+      const wixPrice = wp ? parseFloat(wp.priceData?.price || wp.price || 0) : null;
+      const diff = (wp && wixPrice !== null) ? parseFloat((csvPrice - wixPrice).toFixed(2)) : null;
+      const pctDiff = (wp && wixPrice > 0 && diff !== null) ? (diff / wixPrice * 100) : null;
+      return {
+        sku: p.sku || '',
+        name: p.name,
+        dealer: p.dealer,
+        csvPrice,
+        wixPrice,
+        wixId: wp?.id || null,
+        wixVisible: wp?.visible !== false,
+        diff,
+        pctDiff,
+        onWix: !!wp,
+        selected: false
+      };
+    });
+
+    // Update badge
+    const diffs = gWixCompData.filter(p => p.onWix && p.diff !== null && Math.abs(p.diff) > 0.5);
+    const badge = document.getElementById('gview-wix-badge');
+    if (badge) {
+      badge.style.display = diffs.length ? 'inline' : 'none';
+      badge.textContent = diffs.length + ' diff' + (diffs.length !== 1 ? 's' : '');
+    }
+    gWixCompRender();
+  } catch(e) {
+    tableEl.innerHTML = `<div style="padding:30px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--accent3)">⚠ ${e.message}</div>`;
+  }
+}
+
+function gWixCompRender() {
+  const tableEl = document.getElementById('gWixCompTable');
+  if (!gWixCompData.length) return;
+  const search = (document.getElementById('gWixSearch')?.value || '').toLowerCase();
+  const filter = document.getElementById('gWixFilter')?.value || 'all';
+  const vatRate = parseFloat(document.getElementById('garminVAT')?.value || 15) / 100;
+
+  let data = gWixCompData.filter(p => {
+    if (search && !p.name.toLowerCase().includes(search) && !p.sku.toLowerCase().includes(search)) return false;
+    if (filter === 'onwix'  && !p.onWix) return false;
+    if (filter === 'notwix' && p.onWix)  return false;
+    if (filter === 'diff'   && (!p.onWix || Math.abs(p.diff||0) < 0.5)) return false;
+    return true;
+  });
+
+  const withDiffs = data.filter(p => p.onWix && Math.abs(p.diff||0) > 0.5);
+  const pushAllBtn = document.getElementById('gWixPushAllBtn');
+  const pushSelBtn = document.getElementById('gWixPushSelBtn');
+  if (pushAllBtn) pushAllBtn.style.display = withDiffs.length ? 'inline-flex' : 'none';
+  if (pushAllBtn) pushAllBtn.textContent = `🚀 Push All ${withDiffs.length} Price Updates to Wix`;
+
+  if (!data.length) {
+    tableEl.innerHTML = '<div style="padding:30px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted2)">No products match filter</div>';
+    return;
+  }
+
+  // Sort: price diffs first, then not-on-wix, then matching
+  data.sort((a, b) => {
+    const ad = Math.abs(a.diff || 0), bd = Math.abs(b.diff || 0);
+    if (bd !== ad) return bd - ad;
+    if (a.onWix !== b.onWix) return b.onWix ? 1 : -1;
+    return a.name.localeCompare(b.name);
+  });
+
+  const rows = data.map((p, idx) => {
+    const csvInclVAT = Math.round(p.csvPrice * (1 + vatRate) * 100) / 100;
+    const hasDiff = p.onWix && p.diff !== null && Math.abs(p.diff) > 0.5;
+    const diffUp = p.diff > 0, diffDown = p.diff < 0;
+    const diffColor = hasDiff ? (diffUp ? 'var(--accent2)' : 'var(--accent3)') : 'var(--muted)';
+    const rowBg = hasDiff ? 'rgba(0,180,255,.03)' : 'transparent';
+    const diffStr = hasDiff
+      ? `<span style="color:${diffColor};font-weight:700">${diffUp ? '▲' : '▼'} R${Math.abs(p.diff).toFixed(2)} (${Math.abs(p.pctDiff).toFixed(1)}%)</span>`
+      : p.onWix ? '<span style="color:var(--muted2)">✓ matches</span>' : '—';
+
+    return `<tr style="border-bottom:1px solid var(--border);background:${rowBg}" id="gwr-${idx}">
+      <td style="padding:8px 10px;text-align:center;width:32px">
+        ${p.onWix && hasDiff ? `<input type="checkbox" onchange="gWixToggleSel(${idx},this.checked)" title="Select for push" style="cursor:pointer">` : ''}
+      </td>
+      <td style="padding:8px 12px;max-width:260px">
+        <div style="font-size:12px;color:var(--text);font-weight:${hasDiff?'600':'400'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.name}">${p.name}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:1px">${p.sku || '—'}</div>
+      </td>
+      <td style="padding:8px 12px;text-align:right">
+        <div style="font-family:var(--cond);font-size:16px;font-weight:700;color:var(--accent2)">R ${p.csvPrice.toFixed(2)}</div>
+        <div style="font-family:var(--mono);font-size:8px;color:var(--muted2)">excl VAT → Wix</div>
+        <div style="font-family:var(--mono);font-size:8px;color:var(--muted)">incl: R ${csvInclVAT.toFixed(2)}</div>
+      </td>
+      <td style="padding:8px 12px;text-align:right">
+        ${p.onWix
+          ? `<div style="font-family:var(--cond);font-size:16px;font-weight:700;color:${hasDiff?'var(--accent4)':'var(--muted2)'}">R ${(p.wixPrice||0).toFixed(2)}</div>
+             <div style="font-family:var(--mono);font-size:8px;color:var(--muted2)">${p.wixVisible ? '👁 visible' : '🚫 hidden'}</div>`
+          : `<span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Not on Wix</span>`}
+      </td>
+      <td style="padding:8px 12px;text-align:center;min-width:130px">${diffStr}</td>
+      <td style="padding:8px 10px;text-align:center;width:80px">
+        ${p.onWix
+          ? `<button class="btn btn-primary btn-sm" style="font-size:9px;padding:3px 8px" onclick="gWixPushOne(${idx})">↑ Update</button>`
+          : `<span style="font-family:var(--mono);font-size:9px;color:var(--muted)">—</span>`}
+      </td>
+    </tr>`;
+  }).join('');
+
+  const onWixCount = data.filter(p => p.onWix).length;
+  const diffCount = data.filter(p => p.onWix && Math.abs(p.diff||0) > 0.5).length;
+  const notOnWix = data.filter(p => !p.onWix).length;
+
+  tableEl.innerHTML = `
+    <div style="display:flex;gap:16px;padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:10px;flex-wrap:wrap">
+      <span>Showing <b style="color:var(--accent)">${data.length}</b> products</span>
+      <span>On Wix: <b style="color:var(--accent2)">${onWixCount}</b></span>
+      <span>Price differs: <b style="color:var(--accent4)">${diffCount}</b></span>
+      <span>Not on Wix: <b style="color:var(--muted2)">${notOnWix}</b></span>
+    </div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
+      <thead><tr style="background:var(--surface2);border-bottom:1px solid var(--border2)">
+        <th style="width:32px;padding:8px 10px"></th>
+        <th style="padding:8px 12px;font-family:var(--mono);font-size:8px;color:var(--muted2);text-align:left;text-transform:uppercase;letter-spacing:.08em">Product</th>
+        <th style="padding:8px 12px;font-family:var(--mono);font-size:8px;color:var(--muted2);text-align:right;text-transform:uppercase;letter-spacing:.08em">CSV Price (new)</th>
+        <th style="padding:8px 12px;font-family:var(--mono);font-size:8px;color:var(--muted2);text-align:right;text-transform:uppercase;letter-spacing:.08em">Current Wix Price</th>
+        <th style="padding:8px 12px;font-family:var(--mono);font-size:8px;color:var(--muted2);text-align:center;text-transform:uppercase;letter-spacing:.08em">Difference</th>
+        <th style="padding:8px 10px;width:80px"></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+function gWixToggleSel(idx, checked) {
+  if (gWixCompData[idx]) gWixCompData[idx].selected = checked;
+  const selCount = gWixCompData.filter(p => p.selected).length;
+  const btn = document.getElementById('gWixPushSelBtn');
+  if (btn) { btn.style.display = selCount ? 'inline-flex' : 'none'; btn.textContent = `↑ Push Selected (${selCount})`; }
+}
+
+async function gWixPushOne(idx) {
+  const p = gWixCompData[idx];
+  if (!p || !p.wixId) return;
+  try {
+    await callRelay('updateProduct', { productId: p.wixId, product: { price: p.csvPrice } });
+    p.wixPrice = p.csvPrice; p.diff = 0; p.pctDiff = 0;
+    // Update wixProducts cache
+    const wp = wixProducts.find(x => x.id === p.wixId);
+    if (wp) { if (!wp.priceData) wp.priceData = {}; wp.priceData.price = p.csvPrice; }
+    gWixCompRender();
+  } catch(e) { alert('Push failed: ' + e.message); }
+}
+
+async function gWixCompPushAll() {
+  const toUpdate = gWixCompData.filter(p => p.onWix && p.wixId && Math.abs(p.diff||0) > 0.5);
+  if (!toUpdate.length) return;
+  if (!confirm(`Push ${toUpdate.length} price updates to Wix?`)) return;
+  const progressWrap = document.getElementById('gWixProgressWrap');
+  const progressFill = document.getElementById('gWixProgressFill');
+  const progressText = document.getElementById('gWixProgressText');
+  progressWrap.style.display = 'block';
+  let done = 0, errors = 0;
+  for (const p of toUpdate) {
+    progressText.textContent = `Updating ${done+1}/${toUpdate.length}: ${p.name.substring(0,40)}...`;
+    progressFill.style.width = Math.round((done / toUpdate.length) * 100) + '%';
+    try {
+      await callRelay('updateProduct', { productId: p.wixId, product: { price: p.csvPrice } });
+      const wp = wixProducts.find(x => x.id === p.wixId);
+      if (wp) { if (!wp.priceData) wp.priceData = {}; wp.priceData.price = p.csvPrice; }
+      p.wixPrice = p.csvPrice; p.diff = 0; p.pctDiff = 0;
+      done++;
+    } catch(e) { errors++; console.warn('Push failed:', p.name, e.message); }
+    await new Promise(r => setTimeout(r, 300));
+  }
+  progressFill.style.width = '100%';
+  progressText.textContent = `✓ Done — ${done} updated${errors ? ', ' + errors + ' failed' : ''}`;
+  setTimeout(() => { progressWrap.style.display = 'none'; }, 3000);
+  gWixCompRender();
+}
+
+async function gWixCompPushSelected() {
+  const toUpdate = gWixCompData.filter(p => p.selected && p.wixId);
+  if (!toUpdate.length) return;
+  if (!confirm(`Push ${toUpdate.length} selected price updates to Wix?`)) return;
+  for (const p of toUpdate) {
+    try {
+      await callRelay('updateProduct', { productId: p.wixId, product: { price: p.csvPrice } });
+      const wp = wixProducts.find(x => x.id === p.wixId);
+      if (wp) { if (!wp.priceData) wp.priceData = {}; wp.priceData.price = p.csvPrice; }
+      p.wixPrice = p.csvPrice; p.diff = 0; p.pctDiff = 0; p.selected = false;
+    } catch(e) { console.warn('Push failed:', p.name, e.message); }
+  }
+  gWixCompRender();
 }
 
 </script>
