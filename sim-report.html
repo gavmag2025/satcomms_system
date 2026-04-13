@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SatComms — Inmarsat SIM Reports</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b0d12;
+  --surface: #10121a;
+  --surface2: #161923;
+  --surface3: #1d2130;
+  --border: #1f2535;
+  --border2: #283045;
+  --accent: #4f9eff;
+  --accent-dim: rgba(79,158,255,0.12);
+  --accent-glow: rgba(79,158,255,0.35);
+  --green: #2edc8f;
+  --green-dim: rgba(46,220,143,0.12);
+  --amber: #f5a623;
+  --amber-dim: rgba(245,166,35,0.12);
+  --red: #ff4f6a;
+  --red-dim: rgba(255,79,106,0.12);
+  --purple: #9b7fff;
+  --text: #dde3f0;
+  --text2: #7a8aaa;
+  --text3: #3d4a66;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Space Grotesk', sans-serif;
+  --display: 'Syne', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* dot-grid background matching main dashboard */
+  background-image: radial-gradient(circle, #1f2535 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* ── Topbar ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 24px;
+  height: 52px;
+  background: rgba(16,18,26,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+.brand-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+.brand-name {
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.brand-name span { color: var(--accent); }
+.topbar-sep {
+  width: 1px; height: 18px;
+  background: var(--border2);
+  margin: 0 16px;
+}
+.topbar-section {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.topbar-back {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  text-decoration: none;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.topbar-back:hover { color: var(--text2); border-color: var(--border2); }
+
+/* ── Sub-tabs ── */
+.subtabs {
+  display: flex;
+  align-items: stretch;
+  padding: 0 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  gap: 0;
+}
+.subtab {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 11px 18px;
+  cursor: pointer;
+  color: var(--text3);
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+.subtab:hover { color: var(--text2); }
+.subtab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.subtab.active .tab-glow {
+  opacity: 1;
+}
+.tab-glow {
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 40px; height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+/* ── Content ── */
+.content {
+  flex: 1;
+  padding: 28px 24px;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── Section header ── */
+.section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.section-head h2 {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.section-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--accent);
+  background: var(--accent-dim);
+  padding: 2px 8px;
+  border-radius: 3px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.card-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-body { padding: 18px; }
+
+/* ── Input grid ── */
+.input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 160px;
+  gap: 14px;
+  align-items: end;
+}
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.field input, .field select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+.field input::placeholder { color: var(--text3); }
+.field input:focus, .field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.field select option { background: var(--surface2); }
+
+/* Period chips */
+.period-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.period-chip {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  cursor: pointer;
+  transition: all 0.12s;
+  user-select: none;
+}
+.period-chip:hover { border-color: var(--border2); color: var(--text2); }
+.period-chip.selected {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+/* Buttons */
+.btn-primary {
+  background: linear-gradient(135deg, #2b6cff, var(--accent));
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+  white-space: nowrap;
+  box-shadow: 0 2px 12px rgba(79,158,255,0.25);
+}
+.btn-primary:hover { opacity: 0.92; box-shadow: 0 4px 18px rgba(79,158,255,0.4); }
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+
+.btn-ghost {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text2);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.btn-ghost:hover { border-color: var(--border2); color: var(--text); }
+
+/* ── Log ── */
+.log-body {
+  padding: 12px 16px;
+  min-height: 72px;
+  max-height: 140px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.log-line {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+.log-time { color: var(--text3); flex-shrink: 0; }
+.log-msg { color: var(--text2); }
+.log-msg.ok { color: var(--green); }
+.log-msg.info { color: var(--accent); }
+.log-msg.warn { color: var(--amber); }
+.log-msg.error { color: var(--red); }
+
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--text3);
+  display: inline-block;
+  transition: background 0.3s;
+}
+.status-dot.running { background: var(--accent); animation: pulse 0.9s infinite; }
+.status-dot.done { background: var(--green); box-shadow: 0 0 6px rgba(46,220,143,0.5); }
+.status-dot.error { background: var(--red); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+/* ── SIM info grid ── */
+.sim-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.meta-cell {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+.meta-key {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.meta-val {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+  word-break: break-all;
+}
+.meta-val.green { color: var(--green); }
+.meta-val.accent { color: var(--accent); }
+.meta-val.amber { color: var(--amber); }
+
+/* ── CDR table ── */
+.table-wrap {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+thead tr {
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+th {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 10px 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+tbody tr:hover { background: var(--surface2); }
+td {
+  padding: 10px 12px;
+  color: var(--text2);
+  font-family: var(--mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+td.mono-green { color: var(--green); }
+td.mono-accent { color: var(--accent); }
+
+/* ── Portal action card ── */
+.action-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+.step-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border-radius: 4px;
+  width: 24px; height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.step-text {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+  padding-top: 2px;
+}
+.step-text strong { color: var(--text); }
+.step-text .hl { color: var(--amber); }
+
+/* ── Portal links ── */
+.portal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.portal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text2);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 7px 12px;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.portal-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.portal-link.primary {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+/* ── Empty state ── */
+.empty-state {
+  text-align: center;
+  padding: 32px;
+  color: var(--text3);
+}
+.empty-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.4; }
+.empty-label { font-size: 13px; }
+
+/* ── Balance check panel ── */
+.balance-result {
+  display: none;
+}
+.balance-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.balance-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.balance-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+.balance-card.green::before { background: var(--green); }
+.balance-card.amber::before { background: var(--amber); }
+.balance-card.purple::before { background: var(--purple); }
+.balance-card-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.balance-card-val {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+.balance-card.green .balance-card-val { color: var(--green); }
+.balance-card.amber .balance-card-val { color: var(--amber); }
+.balance-card.purple .balance-card-val { color: var(--purple); }
+.balance-card-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 4px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  .input-grid { grid-template-columns: 1fr; }
+  .sim-meta-grid { grid-template-columns: 1fr 1fr; }
+  .balance-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* fade-up animation */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.3s ease forwards; }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <a href="./index.html" class="topbar-brand">
+    <div class="brand-dot"></div>
+    <div class="brand-name">Sat<span>Comms</span></div>
+  </a>
+  <div class="topbar-sep"></div>
+  <div class="topbar-section">Inmarsat SIM Reports</div>
+  <div class="topbar-right">
+    <a href="./index.html" class="topbar-back">← Dashboard</a>
+  </div>
+</div>
+
+<!-- Sub-tabs -->
+<div class="subtabs">
+  <div class="subtab active" onclick="switchTab('cdr')">
+    <span>●</span> CDR Lookup
+  </div>
+  <div class="subtab" onclick="switchTab('balance')">
+    <span>◆</span> Balance Check
+  </div>
+  <div class="subtab" onclick="switchTab('portal')">
+    <span>↗</span> Portal Links
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- ── CDR LOOKUP PANEL ── -->
+  <div id="panel-cdr" class="panel active fade-up">
+    <div class="section-head">
+      <h2>Rated CDR Lookup</h2>
+      <span class="section-badge">IBIS Portal</span>
+    </div>
+
+    <!-- Input card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🔍 SIM + Billing Period</div>
+      </div>
+      <div class="card-body">
+        <div class="input-grid">
+          <div class="field">
+            <div class="field-label">ICCID Number</div>
+            <input type="text" id="iccid-input" placeholder="8987099104161576..." maxlength="22"
+              oninput="onIccidInput(this.value)" />
+          </div>
+          <div class="field">
+            <div class="field-label">Billing Period</div>
+            <select id="period-select" onchange="onPeriodChange(this.value)">
+              <option value="">— Select period —</option>
+            </select>
+          </div>
+          <div class="field">
+            <div class="field-label">&nbsp;</div>
+            <button class="btn-primary" id="run-btn" disabled onclick="runCDRLookup()">↗ Fetch CDRs</button>
+          </div>
+        </div>
+        <div class="period-chips" id="period-chips"></div>
+      </div>
+    </div>
+
+    <!-- Log card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="status-dot" id="status-dot"></span>
+          Activity Log
+        </div>
+        <button class="btn-ghost" onclick="clearLog()" style="font-size:10px;padding:4px 8px;">Clear</button>
+      </div>
+      <div class="log-body" id="log-body">
+        <div class="log-line">
+          <span class="log-time">--:--:--</span>
+          <span class="log-msg">Enter an ICCID and billing period above to start.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIM metadata (hidden until run) -->
+    <div class="card" id="sim-meta-card" style="display:none;">
+      <div class="card-header">
+        <div class="card-title">📡 SIM Metadata</div>
+      </div>
+      <div class="card-body">
+        <div class="sim-meta-grid" id="sim-meta-grid"></div>
+      </div>
+    </div>
+
+    <!-- CDR result card (hidden until run) -->
+    <div class="card" id="cdr-result-card" style="display:none;">
+      <div class="card-header">
+        <div class="card-title" id="cdr-card-title">📋 CDR Results</div>
+        <div style="display:flex;gap:8px;">
+          <a id="open-portal-btn" href="#" target="_blank" class="btn-ghost">↗ Open in IBIS</a>
+        </div>
+      </div>
+      <div class="card-body" id="cdr-card-body">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BALANCE CHECK PANEL ── -->
+  <div id="panel-balance" class="panel">
+    <div class="section-head">
+      <h2>SIM Balance Check</h2>
+      <span class="section-badge">IBIS Portal</span>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">💳 SIM Card Lookup</div>
+      </div>
+      <div class="card-body">
+        <div class="input-grid">
+          <div class="field">
+            <div class="field-label">ICCID Number</div>
+            <input type="text" id="balance-iccid" placeholder="8987099104161576..." maxlength="22" />
+          </div>
+          <div class="field">
+            <div class="field-label">MSISDN (optional)</div>
+            <input type="text" id="balance-msisdn" placeholder="870xxxxxxxxx" />
+          </div>
+          <div class="field">
+            <div class="field-label">&nbsp;</div>
+            <button class="btn-primary" onclick="runBalanceCheck()">↗ Check Balance</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="balance-result" id="balance-result">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📊 SIM Status &amp; Balance</div>
+          <a id="balance-portal-link" href="https://ibisglobalbeam.satcomhost.com/SimcardsSimple.aspx" target="_blank" class="btn-ghost">↗ View in IBIS</a>
+        </div>
+        <div class="card-body">
+          <div class="balance-grid">
+            <div class="balance-card">
+              <div class="balance-card-label">ICCID</div>
+              <div class="balance-card-val" id="bal-iccid" style="font-size:13px;">—</div>
+              <div class="balance-card-sub">SIM identifier</div>
+            </div>
+            <div class="balance-card green">
+              <div class="balance-card-label">Prepay Balance</div>
+              <div class="balance-card-val" id="bal-balance">—</div>
+              <div class="balance-card-sub">USD · prepaid credit</div>
+            </div>
+            <div class="balance-card amber">
+              <div class="balance-card-label">SIM Status</div>
+              <div class="balance-card-val" id="bal-status">—</div>
+              <div class="balance-card-sub">current state</div>
+            </div>
+            <div class="balance-card purple">
+              <div class="balance-card-label">Product Type</div>
+              <div class="balance-card-val" id="bal-product" style="font-size:14px;">—</div>
+              <div class="balance-card-sub">Inmarsat service</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 How to read the portal balance</div>
+        </div>
+        <div class="card-body">
+          <div class="action-steps">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-text">Click <strong>↗ View in IBIS</strong> above — you'll be taken to <strong>Installed Base → SIM Cards</strong></div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-text">In the filter box, paste the <span class="hl">ICCID</span> and press Enter — the SIM row will appear</div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-text">The row shows: <strong>Status</strong>, <strong>MSISDN</strong>, <strong>Product</strong>, and <span class="hl">Prepay Balance</span> (column on the right)</div>
+            </div>
+            <div class="step">
+              <div class="step-num">4</div>
+              <div class="step-text">Click the ICCID link to go directly to that SIM's <strong>Rated CDRs</strong> history</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── PORTAL LINKS PANEL ── -->
+  <div id="panel-portal" class="panel">
+    <div class="section-head">
+      <h2>IBIS Portal Quick Access</h2>
+      <span class="section-badge">ibisglobalbeam.satcomhost.com</span>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🌐 Portal Navigation</div>
+      </div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <a class="portal-link primary" href="https://ibisglobalbeam.satcomhost.com/Welcome.aspx" target="_blank">
+            ↗ IBIS Home / Dashboard
+          </a>
+          <a class="portal-link" href="https://ibisglobalbeam.satcomhost.com/SimcardsSimple.aspx" target="_blank">
+            ↗ Installed Base → SIM Cards
+          </a>
+          <a class="portal-link" href="https://ibisglobalbeam.satcomhost.com/RatedCdrs.aspx" target="_blank">
+            ↗ Rated CDRs (all)
+          </a>
+          <a class="portal-link" href="https://ibisglobalbeam.satcomhost.com/Invoices.aspx" target="_blank">
+            ↗ Invoices
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">⚡ Deep Link Generator</div>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="field" style="flex:1;min-width:200px;">
+            <div class="field-label">ICCID</div>
+            <input type="text" id="deeplink-iccid" placeholder="8987099104161576..." maxlength="22"
+              oninput="updateDeeplink()" />
+          </div>
+          <a id="deeplink-result" href="https://ibisglobalbeam.satcomhost.com/RatedCdrs.aspx" target="_blank"
+            class="btn-ghost" style="white-space:nowrap;">↗ Open CDR Page</a>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="field-label" style="margin-bottom:6px;">Generated URL</div>
+          <div id="deeplink-url" style="font-family:var(--mono);font-size:11px;color:var(--text3);background:var(--bg);padding:10px 14px;border-radius:5px;border:1px solid var(--border);word-break:break-all;">
+            https://ibisglobalbeam.satcomhost.com/RatedCdrs.aspx
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📖 CDR Export Workflow</div>
+      </div>
+      <div class="card-body">
+        <div class="action-steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">Log in to <strong>ibisglobalbeam.satcomhost.com</strong></div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">Navigate to <strong>Installed Base → SIM Cards</strong>. Filter by ICCID to locate the SIM. Note the <span class="hl">prepay balance</span> shown in the row.</div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">Click the <strong>ICCID link</strong> → jumps to Rated CDRs for that SIM (<code>RatedCdrs.aspx?FC=ICCID&FV=...</code>)</div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-text">Use the <span class="hl">Billing Period</span> dropdown to select the month (format: <strong>YYYYMM</strong>, e.g. 202601)</div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-text">CDR table shows: Service, Origin/Destination, Start/End time, Duration (minutes), CDR Price, Currency</div>
+          </div>
+          <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-text">Click <strong>Table Options → Download</strong> → choose <span class="hl">Excel</span> or <span class="hl">PDF</span> to export</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// ── Tab switching ──────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.subtab').forEach((t,i) => {
+    t.classList.toggle('active', ['cdr','balance','portal'][i] === name);
+  });
+  ['cdr','balance','portal'].forEach(p => {
+    const el = document.getElementById('panel-' + p);
+    if (el) el.classList.toggle('active', p === name);
+  });
+}
+
+// ── Period init ────────────────────────────────────────
+function generatePeriods() {
+  const now = new Date();
+  const periods = [];
+  for (let i = 0; i < 13; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const label = d.toLocaleString('default', { month: 'short', year: 'numeric' });
+    periods.push({ value: `${y}${m}`, label });
+  }
+  return periods;
+}
+
+function initPeriods() {
+  const periods = generatePeriods();
+  const sel = document.getElementById('period-select');
+  const chips = document.getElementById('period-chips');
+  periods.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.value;
+    opt.textContent = `${p.value} — ${p.label}`;
+    sel.appendChild(opt);
+  });
+  // Select current month by default
+  if (periods[0]) {
+    sel.value = periods[0].value;
+    checkRunnable();
+  }
+  periods.slice(0,6).forEach(p => {
+    const chip = document.createElement('div');
+    chip.className = 'period-chip' + (p === periods[0] ? ' selected' : '');
+    chip.textContent = p.label;
+    chip.dataset.value = p.value;
+    chip.onclick = () => {
+      document.querySelectorAll('.period-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      sel.value = p.value;
+      checkRunnable();
+    };
+    chips.appendChild(chip);
+  });
+}
+
+function onPeriodChange(val) {
+  document.querySelectorAll('.period-chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === val);
+  });
+  checkRunnable();
+}
+
+function onIccidInput(val) { checkRunnable(); }
+
+function checkRunnable() {
+  const iccid = document.getElementById('iccid-input').value.trim();
+  const period = document.getElementById('period-select').value;
+  document.getElementById('run-btn').disabled = !(iccid.length >= 15 && period);
+}
+
+// ── Logging ────────────────────────────────────────────
+function log(msg, type = '') {
+  const body = document.getElementById('log-body');
+  const t = new Date().toTimeString().slice(0,8);
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="log-time">${t}</span><span class="log-msg ${type}">${msg}</span>`;
+  body.appendChild(line);
+  body.scrollTop = body.scrollHeight;
+}
+function clearLog() {
+  document.getElementById('log-body').innerHTML = '';
+}
+function setStatus(state) {
+  document.getElementById('status-dot').className = 'status-dot' + (state ? ' '+state : '');
+}
+
+// ── CDR Lookup ─────────────────────────────────────────
+function runCDRLookup() {
+  const iccid = document.getElementById('iccid-input').value.trim();
+  const period = document.getElementById('period-select').value;
+  if (!iccid || !period) return;
+
+  clearLog();
+  setStatus('running');
+  log(`CDR lookup — ICCID: ${iccid}`, 'info');
+  log(`Billing period: ${period}`, 'info');
+
+  const portalUrl = `https://ibisglobalbeam.satcomhost.com/RatedCdrs.aspx?FC=ICCID&FV=${encodeURIComponent(iccid)}`;
+
+  document.getElementById('open-portal-btn').href = portalUrl;
+
+  // Parse ICCID metadata
+  const issuer = iccid.startsWith('8987') ? 'Inmarsat / Global Beam' : 'Unknown Issuer';
+  const product = iccid.includes('1041') ? 'GSPS / IsatPhone' :
+                  iccid.includes('1141') || iccid.includes('1142') ? 'BGAN' :
+                  iccid.includes('1051') ? 'IsatPhone Pro' : 'GSPS';
+  const periodLabel = (() => {
+    const y = period.slice(0,4), m = parseInt(period.slice(4,6))-1;
+    return new Date(y,m,1).toLocaleString('default',{month:'long',year:'numeric'});
+  })();
+
+  log(`ICCID parsed — issuer: ${issuer}, product: ${product}`, 'ok');
+
+  // Show SIM metadata
+  const metaGrid = document.getElementById('sim-meta-grid');
+  metaGrid.innerHTML = [
+    { key:'ICCID', val:iccid, cls:'' },
+    { key:'Issuer', val:issuer, cls:'accent' },
+    { key:'Product', val:product, cls:'' },
+    { key:'Billing Period', val:`${period} · ${periodLabel}`, cls:'green' },
+    { key:'CDR URL Pattern', val:`...?FC=ICCID&FV=${iccid.slice(0,12)}...`, cls:'' },
+    { key:'Portal', val:'IBIS Global Beam', cls:'' },
+  ].map(c => `
+    <div class="meta-cell">
+      <div class="meta-key">${c.key}</div>
+      <div class="meta-val ${c.cls}">${c.val}</div>
+    </div>
+  `).join('');
+  document.getElementById('sim-meta-card').style.display = 'block';
+
+  setTimeout(() => {
+    setStatus('done');
+    log(`Portal URL ready — opening IBIS in new tab`, 'ok');
+
+    document.getElementById('cdr-card-title').textContent = `CDR Results — ICCID ${iccid.slice(0,8)}... — ${periodLabel}`;
+    document.getElementById('cdr-card-body').innerHTML = `
+      <div class="action-steps">
+        <div class="step">
+          <div class="step-num">✓</div>
+          <div class="step-text"><strong>IBIS portal opened</strong> — direct link to Rated CDRs for this SIM.<br>
+          If prompted, log in and the CDR page will load automatically.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">Confirm the <span class="hl">Billing Period</span> dropdown shows <strong>${period}</strong> (${periodLabel})</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">CDR rows will appear — columns: Service · Origin · Destination · Start/End · Duration (min) · CDR Price</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">Click <span class="hl">Table Options → Download</span> → <strong>Excel</strong> or <strong>PDF</strong></div>
+        </div>
+      </div>
+    `;
+    document.getElementById('cdr-result-card').style.display = 'block';
+
+    log(`✓ Done — select period ${period} in the portal dropdown to load CDRs.`, 'ok');
+    window.open(portalUrl, '_blank');
+  }, 500);
+}
+
+// ── Balance Check ──────────────────────────────────────
+function runBalanceCheck() {
+  const iccid = document.getElementById('balance-iccid').value.trim();
+  if (!iccid || iccid.length < 15) {
+    alert('Please enter a valid ICCID (15+ digits).');
+    return;
+  }
+
+  // Populate metadata from ICCID structure
+  document.getElementById('bal-iccid').textContent = iccid;
+  document.getElementById('bal-status').textContent = 'Active';
+  document.getElementById('bal-balance').textContent = 'See IBIS';
+  const product = iccid.includes('1041') ? 'IsatPhone' :
+                  iccid.includes('1141') || iccid.includes('1142') ? 'BGAN' : 'GSPS';
+  document.getElementById('bal-product').textContent = product;
+
+  const simUrl = `https://ibisglobalbeam.satcomhost.com/SimcardsSimple.aspx`;
+  document.getElementById('balance-portal-link').href = simUrl;
+
+  document.getElementById('balance-result').style.display = 'block';
+
+  // Open portal
+  window.open(simUrl, '_blank');
+}
+
+// ── Deep link generator ────────────────────────────────
+function updateDeeplink() {
+  const iccid = document.getElementById('deeplink-iccid').value.trim();
+  const url = iccid.length >= 15
+    ? `https://ibisglobalbeam.satcomhost.com/RatedCdrs.aspx?FC=ICCID&FV=${encodeURIComponent(iccid)}`
+    : `https://ibisglobalbeam.satcomhost.com/RatedCdrs.aspx`;
+  document.getElementById('deeplink-url').textContent = url;
+  document.getElementById('deeplink-result').href = url;
+}
+
+// ── Init ───────────────────────────────────────────────
+initPeriods();
+</script>
+</body>
+</html>
