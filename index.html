@@ -5624,34 +5624,57 @@ function umRenderList() {
     return;
   }
 
-  container.innerHTML = emails.map(email => {
+  // Build HTML using data-attributes — avoids all JS string quoting issues in onclick
+  let html = '';
+  emails.forEach(email => {
     const u = users[email];
     const isAdmin = u.role === 'admin';
     const tabs = u.tabs || [];
+    const emojiRe = /^[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]\s*/u;
 
-    const tabChips = ALL_TABS.map(t => {
+    let chipHtml = ALL_TABS.map(t => {
       const on = tabs.includes(t.id) ? 'on' : '';
-      // Strip emoji from label for cleaner chip display
-      const chipLabel = t.label.replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]\s*/u, '');
-      return '<span class="tab-perm-chip ' + on + '" onclick="umToggleTab(' + JSON.stringify(email) + ',' + JSON.stringify(t.id) + ',this)" title="Click to toggle access to: ' + t.label + '">' + chipLabel + '</span>';
+      const chipLabel = t.label.replace(emojiRe, '');
+      return '<span class="tab-perm-chip ' + on + '" data-email="' + email + '" data-tab="' + t.id + '" title="Click to toggle: ' + chipLabel + '">' + chipLabel + '</span>';
     }).join('');
 
-    return '<div class="um-row" style="flex-direction:column;align-items:flex-start;gap:8px">' +
+    const deleteBtn = (email !== ADMIN_EMAIL)
+      ? '<button class="btn btn-sm um-del-btn" data-email="' + email + '" style="font-size:9px;padding:3px 8px;background:rgba(255,77,109,.12);color:var(--accent3);border:1px solid rgba(255,77,109,.2)">✕ Delete</button>'
+      : '';
+
+    html += '<div class="um-row" style="flex-direction:column;align-items:flex-start;gap:8px">' +
       '<div style="display:flex;align-items:center;gap:10px;width:100%">' +
         '<span class="um-email">' + email + '</span>' +
         '<span class="um-role ' + (isAdmin ? 'admin' : '') + '">' + u.role + '</span>' +
-        '<button class="btn btn-ghost btn-sm" style="font-size:9px;padding:3px 8px" onclick="umResetPass(' + JSON.stringify(email) + ')">🔑 Reset PW</button>' +
-        (email !== ADMIN_EMAIL ? '<button class="btn btn-sm" style="font-size:9px;padding:3px 8px;background:rgba(255,77,109,.12);color:var(--accent3);border:1px solid rgba(255,77,109,.2)" onclick="umDeleteUser(' + JSON.stringify(email) + ')">✕ Delete</button>' : '') +
+        '<button class="btn btn-ghost btn-sm um-pw-btn" data-email="' + email + '" style="font-size:9px;padding:3px 8px">🔑 Reset PW</button>' +
+        deleteBtn +
       '</div>' +
       '<div style="width:100%">' +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">' +
           '<span style="font-family:var(--mono);font-size:9px;color:var(--muted2);letter-spacing:.08em;text-transform:uppercase">Tab Access</span>' +
           '<span style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.04em">— click to toggle on/off</span>' +
         '</div>' +
-        '<div class="tab-perm-grid">' + tabChips + '</div>' +
+        '<div class="tab-perm-grid">' + chipHtml + '</div>' +
       '</div>' +
     '</div>';
-  }).join('');
+  });
+
+  container.innerHTML = html;
+
+  // Wire up events via delegation (safe — no inline JS quoting issues)
+  container.querySelectorAll('.tab-perm-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const email = chip.dataset.email;
+      const tabId = chip.dataset.tab;
+      umToggleTab(email, tabId, chip);
+    });
+  });
+  container.querySelectorAll('.um-pw-btn').forEach(btn => {
+    btn.addEventListener('click', () => umResetPass(btn.dataset.email));
+  });
+  container.querySelectorAll('.um-del-btn').forEach(btn => {
+    btn.addEventListener('click', () => umDeleteUser(btn.dataset.email));
+  });
 }
 
 // ── Bootstrap auth on DOMContentLoaded ──
