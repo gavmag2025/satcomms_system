@@ -354,25 +354,143 @@ select option{background:var(--surface2)}
   .pgrid{grid-template-columns:1fr}
   .tab{padding:12px 12px;font-size:9px}
 }
+
+/* ── AUTH ── */
+#authOverlay{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0,180,255,.08) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23192130' fill-opacity='0.35'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+#authBox{
+  background:var(--surface);border:1px solid var(--border2);
+  padding:40px 44px;width:100%;max-width:400px;
+  box-shadow:0 0 60px rgba(0,180,255,.08);
+}
+#authBox .auth-logo{
+  font-family:var(--cond);font-size:26px;font-weight:800;
+  margin-bottom:4px;display:flex;align-items:center;gap:10px;
+}
+#authBox .auth-logo em{color:var(--accent);font-style:normal}
+#authBox .auth-sub{
+  font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:var(--muted2);
+  text-transform:uppercase;margin-bottom:32px;
+}
+#authBox .mfield{margin-bottom:14px}
+#authBox .mfield label{
+  display:block;font-family:var(--mono);font-size:9px;letter-spacing:.12em;
+  color:var(--muted2);text-transform:uppercase;margin-bottom:6px;
+}
+#authBox .mfield input{
+  width:100%;background:var(--surface2);border:1px solid var(--border2);
+  color:var(--text);font-family:var(--body);font-size:13px;
+  padding:10px 12px;outline:none;
+  transition:border-color .2s;
+}
+#authBox .mfield input:focus{border-color:var(--accent);}
+#authError{
+  font-family:var(--mono);font-size:10px;color:var(--accent3);
+  margin-bottom:12px;min-height:16px;
+}
+#authBtn{
+  width:100%;padding:12px;background:var(--accent);color:#000;
+  font-family:var(--cond);font-size:14px;font-weight:700;letter-spacing:.08em;
+  border:none;cursor:pointer;margin-top:4px;
+  transition:opacity .2s;
+}
+#authBtn:hover{opacity:.85}
+#authBtn:disabled{opacity:.5;cursor:not-allowed}
+#authFooter{
+  font-family:var(--mono);font-size:9px;color:var(--muted);
+  margin-top:20px;text-align:center;
+}
+/* topbar user chip */
+#userChip{
+  display:flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:10px;color:var(--muted2);
+  background:var(--surface2);border:1px solid var(--border);
+  padding:4px 12px;cursor:default;
+}
+#userChip .uc-name{color:var(--text)}
+#logoutBtn{
+  font-family:var(--mono);font-size:9px;color:var(--muted2);
+  background:none;border:none;cursor:pointer;padding:0;
+  letter-spacing:.06em;text-transform:uppercase;
+  transition:color .2s;
+}
+#logoutBtn:hover{color:var(--accent3)}
+/* user management in settings */
+.um-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;border-bottom:1px solid var(--border);
+  transition:background .15s;
+}
+.um-row:hover{background:var(--surface2)}
+.um-row:last-child{border-bottom:none}
+.um-email{font-family:var(--mono);font-size:11px;color:var(--text);flex:1}
+.um-role{font-family:var(--mono);font-size:9px;color:var(--accent4);
+  background:rgba(255,200,77,.1);border:1px solid rgba(255,200,77,.2);
+  padding:2px 8px;border-radius:2px;white-space:nowrap}
+.um-role.admin{color:var(--accent);background:rgba(0,180,255,.1);border-color:rgba(0,180,255,.2)}
+.tab-perm-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tab-perm-chip{
+  display:flex;align-items:center;gap:5px;
+  font-family:var(--mono);font-size:9px;letter-spacing:.06em;
+  padding:4px 10px;border:1px solid var(--border2);
+  cursor:pointer;user-select:none;transition:all .15s;color:var(--muted2);
+}
+.tab-perm-chip.on{
+  background:rgba(0,229,176,.1);border-color:rgba(0,229,176,.3);
+  color:var(--accent2);
+}
+.tab-perm-chip input{display:none}
 </style>
 </head>
 <body>
+
+<!-- ── AUTH OVERLAY ── -->
+<div id="authOverlay">
+  <div id="authBox">
+    <div class="auth-logo"><span>🛰</span><em>Sat</em>&nbsp;Comms</div>
+    <div class="auth-sub">Product Intelligence System</div>
+    <div class="mfield">
+      <label>Email Address</label>
+      <input type="email" id="authEmail" placeholder="you@satcomms.co.za" autocomplete="username"
+        onkeydown="if(event.key==='Enter')document.getElementById('authPass').focus()">
+    </div>
+    <div class="mfield">
+      <label>Password</label>
+      <input type="password" id="authPass" placeholder="••••••••" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')authLogin()">
+    </div>
+    <div id="authError"></div>
+    <button id="authBtn" onclick="authLogin()">Sign In →</button>
+    <div id="authFooter">Access restricted to satcomms.co.za accounts</div>
+  </div>
+</div>
 
 <!-- TOP BAR -->
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:14px;min-width:0">
     <div class="logo"><span class="logo-icon">🛰</span><em>Sat</em>&nbsp;Comms</div>
-    <div class="sys-badge">Product Intelligence System</div>
+    <div class="sys-badge">Product Intelligence System · v1.5 · 2026-04-14</div>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><span class="pulse"></span><span id="feedStatusText">Ready</span></div>
     <div id="feedTime"></div>
     <button class="btn btn-ghost btn-sm" onclick="loadMyWixProducts()">↻ Sync Wix</button>
+    <div id="userChip" style="display:none">
+      <span>👤</span>
+      <span class="uc-name" id="userChipName"></span>
+      <button id="logoutBtn" onclick="authLogout()">sign out</button>
+    </div>
   </div>
 </div>
 
 <!-- TABS -->
-<div class="tabs">
+<div class="tabs" id="tabsBar" style="visibility:hidden">
   <div class="tab active" onclick="switchTab('mywix')">📦 My Products <span class="tab-count g" id="tc-mywix">0</span></div>
   <div class="tab" onclick="switchTab('garmin')">🗺 Garmin Import <span class="tab-count g" id="tc-garmin">0</span></div>
   <div class="tab" onclick="switchTab('amazon')">🛒 Amazon Monitor <span class="tab-count b" id="tc-amz">0</span></div>
@@ -1502,6 +1620,42 @@ select option{background:var(--surface2)}
       <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
     </div>
   </div>
+
+  <!-- USER MANAGEMENT — admin only -->
+  <div id="userMgmtSection" style="margin-top:2px;display:none">
+    <div style="background:var(--surface);border:1px solid var(--border);padding:20px">
+      <div class="flabel" style="margin-bottom:16px;color:var(--accent)">👥 User Management <span style="font-family:var(--mono);font-size:9px;color:var(--muted2);font-weight:400;text-transform:lowercase;letter-spacing:0">(admin only)</span></div>
+
+      <!-- Add user form -->
+      <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;align-items:end;margin-bottom:16px">
+        <div class="mfield" style="margin:0">
+          <label>Email (@satcomms.co.za)</label>
+          <input type="email" id="umEmail" placeholder="susanh@satcomms.co.za" style="width:100%">
+        </div>
+        <div class="mfield" style="margin:0">
+          <label>Password</label>
+          <input type="password" id="umPass" placeholder="Temp password" style="width:100%">
+        </div>
+        <div class="mfield" style="margin:0">
+          <label>Role</label>
+          <select id="umRole" style="width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:9px 10px;font-family:var(--body);font-size:13px">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="umAddUser()" style="white-space:nowrap;height:38px">+ Add User</button>
+      </div>
+      <div id="umAddError" style="font-family:var(--mono);font-size:10px;color:var(--accent3);margin-bottom:10px;min-height:14px"></div>
+
+      <!-- Tab permissions template -->
+      <div style="margin-bottom:14px">
+        <div class="flabel" style="margin-bottom:8px;font-size:9px">Tab Permissions (set per user below)</div>
+      </div>
+
+      <!-- User list -->
+      <div id="umList" style="border:1px solid var(--border)"></div>
+    </div>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -1676,9 +1830,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const d = new Date(lastDate);
     el.textContent = d.toLocaleDateString('en-ZA', {day:'numeric', month:'short'}) + ' ' + d.toLocaleTimeString('en-ZA', {hour:'2-digit', minute:'2-digit'});
   }
-  // Restore active tab
-  const lastTab = localStorage.getItem('sc_tab') || 'mywix';
-  switchTab(lastTab);
+  // Restore active tab — only if NOT using auth (auth handles tab restore)
+  const _existingSession = authGetSession ? authGetSession() : null;
+  if (!_existingSession) {
+    const lastTab = localStorage.getItem('sc_tab') || 'mywix';
+    switchTab(lastTab);
+  }
   document.querySelectorAll('.tab').forEach(t => {
     t.addEventListener('click', () => {
       const m = t.getAttribute('onclick')?.match(/'(\w+)'/);
@@ -5210,6 +5367,296 @@ async function gWixCompPushSelected() {
   }
   gWixCompRender();
 }
+
+// ─────────────────────────────────────────────────────────────
+// AUTH SYSTEM
+// ─────────────────────────────────────────────────────────────
+const AUTH_KEY = 'sc_auth_session';
+const USERS_KEY = 'sc_users';
+const ADMIN_EMAIL = 'gavmag@gmail.com';
+
+// All available tabs with labels
+const ALL_TABS = [
+  { id: 'mywix',    label: '📦 My Products' },
+  { id: 'garmin',   label: '🗺 Garmin Import' },
+  { id: 'amazon',   label: '🛒 Amazon Monitor' },
+  { id: 'watchlist',label: '👁 Watchlist' },
+  { id: 'alerts',   label: '🇿🇦 Competitor Prices' },
+  { id: 'usd',      label: '💱 USD Pricing' },
+  { id: 'topup',    label: '📶 Topups' },
+  { id: 'seo',      label: '🔍 SEO Agent' },
+  { id: 'publish',  label: '🚀 Publish to Wix' },
+  { id: 'pricing',  label: '💰 Global Pricing' },
+  { id: 'sim',      label: '📡 SIM Reports' },
+  { id: 'settings', label: '⚙ Settings' },
+];
+
+function authHash(str) {
+  // Simple but consistent hash for password storage
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) + h) ^ str.charCodeAt(i);
+    h = h & 0xffffffff;
+  }
+  return (h >>> 0).toString(36);
+}
+
+function authGetUsers() {
+  return JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+}
+
+function authSaveUsers(users) {
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
+
+function authGetSession() {
+  try { return JSON.parse(localStorage.getItem(AUTH_KEY) || 'null'); }
+  catch { return null; }
+}
+
+function authLogin() {
+  const email = document.getElementById('authEmail').value.trim().toLowerCase();
+  const pass  = document.getElementById('authPass').value;
+  const errEl = document.getElementById('authError');
+  const btn   = document.getElementById('authBtn');
+  errEl.textContent = '';
+
+  // Validate domain
+  if (!email.endsWith('@satcomms.co.za') && email !== ADMIN_EMAIL) {
+    errEl.textContent = 'Only @satcomms.co.za accounts are permitted.';
+    return;
+  }
+  if (!pass) { errEl.textContent = 'Please enter your password.'; return; }
+
+  btn.disabled = true; btn.textContent = 'Signing in…';
+
+  const users = authGetUsers();
+
+  // Special case: admin email
+  if (email === ADMIN_EMAIL) {
+    // If no admin record yet, bootstrap it with the entered password
+    if (!users[ADMIN_EMAIL]) {
+      users[ADMIN_EMAIL] = {
+        passwordHash: authHash(pass),
+        role: 'admin',
+        tabs: ALL_TABS.map(t => t.id),
+        name: 'Admin'
+      };
+      authSaveUsers(users);
+    }
+  }
+
+  const user = users[email];
+  if (!user) {
+    errEl.textContent = 'Account not found. Contact your administrator.';
+    btn.disabled = false; btn.textContent = 'Sign In →'; return;
+  }
+  if (user.passwordHash !== authHash(pass)) {
+    errEl.textContent = 'Incorrect password.';
+    btn.disabled = false; btn.textContent = 'Sign In →'; return;
+  }
+
+  // Store session
+  const session = { email, role: user.role, tabs: user.tabs, name: user.name || email.split('@')[0] };
+  localStorage.setItem(AUTH_KEY, JSON.stringify(session));
+  authApplySession(session);
+}
+
+function authApplySession(session) {
+  // Hide overlay
+  document.getElementById('authOverlay').style.display = 'none';
+
+  // Reveal tab bar
+  const tabsBar = document.getElementById('tabsBar');
+  if (tabsBar) tabsBar.style.visibility = '';
+
+  // Show user chip
+  const chip = document.getElementById('userChip');
+  const nameEl = document.getElementById('userChipName');
+  chip.style.display = 'flex';
+  nameEl.textContent = session.name || session.email.split('@')[0];
+
+  // Show/hide tabs based on permissions
+  authApplyTabVisibility(session);
+
+  // Show user management only for admins
+  const umSection = document.getElementById('userMgmtSection');
+  if (umSection) umSection.style.display = session.role === 'admin' ? 'block' : 'none';
+
+  // Redirect if current tab not permitted
+  const permittedTabs = session.tabs || ALL_TABS.map(t => t.id);
+  const lastTab = localStorage.getItem('sc_tab') || 'mywix';
+  const startTab = permittedTabs.includes(lastTab) ? lastTab : permittedTabs[0] || 'settings';
+  switchTab(startTab);
+}
+
+function authApplyTabVisibility(session) {
+  const permittedTabs = session.tabs || ALL_TABS.map(t => t.id);
+
+  document.querySelectorAll('.tab').forEach(tabEl => {
+    const onclick = tabEl.getAttribute('onclick') || '';
+    // Extract tab id from onclick like switchTab('mywix') or window.open
+    const m = onclick.match(/'(\w+)'/);
+    let tabId = m ? m[1] : null;
+    // SIM Reports uses window.open — map to 'sim'
+    if (onclick.includes('sim-report.html')) tabId = 'sim';
+
+    if (tabId === null) { tabEl.style.display = ''; return; } // unknown, show
+    tabEl.style.display = permittedTabs.includes(tabId) ? '' : 'none';
+  });
+}
+
+function authLogout() {
+  localStorage.removeItem(AUTH_KEY);
+  // Re-hide tab bar
+  const tabsBar = document.getElementById('tabsBar');
+  if (tabsBar) tabsBar.style.visibility = 'hidden';
+  // Clear inputs and show overlay
+  document.getElementById('authEmail').value = '';
+  document.getElementById('authPass').value = '';
+  document.getElementById('authError').textContent = '';
+  document.getElementById('authBtn').disabled = false;
+  document.getElementById('authBtn').textContent = 'Sign In →';
+  document.getElementById('authOverlay').style.display = 'flex';
+  document.getElementById('userChip').style.display = 'none';
+}
+
+// ── User Management (admin) ──
+function umAddUser() {
+  const email = document.getElementById('umEmail').value.trim().toLowerCase();
+  const pass  = document.getElementById('umPass').value;
+  const role  = document.getElementById('umRole').value;
+  const errEl = document.getElementById('umAddError');
+  errEl.textContent = '';
+
+  if (!email.endsWith('@satcomms.co.za')) {
+    errEl.textContent = 'Email must end in @satcomms.co.za'; return;
+  }
+  if (!pass || pass.length < 4) {
+    errEl.textContent = 'Password must be at least 4 characters.'; return;
+  }
+
+  const users = authGetUsers();
+  if (users[email]) {
+    errEl.textContent = 'User already exists. Edit below to change password/tabs.'; return;
+  }
+
+  // Default tabs: all for admin, basic set for user
+  const defaultTabs = role === 'admin'
+    ? ALL_TABS.map(t => t.id)
+    : ['mywix', 'topup', 'sim'];
+
+  users[email] = {
+    passwordHash: authHash(pass),
+    role,
+    tabs: defaultTabs,
+    name: email.split('@')[0]
+  };
+  authSaveUsers(users);
+
+  document.getElementById('umEmail').value = '';
+  document.getElementById('umPass').value = '';
+  umRenderList();
+}
+
+function umDeleteUser(email) {
+  if (email === ADMIN_EMAIL) { alert('Cannot delete admin account.'); return; }
+  const session = authGetSession();
+  if (email === session?.email) { alert('Cannot delete your own account.'); return; }
+  if (!confirm('Delete user ' + email + '?')) return;
+  const users = authGetUsers();
+  delete users[email];
+  authSaveUsers(users);
+  umRenderList();
+}
+
+function umResetPass(email) {
+  const np = prompt('New password for ' + email + ':');
+  if (!np || np.length < 4) { alert('Password too short.'); return; }
+  const users = authGetUsers();
+  if (!users[email]) return;
+  users[email].passwordHash = authHash(np);
+  authSaveUsers(users);
+  alert('Password updated for ' + email);
+}
+
+function umToggleTab(email, tabId, el) {
+  const users = authGetUsers();
+  if (!users[email]) return;
+  let tabs = users[email].tabs || [];
+  if (tabs.includes(tabId)) {
+    tabs = tabs.filter(t => t !== tabId);
+    el.classList.remove('on');
+  } else {
+    tabs.push(tabId);
+    el.classList.add('on');
+  }
+  users[email].tabs = tabs;
+  authSaveUsers(users);
+  // If editing current session user, re-apply visibility
+  const session = authGetSession();
+  if (session && session.email === email) {
+    session.tabs = tabs;
+    localStorage.setItem(AUTH_KEY, JSON.stringify(session));
+    authApplyTabVisibility(session);
+  }
+}
+
+function umRenderList() {
+  const container = document.getElementById('umList');
+  if (!container) return;
+  const users = authGetUsers();
+  const emails = Object.keys(users);
+
+  if (!emails.length) {
+    container.innerHTML = '<div style="padding:20px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted)">No users yet</div>';
+    return;
+  }
+
+  container.innerHTML = emails.map(email => {
+    const u = users[email];
+    const isAdmin = u.role === 'admin';
+    const tabs = u.tabs || [];
+
+    const tabChips = ALL_TABS.map(t => {
+      const on = tabs.includes(t.id) ? 'on' : '';
+      return '<span class="tab-perm-chip ' + on + '" onclick="umToggleTab(' + JSON.stringify(email) + ',' + JSON.stringify(t.id) + ',this)">' + t.label + '</span>';
+    }).join('');
+
+    return '<div class="um-row" style="flex-direction:column;align-items:flex-start;gap:8px">' +
+      '<div style="display:flex;align-items:center;gap:10px;width:100%">' +
+        '<span class="um-email">' + email + '</span>' +
+        '<span class="um-role ' + (isAdmin ? 'admin' : '') + '">' + u.role + '</span>' +
+        '<button class="btn btn-ghost btn-sm" style="font-size:9px;padding:3px 8px" onclick="umResetPass(' + JSON.stringify(email) + ')">🔑 Reset PW</button>' +
+        (email !== ADMIN_EMAIL ? '<button class="btn btn-sm" style="font-size:9px;padding:3px 8px;background:rgba(255,77,109,.12);color:var(--accent3);border:1px solid rgba(255,77,109,.2)" onclick="umDeleteUser(' + JSON.stringify(email) + ')">✕ Delete</button>' : '') +
+      '</div>' +
+      '<div><div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-bottom:5px;letter-spacing:.06em">TAB ACCESS:</div>' +
+      '<div class="tab-perm-grid">' + tabChips + '</div></div>' +
+    '</div>';
+  }).join('');
+}
+
+// ── Bootstrap auth on DOMContentLoaded ──
+document.addEventListener('DOMContentLoaded', () => {
+  const session = authGetSession();
+  if (session) {
+    authApplySession(session);
+  }
+  // else overlay stays visible, tabsBar stays visibility:hidden
+
+  // Init user list if admin
+  if (session && session.role === 'admin') umRenderList();
+
+  // Patch switchTab to refresh user list when settings tab opens
+  const _origSwitchTab = switchTab;
+  window.switchTab = function(name) {
+    _origSwitchTab(name);
+    if (name === 'settings') {
+      const s = authGetSession();
+      if (s && s.role === 'admin') umRenderList();
+    }
+  };
+});
 
 </script>
 </body>
