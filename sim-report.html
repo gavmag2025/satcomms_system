@@ -564,6 +564,9 @@ td.mono-accent { color: var(--accent); }
   .balance-grid { grid-template-columns: 1fr 1fr; }
 }
 
+/* spin for loading */
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* fade-up animation */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(12px); }
@@ -682,90 +685,120 @@ td.mono-accent { color: var(--accent); }
   <div id="panel-balance" class="panel">
     <div class="section-head">
       <h2>SIM Balance Check</h2>
-      <span class="section-badge">IBIS Portal</span>
+      <span class="section-badge">Live · IBIS GlobalBeam</span>
     </div>
 
+    <!-- Input card -->
     <div class="card">
       <div class="card-header">
-        <div class="card-title">💳 SIM Card Lookup</div>
+        <div class="card-title">💳 ICCID Lookup</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3)">Live data from IBIS portal</div>
       </div>
       <div class="card-body">
         <div class="input-grid">
           <div class="field">
             <div class="field-label">ICCID Number</div>
-            <input type="text" id="balance-iccid" placeholder="8987099104161576..." maxlength="22" />
-          </div>
-          <div class="field">
-            <div class="field-label">MSISDN (optional)</div>
-            <input type="text" id="balance-msisdn" placeholder="870xxxxxxxxx" />
+            <input type="text" id="balance-iccid" placeholder="e.g. 8987099194168271..." maxlength="22"
+              oninput="balCheckRunnable()"
+              onkeydown="if(event.key==='Enter')runBalanceCheck()" />
           </div>
           <div class="field">
             <div class="field-label">&nbsp;</div>
-            <button class="btn-primary" onclick="runBalanceCheck()">↗ Check Balance</button>
+            <button class="btn-primary" id="balance-btn" onclick="runBalanceCheck()" disabled>↗ Check Balance</button>
           </div>
+        </div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:10px;">
+          ICCID is the 15–22 digit number printed on your SIM card. First lookup may take ~20 seconds.
         </div>
       </div>
     </div>
 
-    <div class="balance-result" id="balance-result">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">📊 SIM Status &amp; Balance</div>
-          <a id="balance-portal-link" href="https://ibisglobalbeam.satcomhost.com/SimcardsSimple.aspx" target="_blank" class="btn-ghost">↗ View in IBIS</a>
-        </div>
-        <div class="card-body">
-          <div class="balance-grid">
-            <div class="balance-card">
-              <div class="balance-card-label">ICCID</div>
-              <div class="balance-card-val" id="bal-iccid" style="font-size:13px;">—</div>
-              <div class="balance-card-sub">SIM identifier</div>
-            </div>
-            <div class="balance-card green">
-              <div class="balance-card-label">Prepay Balance</div>
-              <div class="balance-card-val" id="bal-balance">—</div>
-              <div class="balance-card-sub">USD · prepaid credit</div>
-            </div>
-            <div class="balance-card amber">
-              <div class="balance-card-label">SIM Status</div>
-              <div class="balance-card-val" id="bal-status">—</div>
-              <div class="balance-card-sub">current state</div>
-            </div>
-            <div class="balance-card purple">
-              <div class="balance-card-label">Product Type</div>
-              <div class="balance-card-val" id="bal-product" style="font-size:14px;">—</div>
-              <div class="balance-card-sub">Inmarsat service</div>
-            </div>
-          </div>
-        </div>
+    <!-- Loading state -->
+    <div class="card" id="balance-loading" style="display:none;">
+      <div class="card-body" style="text-align:center;padding:32px;">
+        <div style="width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 14px;"></div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--accent);" id="balance-loading-msg">Connecting to IBIS portal...</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:6px;">First lookup logs in and may take up to 30 seconds</div>
       </div>
+    </div>
 
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">📋 How to read the portal balance</div>
-        </div>
-        <div class="card-body">
-          <div class="action-steps">
-            <div class="step">
-              <div class="step-num">1</div>
-              <div class="step-text">Click <strong>↗ View in IBIS</strong> above — you'll be taken to <strong>Installed Base → SIM Cards</strong></div>
-            </div>
-            <div class="step">
-              <div class="step-num">2</div>
-              <div class="step-text">In the filter box, paste the <span class="hl">ICCID</span> and press Enter — the SIM row will appear</div>
-            </div>
-            <div class="step">
-              <div class="step-num">3</div>
-              <div class="step-text">The row shows: <strong>Status</strong>, <strong>MSISDN</strong>, <strong>Product</strong>, and <span class="hl">Prepay Balance</span> (column on the right)</div>
-            </div>
-            <div class="step">
-              <div class="step-num">4</div>
-              <div class="step-text">Click the ICCID link to go directly to that SIM's <strong>Rated CDRs</strong> history</div>
-            </div>
-          </div>
+    <!-- Error state -->
+    <div class="card" id="balance-error" style="display:none;border-color:var(--red);">
+      <div class="card-body" style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="font-size:20px;flex-shrink:0;">⚠</div>
+        <div>
+          <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--red);margin-bottom:4px;">LOOKUP FAILED</div>
+          <div style="font-size:13px;color:var(--text2);" id="balance-error-msg">Something went wrong.</div>
         </div>
       </div>
     </div>
 
+    <!-- Result card — hidden until data loads -->
+    <div id="balance-result" style="display:none;">
+
+      <!-- Hero balance card -->
+      <div style="background:linear-gradient(135deg,#0a1628,#0d2340);border:1px solid var(--border2);border-radius:10px;padding:28px 28px 22px;margin-bottom:16px;position:relative;overflow:hidden;">
+        <!-- subtle glow -->
+        <div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(79,158,255,0.15),transparent 70%);pointer-events:none;"></div>
+        <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Available Balance</div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:14px;">
+          <span style="font-family:var(--display);font-size:20px;font-weight:700;color:var(--text2);">$</span>
+          <span id="bal-amount" style="font-family:var(--display);font-size:52px;font-weight:800;color:var(--green);line-height:1;letter-spacing:-0.02em;">—</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span id="bal-status-badge" style="font-family:var(--mono);font-size:10px;font-weight:600;padding:4px 12px;border-radius:100px;background:var(--green-dim);color:var(--green);">— Unknown —</span>
+          <span id="bal-iccid-hero" style="font-family:var(--mono);font-size:10px;color:var(--text3);">—</span>
+        </div>
+      </div>
+
+      <!-- Detail grid -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header">
+          <div class="card-title">📡 SIM Details</div>
+          <a href="https://ibisglobalbeam.satcomhost.com/SimcardsSimple.aspx" target="_blank" class="btn-ghost">↗ View in IBIS</a>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+            <div class="meta-cell">
+              <div class="meta-key">Expiry Date</div>
+              <div class="meta-val" id="bal-expiry">—</div>
+            </div>
+            <div class="meta-cell">
+              <div class="meta-key">Product</div>
+              <div class="meta-val" id="bal-product">—</div>
+            </div>
+            <div class="meta-cell">
+              <div class="meta-key">Plan</div>
+              <div class="meta-val" id="bal-plan">—</div>
+            </div>
+            <div class="meta-cell">
+              <div class="meta-key">Phone Number (MSISDN)</div>
+              <div class="meta-val accent" id="bal-msisdn">—</div>
+            </div>
+            <div class="meta-cell">
+              <div class="meta-key">Last Used</div>
+              <div class="meta-val" id="bal-lastused">—</div>
+            </div>
+            <div class="meta-cell">
+              <div class="meta-key">Location</div>
+              <div class="meta-val" id="bal-location">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expiry warning (shown if <90 days) -->
+      <div class="card" id="bal-expiry-warn" style="display:none;border-color:var(--amber);">
+        <div class="card-body" style="display:flex;align-items:center;gap:12px;">
+          <div style="font-size:22px;">⏰</div>
+          <div>
+            <div style="font-family:var(--mono);font-size:10px;font-weight:600;color:var(--amber);margin-bottom:3px;">EXPIRY WARNING</div>
+            <div style="font-size:13px;color:var(--text2);" id="bal-expiry-warn-msg">SIM expires soon — contact SatComms to top up.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </div>
 
   <!-- ── PORTAL LINKS PANEL ── -->
@@ -1023,29 +1056,133 @@ function runCDRLookup() {
   }, 500);
 }
 
-// ── Balance Check ──────────────────────────────────────
-function runBalanceCheck() {
+// ── Balance Check — Railway API ────────────────────────
+const BALANCE_API = 'https://sim-balance-api-production.up.railway.app/api/balance';
+
+function balCheckRunnable() {
   const iccid = document.getElementById('balance-iccid').value.trim();
-  if (!iccid || iccid.length < 15) {
-    alert('Please enter a valid ICCID (15+ digits).');
+  document.getElementById('balance-btn').disabled = !/^\d{15,22}$/.test(iccid.replace(/[\s\-]/g,''));
+}
+
+// Keep-alive ping so Railway doesn't sleep
+function balanceKeepAlive() {
+  fetch('https://sim-balance-api-production.up.railway.app/health').catch(()=>{});
+}
+balanceKeepAlive();
+setInterval(balanceKeepAlive, 10 * 60 * 1000);
+
+async function runBalanceCheck() {
+  const rawInput = document.getElementById('balance-iccid').value.trim();
+  const iccid = rawInput.replace(/[\s\-]/g, '');
+
+  if (!/^\d{15,22}$/.test(iccid)) {
+    showBalanceError('That doesn\'t look like a valid ICCID — it should be 15–22 digits.');
     return;
   }
 
-  // Populate metadata from ICCID structure
-  document.getElementById('bal-iccid').textContent = iccid;
-  document.getElementById('bal-status').textContent = 'Active';
-  document.getElementById('bal-balance').textContent = 'See IBIS';
-  const product = iccid.includes('1041') ? 'IsatPhone' :
-                  iccid.includes('1141') || iccid.includes('1142') ? 'BGAN' : 'GSPS';
-  document.getElementById('bal-product').textContent = product;
+  // Reset UI
+  document.getElementById('balance-result').style.display = 'none';
+  document.getElementById('balance-error').style.display = 'none';
+  document.getElementById('balance-loading').style.display = 'block';
+  document.getElementById('balance-btn').disabled = true;
 
-  const simUrl = `https://ibisglobalbeam.satcomhost.com/SimcardsSimple.aspx`;
-  document.getElementById('balance-portal-link').href = simUrl;
+  // Cycle loading messages
+  const msgs = [
+    'Connecting to IBIS portal...',
+    'Logging in...',
+    'Searching for SIM...',
+    'Reading balance data...'
+  ];
+  let mi = 0;
+  const msgEl = document.getElementById('balance-loading-msg');
+  const msgTimer = setInterval(() => {
+    mi = (mi + 1) % msgs.length;
+    msgEl.textContent = msgs[mi];
+  }, 5000);
+
+  try {
+    const resp = await fetch(BALANCE_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ iccid })
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Server error — please try again.');
+    renderBalanceResult(data);
+  } catch(e) {
+    showBalanceError(e.message || 'Could not connect to the balance service. Please try again.');
+  } finally {
+    clearInterval(msgTimer);
+    document.getElementById('balance-loading').style.display = 'none';
+    document.getElementById('balance-btn').disabled = false;
+  }
+}
+
+function renderBalanceResult(d) {
+  // Balance amount
+  const bal = parseFloat(d.balance) || 0;
+  document.getElementById('bal-amount').textContent = bal.toFixed(2);
+
+  // Status badge
+  const status = d.status || 'Unknown';
+  const badge = document.getElementById('bal-status-badge');
+  badge.textContent = status;
+  if (/activ/i.test(status)) {
+    badge.style.background = 'var(--green-dim)';
+    badge.style.color = 'var(--green)';
+  } else if (/expir/i.test(status)) {
+    badge.style.background = 'var(--red-dim)';
+    badge.style.color = 'var(--red)';
+  } else {
+    badge.style.background = 'rgba(255,255,255,0.08)';
+    badge.style.color = 'var(--text2)';
+  }
+
+  // Hero ICCID
+  document.getElementById('bal-iccid-hero').textContent = d.iccid ? 'ICCID: ' + d.iccid : '';
+
+  // Detail cells
+  const setText = (id, val) => { document.getElementById(id).textContent = val || '—'; };
+  setText('bal-product',  d.product);
+  setText('bal-plan',     d.plan);
+  setText('bal-msisdn',   d.msisdn);
+  setText('bal-lastused', d.lastUsed);
+  setText('bal-location', d.location);
+
+  // Expiry with warning
+  const expiryEl = document.getElementById('bal-expiry');
+  const warnCard = document.getElementById('bal-expiry-warn');
+  const warnMsg  = document.getElementById('bal-expiry-warn-msg');
+  expiryEl.textContent = d.expiry || '—';
+  expiryEl.style.color = '';
+  warnCard.style.display = 'none';
+
+  if (d.expiry && d.expiry !== 'N/A') {
+    const expDate = new Date(d.expiry);
+    const daysLeft = (expDate - Date.now()) / 86400000;
+    if (!isNaN(daysLeft)) {
+      if (daysLeft < 0) {
+        expiryEl.style.color = 'var(--red)';
+        expiryEl.textContent = d.expiry + ' (EXPIRED)';
+        warnCard.style.display = 'block';
+        warnMsg.textContent = 'This SIM has expired. Contact SatComms to renew.';
+      } else if (daysLeft < 90) {
+        expiryEl.style.color = 'var(--amber)';
+        expiryEl.textContent = d.expiry + ' (' + Math.ceil(daysLeft) + ' days left)';
+        warnCard.style.display = 'block';
+        warnMsg.textContent = Math.ceil(daysLeft) + ' days until expiry — contact SatComms to top up and extend.';
+      }
+    }
+  }
 
   document.getElementById('balance-result').style.display = 'block';
+}
 
-  // Open portal
-  window.open(simUrl, '_blank');
+function showBalanceError(msg) {
+  document.getElementById('balance-error-msg').textContent = msg;
+  document.getElementById('balance-error').style.display = 'block';
+  document.getElementById('balance-result').style.display = 'none';
+  document.getElementById('balance-loading').style.display = 'none';
 }
 
 // ── Deep link generator ────────────────────────────────
