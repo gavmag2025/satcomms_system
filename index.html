@@ -434,16 +434,32 @@ select option{background:var(--surface2)}
   background:rgba(255,200,77,.1);border:1px solid rgba(255,200,77,.2);
   padding:2px 8px;border-radius:2px;white-space:nowrap}
 .um-role.admin{color:var(--accent);background:rgba(0,180,255,.1);border-color:rgba(0,180,255,.2)}
-.tab-perm-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tab-perm-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
 .tab-perm-chip{
-  display:flex;align-items:center;gap:5px;
-  font-family:var(--mono);font-size:9px;letter-spacing:.06em;
-  padding:4px 10px;border:1px solid var(--border2);
-  cursor:pointer;user-select:none;transition:all .15s;color:var(--muted2);
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--mono);font-size:9px;letter-spacing:.05em;
+  padding:6px 12px;border:1px solid var(--border);
+  cursor:pointer;user-select:none;transition:all .15s;
+  color:var(--muted);background:var(--surface3);
 }
+.tab-perm-chip::before{
+  content:"OFF";font-size:7px;font-family:var(--mono);letter-spacing:.08em;
+  color:var(--muted);padding:1px 4px;background:rgba(255,255,255,.04);
+  border:1px solid var(--border);border-radius:2px;flex-shrink:0;
+  transition:all .15s;
+}
+.tab-perm-chip:hover{border-color:var(--border2);color:var(--muted2);}
 .tab-perm-chip.on{
-  background:rgba(0,229,176,.1);border-color:rgba(0,229,176,.3);
-  color:var(--accent2);
+  background:rgba(0,229,176,.08);border-color:rgba(0,229,176,.45);
+  color:var(--accent2);box-shadow:0 0 8px rgba(0,229,176,.08);
+}
+.tab-perm-chip.on::before{
+  content:"ON";color:var(--accent2);background:rgba(0,229,176,.1);
+  border-color:rgba(0,229,176,.3);
+}
+.tab-perm-chip.on:hover{
+  background:rgba(0,229,176,.13);border-color:rgba(0,229,176,.65);
+  box-shadow:0 0 14px rgba(0,229,176,.15);
 }
 .tab-perm-chip input{display:none}
 </style>
@@ -1646,11 +1662,6 @@ select option{background:var(--surface2)}
         <button class="btn btn-primary btn-sm" onclick="umAddUser()" style="white-space:nowrap;height:38px">+ Add User</button>
       </div>
       <div id="umAddError" style="font-family:var(--mono);font-size:10px;color:var(--accent3);margin-bottom:10px;min-height:14px"></div>
-
-      <!-- Tab permissions template -->
-      <div style="margin-bottom:14px">
-        <div class="flabel" style="margin-bottom:8px;font-size:9px">Tab Permissions (set per user below)</div>
-      </div>
 
       <!-- User list -->
       <div id="umList" style="border:1px solid var(--border)"></div>
@@ -5620,7 +5631,9 @@ function umRenderList() {
 
     const tabChips = ALL_TABS.map(t => {
       const on = tabs.includes(t.id) ? 'on' : '';
-      return '<span class="tab-perm-chip ' + on + '" onclick="umToggleTab(' + JSON.stringify(email) + ',' + JSON.stringify(t.id) + ',this)">' + t.label + '</span>';
+      // Strip emoji from label for cleaner chip display
+      const chipLabel = t.label.replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]\s*/u, '');
+      return '<span class="tab-perm-chip ' + on + '" onclick="umToggleTab(' + JSON.stringify(email) + ',' + JSON.stringify(t.id) + ',this)" title="Click to toggle access to: ' + t.label + '">' + chipLabel + '</span>';
     }).join('');
 
     return '<div class="um-row" style="flex-direction:column;align-items:flex-start;gap:8px">' +
@@ -5630,8 +5643,13 @@ function umRenderList() {
         '<button class="btn btn-ghost btn-sm" style="font-size:9px;padding:3px 8px" onclick="umResetPass(' + JSON.stringify(email) + ')">🔑 Reset PW</button>' +
         (email !== ADMIN_EMAIL ? '<button class="btn btn-sm" style="font-size:9px;padding:3px 8px;background:rgba(255,77,109,.12);color:var(--accent3);border:1px solid rgba(255,77,109,.2)" onclick="umDeleteUser(' + JSON.stringify(email) + ')">✕ Delete</button>' : '') +
       '</div>' +
-      '<div><div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-bottom:5px;letter-spacing:.06em">TAB ACCESS:</div>' +
-      '<div class="tab-perm-grid">' + tabChips + '</div></div>' +
+      '<div style="width:100%">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">' +
+          '<span style="font-family:var(--mono);font-size:9px;color:var(--muted2);letter-spacing:.08em;text-transform:uppercase">Tab Access</span>' +
+          '<span style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.04em">— click to toggle on/off</span>' +
+        '</div>' +
+        '<div class="tab-perm-grid">' + tabChips + '</div>' +
+      '</div>' +
     '</div>';
   }).join('');
 }
