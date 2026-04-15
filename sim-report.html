@@ -217,10 +217,18 @@ td.hi{color:var(--green)}td.hi-accent{color:var(--accent)}
           </div>
           <div class="field">
             <div class="field-label">&nbsp;</div>
-            <button class="btn-primary" id="cdr-btn" onclick="runCDR()" disabled>↗ Open in IBIS</button>
+            <button class="btn-primary" id="cdr-btn" onclick="runCDR()" disabled>↗ Fetch CDRs</button>
           </div>
         </div>
         <div class="period-chips" id="cdr-chips"></div>
+      </div>
+    </div>
+
+    <div class="card" id="cdr-loading" style="display:none">
+      <div class="card-body" style="text-align:center;padding:36px">
+        <div class="spinner"></div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--accent)" id="cdr-loading-msg">Connecting to IBIS...</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:6px">Fetching CDR records — this takes ~20 seconds</div>
       </div>
     </div>
 
@@ -275,6 +283,7 @@ td.hi{color:var(--green)}td.hi-accent{color:var(--accent)}
       <div class="card" id="cdr-table-card" style="display:none">
         <div class="card-header">
           <div class="card-title" id="cdr-table-title">📋 CDR Records</div>
+          <button class="btn-ghost" onclick="exportCDRCSV()" style="font-size:10px">⬇ Export CSV</button>
         </div>
         <div class="card-body" style="padding:0">
           <div class="table-wrap">
@@ -456,35 +465,93 @@ function renderBalance(d) {
   document.getElementById('bal-result').style.display='block';
 }
 
-// ══ CDR — opens IBIS portal directly at correct SIM + period ══
-function runCDR() {
+// ══ CDR — fetches live data from Railway Puppeteer backend ══
+const RAILWAY_CDR = 'https://sim-balance-api-production.up.railway.app/api/cdrs';
+let cdrRows = [];
+
+async function runCDR() {
   const iccid=document.getElementById('cdr-input').value.replace(/[\s\-]/g,'');
   const period=document.getElementById('cdr-period').value;
   if(!iccid||!period)return;
 
+  document.getElementById('cdr-result').style.display='none';
+  document.getElementById('cdr-error').style.display='none';
+  document.getElementById('cdr-loading').style.display='block';
+  document.getElementById('cdr-btn').disabled=true;
+
+  const t=cycleMsgs('cdr-loading-msg',[
+    'Connecting to IBIS...',
+    'Logging in to GlobalBeam...',
+    'Loading CDR page for this SIM...',
+    'Selecting billing period '+period+'...',
+    'Reading CDR records...'
+  ]);
+
+  try {
+    const resp=await fetch(RAILWAY_CDR,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({iccid,period})
+    });
+    const data=await resp.json();
+    if(!resp.ok) throw new Error(data.error||'Server error — please try again.');
+    cdrRows=data.rows||[];
+    renderCDR(iccid,period,cdrRows);
+  } catch(e) {
+    document.getElementById('cdr-error-msg').textContent=e.message;
+    document.getElementById('cdr-error').style.display='block';
+  } finally {
+    clearInterval(t);
+    document.getElementById('cdr-loading').style.display='none';
+    document.getElementById('cdr-btn').disabled=false;
+  }
+}
+
+function renderCDR(iccid,period,rows) {
   const y=period.slice(0,4),m=parseInt(period.slice(4,6))-1;
   const lbl=new Date(y,m,1).toLocaleString('default',{month:'long',year:'numeric'});
-
-  // Build the deep link — takes you straight to this SIM's CDR page
-  const portalUrl='https://ibisglobalbeam.satcomhost.com/RatedCdrs.aspx?FC=ICCID&FV='+encodeURIComponent(iccid);
-
-  // Show the info panel
-  document.getElementById('cdr-result').style.display='block';
-  document.getElementById('cdr-error').style.display='none';
+  const totalMin=rows.reduce((s,r)=>s+(parseFloat(r.volMin)||0),0);
+  const totalCost=rows.reduce((s,r)=>s+(parseFloat(r.cdrTotal)||0),0);
 
   document.getElementById('cdr-chips-summary').innerHTML=`
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-family:var(--mono);font-size:11px"><div style="color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">ICCID</div><div style="color:var(--text)">${iccid}</div></div>
-    <div style="background:var(--surface);border:1px solid var(--accent);border-radius:6px;padding:10px 16px;font-family:var(--mono);font-size:11px"><div style="color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Period</div><div style="color:var(--accent)">${lbl} (${period})</div></div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-family:var(--mono);font-size:11px"><div style="color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Period</div><div style="color:var(--accent)">${lbl}</div></div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-family:var(--mono);font-size:11px"><div style="color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Records</div><div style="color:var(--text)">${rows.length}</div></div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-family:var(--mono);font-size:11px"><div style="color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Total Duration</div><div style="color:var(--green)">${totalMin.toFixed(2)} min</div></div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-family:var(--mono);font-size:11px"><div style="color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Total Cost</div><div style="color:var(--amber)">$${totalCost.toFixed(4)}</div></div>
   `;
 
-  document.getElementById('cdr-nodata').style.display='none';
-  document.getElementById('cdr-table-card').style.display='none';
-  document.getElementById('cdr-portal-card').style.display='block';
-  document.getElementById('cdr-portal-link').href=portalUrl;
-  document.getElementById('cdr-period-label').textContent=period+' ('+lbl+')';
+  document.getElementById('cdr-portal-card').style.display='none';
+  document.getElementById('cdr-nodata').style.display=rows.length?'none':'block';
+  document.getElementById('cdr-table-card').style.display=rows.length?'block':'none';
+  document.getElementById('cdr-table-title').textContent='CDR Records — '+lbl;
 
-  // Auto-open portal
-  window.open(portalUrl,'_blank');
+  if(rows.length){
+    document.getElementById('cdr-tbody').innerHTML=rows.map(r=>`<tr>
+      <td>${r.service||'—'}</td>
+      <td class="hi-accent">${r.originNum||'—'}</td>
+      <td>${r.destNum||'—'}</td>
+      <td>${r.network||'—'}</td>
+      <td>${r.country||'—'}</td>
+      <td>${r.startCDR||'—'}</td>
+      <td>${r.endCDR||'—'}</td>
+      <td class="hi">${r.volMin||'0'}</td>
+      <td class="hi">${r.cdrTotal||'0'}</td>
+      <td>${r.currency||'—'}</td>
+    </tr>`).join('');
+  }
+  document.getElementById('cdr-result').style.display='block';
+}
+
+function exportCDRCSV() {
+  if(!cdrRows.length)return;
+  const h=['Service','Origin No.','Dest No.','Network','Country','Start CDR','End CDR','Duration (min)','CDR Total','Currency'];
+  const rows=cdrRows.map(r=>[r.service,r.originNum,r.destNum,r.network,r.country,r.startCDR,r.endCDR,r.volMin,r.cdrTotal,r.currency].map(v=>'"'+(v||'').replace(/"/g,'""')+'"').join(','));
+  const csv=[h.join(','),...rows].join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='CDR_'+iccid+'_'+period+'.csv';
+  a.click();
 }
 
 function updateDeeplink() {
