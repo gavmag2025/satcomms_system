@@ -217,18 +217,10 @@ td.hi{color:var(--green)}td.hi-accent{color:var(--accent)}
           </div>
           <div class="field">
             <div class="field-label">&nbsp;</div>
-            <button class="btn-primary" id="cdr-btn" onclick="runCDR()" disabled>↗ Fetch CDRs</button>
+            <button class="btn-primary" id="cdr-btn" onclick="runCDR()" disabled>↗ Open in IBIS</button>
           </div>
         </div>
         <div class="period-chips" id="cdr-chips"></div>
-      </div>
-    </div>
-
-    <div class="card" id="cdr-loading" style="display:none">
-      <div class="card-body" style="text-align:center;padding:36px">
-        <div class="spinner"></div>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--accent)" id="cdr-loading-msg">Connecting to IBIS...</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:6px">Fetching CDR records for this period — please wait</div>
       </div>
     </div>
 
@@ -236,7 +228,7 @@ td.hi{color:var(--green)}td.hi-accent{color:var(--accent)}
       <div class="card-body" style="display:flex;align-items:flex-start;gap:12px">
         <div style="font-size:22px">⚠</div>
         <div>
-          <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--red);margin-bottom:4px">CDR FETCH FAILED</div>
+          <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--red);margin-bottom:4px">ERROR</div>
           <div style="font-size:13px;color:var(--text2)" id="cdr-error-msg">Something went wrong.</div>
         </div>
       </div>
@@ -244,6 +236,34 @@ td.hi{color:var(--green)}td.hi-accent{color:var(--accent)}
 
     <div id="cdr-result" style="display:none">
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px" id="cdr-chips-summary"></div>
+
+      <!-- Portal card — opens IBIS at correct SIM + period -->
+      <div class="card" id="cdr-portal-card" style="display:none;border-color:var(--accent)">
+        <div class="card-header">
+          <div class="card-title">✓ Portal Ready — IBIS opened in new tab</div>
+          <a id="cdr-portal-link" href="#" target="_blank" class="btn-ghost" style="font-size:10px">↗ Re-open IBIS</a>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;">
+              <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--green);background:var(--green-dim);border-radius:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✓</div>
+              <div style="font-size:13px;color:var(--text2);padding-top:2px;">IBIS has opened directly at the <strong>Rated CDRs</strong> page for this SIM. Log in if prompted.</div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;">
+              <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-dim);border-radius:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div>
+              <div style="font-size:13px;color:var(--text2);padding-top:2px;">In the portal, set the <strong>Billing Period</strong> dropdown to <span style="color:var(--amber);font-family:var(--mono)" id="cdr-period-label">—</span></div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;">
+              <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-dim);border-radius:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
+              <div style="font-size:13px;color:var(--text2);padding-top:2px;">CDR rows will appear — columns: Service · Origin · Destination · Duration · Cost</div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;">
+              <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-dim);border-radius:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
+              <div style="font-size:13px;color:var(--text2);padding-top:2px;">Click <span style="color:var(--amber)">Table Options → Download</span> → choose <strong>Excel</strong> or <strong>PDF</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div class="card" id="cdr-nodata" style="display:none">
         <div class="empty-state">
@@ -255,7 +275,6 @@ td.hi{color:var(--green)}td.hi-accent{color:var(--accent)}
       <div class="card" id="cdr-table-card" style="display:none">
         <div class="card-header">
           <div class="card-title" id="cdr-table-title">📋 CDR Records</div>
-          <button class="btn-ghost" onclick="exportCDRCSV()" style="font-size:10px">⬇ Export CSV</button>
         </div>
         <div class="card-body" style="padding:0">
           <div class="table-wrap">
@@ -375,7 +394,16 @@ function cycleMsgs(elId, msgs) {
   return setInterval(()=>{i=(i+1)%msgs.length;if(el)el.textContent=msgs[i];},5000);
 }
 
-// ══ BALANCE ══
+// ══ BALANCE — via Railway (Puppeteer backend, already proven working) ══
+const RAILWAY_API = 'https://sim-balance-api-production.up.railway.app/api/balance';
+
+// Keep Railway awake
+function keepRailwayAlive() {
+  fetch('https://sim-balance-api-production.up.railway.app/health').catch(()=>{});
+}
+keepRailwayAlive();
+setInterval(keepRailwayAlive, 10 * 60 * 1000);
+
 async function runBalance() {
   const iccid=document.getElementById('bal-input').value.replace(/[\s\-]/g,'');
   if(!/^\d{15,22}$/.test(iccid))return;
@@ -385,8 +413,14 @@ async function runBalance() {
   document.getElementById('bal-btn').disabled=true;
   const t=cycleMsgs('bal-loading-msg',['Connecting to IBIS...','Logging in to GlobalBeam...','Searching for SIM card...','Reading balance and expiry...']);
   try {
-    const d=await callRelay('getIBISBalance',{iccid});
-    renderBalance(d);
+    const resp=await fetch(RAILWAY_API,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({iccid})
+    });
+    const data=await resp.json();
+    if(!resp.ok) throw new Error(data.error||'Server error — please try again.');
+    renderBalance(data);
   } catch(e) {
     document.getElementById('bal-error-msg').textContent=e.message;
     document.getElementById('bal-error').style.display='block';
@@ -422,76 +456,35 @@ function renderBalance(d) {
   document.getElementById('bal-result').style.display='block';
 }
 
-// ══ CDR ══
-let cdrRows=[];
-
-async function runCDR() {
+// ══ CDR — opens IBIS portal directly at correct SIM + period ══
+function runCDR() {
   const iccid=document.getElementById('cdr-input').value.replace(/[\s\-]/g,'');
   const period=document.getElementById('cdr-period').value;
   if(!iccid||!period)return;
-  document.getElementById('cdr-result').style.display='none';
-  document.getElementById('cdr-error').style.display='none';
-  document.getElementById('cdr-loading').style.display='block';
-  document.getElementById('cdr-btn').disabled=true;
-  const t=cycleMsgs('cdr-loading-msg',['Connecting to IBIS...','Logging in to GlobalBeam...','Loading CDR page for this SIM...','Selecting billing period '+period+'...','Parsing CDR records...']);
-  try {
-    const d=await callRelay('getIBISCDRs',{iccid,period});
-    cdrRows=d.rows||[];
-    renderCDR(iccid,period,cdrRows);
-  } catch(e) {
-    document.getElementById('cdr-error-msg').textContent=e.message;
-    document.getElementById('cdr-error').style.display='block';
-  } finally {
-    clearInterval(t);
-    document.getElementById('cdr-loading').style.display='none';
-    document.getElementById('cdr-btn').disabled=false;
-  }
-}
 
-function renderCDR(iccid,period,rows) {
   const y=period.slice(0,4),m=parseInt(period.slice(4,6))-1;
   const lbl=new Date(y,m,1).toLocaleString('default',{month:'long',year:'numeric'});
-  const totalMin=rows.reduce((s,r)=>s+(parseFloat(r.volMin)||0),0);
-  const totalCost=rows.reduce((s,r)=>s+(parseFloat(r.cdrTotal)||0),0);
+
+  // Build the deep link — takes you straight to this SIM's CDR page
+  const portalUrl='https://ibisglobalbeam.satcomhost.com/RatedCdrs.aspx?FC=ICCID&FV='+encodeURIComponent(iccid);
+
+  // Show the info panel
+  document.getElementById('cdr-result').style.display='block';
+  document.getElementById('cdr-error').style.display='none';
 
   document.getElementById('cdr-chips-summary').innerHTML=`
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-family:var(--mono);font-size:11px"><div style="color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">ICCID</div><div style="color:var(--text)">${iccid}</div></div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-family:var(--mono);font-size:11px"><div style="color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Period</div><div style="color:var(--accent)">${lbl}</div></div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-family:var(--mono);font-size:11px"><div style="color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Records</div><div style="color:var(--text)">${rows.length}</div></div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-family:var(--mono);font-size:11px"><div style="color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Total Duration</div><div style="color:var(--green)">${totalMin.toFixed(2)} min</div></div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-family:var(--mono);font-size:11px"><div style="color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Total Cost</div><div style="color:var(--amber)">$${totalCost.toFixed(4)}</div></div>
+    <div style="background:var(--surface);border:1px solid var(--accent);border-radius:6px;padding:10px 16px;font-family:var(--mono);font-size:11px"><div style="color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Period</div><div style="color:var(--accent)">${lbl} (${period})</div></div>
   `;
 
-  document.getElementById('cdr-table-title').textContent='CDR Records — '+lbl;
-  document.getElementById('cdr-nodata').style.display=rows.length?'none':'block';
-  document.getElementById('cdr-table-card').style.display=rows.length?'block':'none';
+  document.getElementById('cdr-nodata').style.display='none';
+  document.getElementById('cdr-table-card').style.display='none';
+  document.getElementById('cdr-portal-card').style.display='block';
+  document.getElementById('cdr-portal-link').href=portalUrl;
+  document.getElementById('cdr-period-label').textContent=period+' ('+lbl+')';
 
-  if(rows.length){
-    document.getElementById('cdr-tbody').innerHTML=rows.map(r=>`<tr>
-      <td>${r.service||'—'}</td>
-      <td class="hi-accent">${r.originNum||'—'}</td>
-      <td>${r.destNum||'—'}</td>
-      <td>${r.network||'—'}</td>
-      <td>${r.country||'—'}</td>
-      <td>${r.startCDR||'—'}</td>
-      <td>${r.endCDR||'—'}</td>
-      <td class="hi">${r.volMin||'0'}</td>
-      <td class="hi">${r.cdrTotal||'0'}</td>
-      <td>${r.currency||'—'}</td>
-    </tr>`).join('');
-  }
-  document.getElementById('cdr-result').style.display='block';
-}
-
-function exportCDRCSV() {
-  if(!cdrRows.length)return;
-  const h=['Service','Origin No.','Dest No.','Network','Country','Start CDR','End CDR','Duration (min)','CDR Total','Currency'];
-  const rows=cdrRows.map(r=>[r.service,r.originNum,r.destNum,r.network,r.country,r.startCDR,r.endCDR,r.volMin,r.cdrTotal,r.currency].map(v=>'"'+(v||'').replace(/"/g,'""')+'"').join(','));
-  const csv=[h.join(','),...rows].join('\n');
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='CDR_'+(document.getElementById('cdr-input').value||'SIM')+'_'+(document.getElementById('cdr-period').value||'')+'.csv';
-  a.click();
+  // Auto-open portal
+  window.open(portalUrl,'_blank');
 }
 
 function updateDeeplink() {
