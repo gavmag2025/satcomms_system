@@ -3075,19 +3075,27 @@ async function processTopupFile(file) {
 
     const isPDF = file.type === 'application/pdf';
     const mediaType = isPDF ? 'application/pdf' : file.type || 'image/jpeg';
-
     if (msg) msg.textContent = 'Sending to AI for extraction...';
 
-    // Route through GAS relay (CORS prevents direct Anthropic calls from browser)
-    const result = await callRelay('parseInvoice', {
-      base64,
-      mediaType,
-      isPDF
+    // Direct Anthropic call — works from browser with valid API key
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: 'You are an invoice parser for a South African satellite communications company. Return ONLY valid JSON, no markdown, no explanation. Start with { and end with }.',
+        messages: [{ role: 'user', content: [
+          { type: isPDF ? 'document' : 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+          { type: 'text', text: 'Extract all details from this invoice and return ONLY this JSON:\n{"invoiceNumber":"","date":"YYYY-MM-DD","customerName":"","customerEmail":"","customerPhone":"","amount":0,"airtimeProduct":"all line items and quantities","devices":[{"tel":"TEL or IMEI number","sim":"SIM or ICCID number"}],"notes":""}\nCRITICAL: The devices array must contain ALL TEL/IMEI and SIM/ICCID entries found anywhere in the document. Scan every row of every table — do NOT stop at the first one. If no devices found use []. If a field is missing use empty string or 0.' }
+        ]}]
+      })
     });
-
-    if (!result || result.error) throw new Error(result?.error || 'Relay returned no result');
-
-    const parsed = result;
+    const data = await response.json();
+    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    const js = text.indexOf('{'), je = text.lastIndexOf('}');
+    if (js < 0 || je < js) throw new Error('Could not parse AI response: ' + text.substring(0,100));
+    const parsed = JSON.parse(text.substring(js, je + 1));
 
     // Populate form fields
     const set = (id, v) => { const el = document.getElementById(id); if (el && (v || v === 0)) el.value = v; };
@@ -3099,7 +3107,6 @@ async function processTopupFile(file) {
     set('tp_amount', parsed.amount || '');
     set('tp_product', parsed.airtimeProduct);
     set('tp_notes', parsed.notes);
-    // Populate device rows (TEL/IMEI + SIM/ICCID)
     const devices = Array.isArray(parsed.devices) ? parsed.devices : [];
     setTopupDeviceRows(devices.length ? devices : [{ tel: '', sim: '' }]);
 
