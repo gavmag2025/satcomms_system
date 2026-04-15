@@ -3078,35 +3078,16 @@ async function processTopupFile(file) {
 
     if (msg) msg.textContent = 'Sending to AI for extraction...';
 
-    // Call Claude via Anthropic API to extract invoice details
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20251022',
-        max_tokens: 1000,
-        system: 'You are an invoice parser for a South African satellite communications company. Extract invoice details and return ONLY valid JSON, no markdown, no explanation. Start with { and end with }.',
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: isPDF ? 'document' : 'image',
-              source: { type: 'base64', media_type: mediaType, data: base64 }
-            },
-            {
-              type: 'text',
-              text: 'Extract all details from this invoice and return ONLY this JSON structure — no markdown, no explanation:\n{\n  "invoiceNumber": "INV-001",\n  "date": "YYYY-MM-DD",\n  "customerName": "Full Name",\n  "customerEmail": "email@example.com",\n  "customerPhone": "+27...",\n  "amount": 1234.56,\n  "airtimeProduct": "Description of airtime product(s) and quantities",\n  "devices": [\n    { "tel": "phone number or IMEI here", "sim": "SIM or ICCID number here" },\n    { "tel": "second entry", "sim": "second SIM/ICCID" }\n  ],\n  "notes": "Any other relevant info"\n}\nCRITICAL: Scan the ENTIRE document for ALL TEL, IMEI, SIM, and ICCID entries — they may appear in a table with multiple rows. Include every single one in the "devices" array. Do NOT stop at the first entry. If a field is not found use empty string or 0. If no devices found use [].'
-            }
-          ]
-        }]
-      })
+    // Route through GAS relay (CORS prevents direct Anthropic calls from browser)
+    const result = await callRelay('parseInvoice', {
+      base64,
+      mediaType,
+      isPDF
     });
 
-    const data = await response.json();
-    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-    const js = text.indexOf('{'), je = text.lastIndexOf('}');
-    if (js < 0 || je < js) throw new Error('Could not parse AI response');
-    const parsed = JSON.parse(text.substring(js, je + 1));
+    if (!result || result.error) throw new Error(result?.error || 'Relay returned no result');
+
+    const parsed = result;
 
     // Populate form fields
     const set = (id, v) => { const el = document.getElementById(id); if (el && (v || v === 0)) el.value = v; };
@@ -3130,7 +3111,6 @@ async function processTopupFile(file) {
   } catch(e) {
     parsing.style.display = 'none';
     extracted.style.display = 'block';
-    // Show form blank for manual entry
     document.getElementById('topupExtractBadge').textContent = '⚠ MANUAL ENTRY';
     document.getElementById('topupExtractBadge').style.background = 'var(--accent4)';
     setTopupDeviceRows([{ tel: '', sim: '' }]);
