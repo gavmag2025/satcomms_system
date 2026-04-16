@@ -515,6 +515,8 @@ select option{background:var(--surface2)}
       <button class="btn btn-ghost btn-sm" onclick="garminSelectAllVisible()">☑ Select All Visible</button>
       <button class="btn btn-ghost btn-sm" onclick="garminClearSelection()">☐ Deselect All</button>
       <div style="flex:1"></div>
+      <button class="btn btn-success btn-sm" onclick="showGarminWixPanel()">📊 Wix Price Compare</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--accent4)" onclick="showGarminCompWatch()">🎯 Competitor Watch</button>
       <span id="garminSelSummary" style="font-family:var(--mono);font-size:10px;color:var(--accent4)"></span>
     </div>
 
@@ -592,6 +594,43 @@ select option{background:var(--surface2)}
   </div>
 
   <div id="garminEmpty" class="empty" style="display:none"><div class="empty-icon">🔍</div><div class="empty-text">No products match your filters.</div></div>
+
+  <!-- ══ WIX PRICE COMPARISON PANEL ══ -->
+  <div id="garminWixPanel" style="margin-top:20px;border-top:2px solid var(--border2);padding-top:16px;display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <div>
+        <div style="font-family:var(--cond);font-size:16px;font-weight:700;letter-spacing:.06em;color:var(--accent2)">📊 WIX PRICE COMPARISON</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-top:2px">CSV calculated price (excl VAT) vs current live Wix price — push updates in one click</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="loadGarminWixComparison()">↻ Load &amp; Compare</button>
+        <button class="btn btn-wix btn-sm" onclick="pushAllGarminWixPrices()" id="garminWixPushAllBtn" style="display:none">🚀 Push All Updates</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('garminWixPanel').style.display='none'">✕</button>
+      </div>
+    </div>
+    <div id="garminWixLog" style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-bottom:8px;min-height:14px"></div>
+    <div id="garminWixTable"></div>
+  </div>
+
+  <!-- ══ GARMIN COMPETITOR PRICE WATCH ══ -->
+  <div id="garminCompWatch" style="margin-top:20px;border-top:2px solid var(--border2);padding-top:16px;display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <div>
+        <div style="font-family:var(--cond);font-size:16px;font-weight:700;letter-spacing:.06em;color:var(--accent4)">🎯 GARMIN COMPETITOR PRICE WATCH</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-top:2px">Compare your prices against SA retailers via Google Shopping</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="gcwAddFromCSV()">+ From CSV</button>
+        <button class="btn btn-primary btn-sm" onclick="gcwRefreshAll()" id="gcwRefreshBtn">↻ Refresh All</button>
+        <button class="btn btn-ghost btn-sm" onclick="gcwClearAll()">✕ Clear All</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('garminCompWatch').style.display='none'">— Hide</button>
+      </div>
+    </div>
+    <div id="gcwGrid" style="display:flex;flex-direction:column;gap:8px">
+      <div class="empty" style="padding:30px"><div class="empty-icon">🎯</div><div class="empty-text">Add products from your Garmin CSV to start tracking competitor prices.</div></div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -4602,6 +4641,289 @@ function logAuto(msg, type=''){
   if(lines.length > 10) el.innerHTML = lines.slice(0,10).join('<br>');
 }
 
+
+// ═══════════════════════════════════════════════════════
+// GARMIN WIX PRICE COMPARISON
+// ═══════════════════════════════════════════════════════
+function showGarminWixPanel() {
+  var panel = document.getElementById('garminWixPanel');
+  if (!garminProducts.length) { alert('Upload a Garmin CSV first.'); return; }
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  loadGarminWixComparison();
+}
+
+async function loadGarminWixComparison() {
+  var log = document.getElementById('garminWixLog');
+  var table = document.getElementById('garminWixTable');
+  var pushBtn = document.getElementById('garminWixPushAllBtn');
+  log.textContent = 'Loading live Wix products...';
+  table.innerHTML = '<div style="padding:20px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted2)">Loading...</div>';
+  pushBtn.style.display = 'none';
+
+  try {
+    // Load all Wix products
+    var all = [], offset = 0, limit = 100;
+    while (true) {
+      var r = await callRelay('getWixProducts', { limit: limit, offset: offset });
+      var items = (r && (r.products || r.items)) || [];
+      all = all.concat(items);
+      if (items.length < limit) break;
+      offset += limit;
+      if (all.length >= 500) break;
+    }
+
+    // Build SKU and name maps for matching
+    var wixBySku = {};
+    var wixByName = {};
+    all.forEach(function(p) {
+      if (p.sku) wixBySku[p.sku.trim().toLowerCase()] = p;
+      if (p.name) wixByName[p.name.trim().toLowerCase()] = p;
+    });
+
+    // Match each Garmin CSV product to a Wix product
+    var rows = [];
+    garminProducts.forEach(function(g) {
+      var wix = wixBySku[g.sku.trim().toLowerCase()]
+             || wixByName[g.name.trim().toLowerCase()];
+      var csvPrice = calcGarminPrice(g);
+      var wixPrice = wix ? parseFloat(wix.priceData && wix.priceData.price || wix.price || 0) : null;
+      rows.push({
+        sku: g.sku, name: g.name, dealer: g.dealer,
+        csvPrice: csvPrice,
+        wixId: wix ? wix.id : null,
+        wixPrice: wixPrice,
+        instock: g.instock,
+        onWix: !!wix
+      });
+    });
+
+    var onWix = rows.filter(function(r) { return r.onWix; });
+    var needsUpdate = onWix.filter(function(r) { return r.wixPrice !== null && Math.abs(r.csvPrice - r.wixPrice) > 1; });
+
+    log.textContent = onWix.length + ' of ' + rows.length + ' CSV products found on Wix · ' + needsUpdate.length + ' need price updates';
+    if (needsUpdate.length > 0) {
+      pushBtn.style.display = 'inline-flex';
+      pushBtn.textContent = 'Push ' + needsUpdate.length + ' Price Updates to Wix';
+    }
+
+    // Store for push
+    window._garminWixRows = rows;
+
+    // Render table - only show products that are on Wix
+    if (!onWix.length) {
+      table.innerHTML = '<div class="empty" style="padding:30px"><div class="empty-icon">📊</div><div class="empty-text">No Garmin CSV products matched to Wix products by SKU or name.</div></div>';
+      return;
+    }
+
+    var t = '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+    t += '<thead><tr style="background:var(--surface2);font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase">';
+    t += '<th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)">Product / SKU</th>';
+    t += '<th style="padding:8px 12px;text-align:right;border-bottom:1px solid var(--border)">Dealer Cost</th>';
+    t += '<th style="padding:8px 12px;text-align:right;border-bottom:1px solid var(--border)">CSV Price (Excl VAT)</th>';
+    t += '<th style="padding:8px 12px;text-align:right;border-bottom:1px solid var(--border)">Wix Price (Current)</th>';
+    t += '<th style="padding:8px 12px;text-align:center;border-bottom:1px solid var(--border)">Diff</th>';
+    t += '<th style="padding:8px 12px;text-align:center;border-bottom:1px solid var(--border)">Action</th>';
+    t += '</tr></thead><tbody>';
+
+    onWix.forEach(function(row, i) {
+      var diff = row.wixPrice !== null ? row.csvPrice - row.wixPrice : 0;
+      var pct = row.wixPrice && row.wixPrice > 0 ? (diff / row.wixPrice * 100) : 0;
+      var needsUp = Math.abs(diff) > 1;
+      var diffColor = diff > 1 ? 'var(--accent2)' : diff < -1 ? 'var(--accent3)' : 'var(--muted2)';
+      var diffStr = needsUp ? (diff > 0 ? '+' : '') + 'R' + Math.abs(diff).toLocaleString('en-ZA', {minimumFractionDigits:2}) + ' (' + (pct > 0 ? '+' : '') + pct.toFixed(1) + '%)' : '✓ Up to date';
+      var rowBg = needsUp ? (diff > 0 ? 'rgba(0,229,176,.04)' : 'rgba(255,77,109,.04)') : '';
+
+      t += '<tr style="border-bottom:1px solid var(--border);background:' + rowBg + '">';
+      t += '<td style="padding:8px 12px"><div style="font-weight:600;font-size:12px">' + row.name.substring(0, 55) + '</div>';
+      t += '<div style="font-family:var(--mono);font-size:9px;color:var(--muted)">' + row.sku + (row.instock ? '' : ' · OOS') + '</div></td>';
+      t += '<td style="padding:8px 12px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--muted2)">R' + row.dealer.toLocaleString('en-ZA') + '</td>';
+      t += '<td style="padding:8px 12px;text-align:right;font-family:var(--cond);font-size:15px;font-weight:700;color:var(--accent2)">R' + row.csvPrice.toLocaleString('en-ZA') + '</td>';
+      t += '<td style="padding:8px 12px;text-align:right;font-family:var(--cond);font-size:15px;font-weight:700;color:var(--muted2)">' + (row.wixPrice !== null ? 'R' + row.wixPrice.toLocaleString('en-ZA') : '—') + '</td>';
+      t += '<td style="padding:8px 12px;text-align:center;font-family:var(--mono);font-size:10px;color:' + diffColor + '">' + diffStr + '</td>';
+      t += '<td style="padding:8px 12px;text-align:center">';
+      if (needsUp && row.wixId) {
+        t += '<button class="btn btn-sm btn-ghost" onclick="pushSingleGarminWixPrice(' + i + ')" style="font-size:9px">↑ Push</button>';
+      } else if (!needsUp) {
+        t += '<span style="font-family:var(--mono);font-size:9px;color:var(--accent2)">✓</span>';
+      }
+      t += '</td></tr>';
+    });
+
+    t += '</tbody></table>';
+    table.innerHTML = t;
+    // Store onWix rows with indices for push
+    window._garminWixOnWixRows = onWix;
+
+  } catch(e) {
+    log.textContent = '✗ Error: ' + e.message;
+    table.innerHTML = '';
+  }
+}
+
+async function pushSingleGarminWixPrice(idx) {
+  var row = (window._garminWixOnWixRows || [])[idx];
+  if (!row || !row.wixId) return;
+  var btn = document.querySelectorAll('#garminWixTable button')[idx] || event.target;
+  btn.disabled = true; btn.textContent = '⏳';
+  try {
+    await callRelay('updateProduct', { productId: row.wixId, product: { priceData: { price: row.csvPrice } } });
+    row.wixPrice = row.csvPrice;
+    btn.textContent = '✓';
+    btn.style.color = 'var(--accent2)';
+    document.getElementById('garminWixLog').textContent = 'Updated: ' + row.name.substring(0,40) + ' → R' + row.csvPrice.toLocaleString('en-ZA');
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '↑ Push';
+    document.getElementById('garminWixLog').textContent = '✗ ' + e.message;
+  }
+}
+
+async function pushAllGarminWixPrices() {
+  var rows = (window._garminWixOnWixRows || []).filter(function(r) { return r.wixId && Math.abs(r.csvPrice - r.wixPrice) > 1; });
+  if (!rows.length) { alert('No price updates needed.'); return; }
+  if (!confirm('Push ' + rows.length + ' price updates to Wix?')) return;
+  var log = document.getElementById('garminWixLog');
+  var btn = document.getElementById('garminWixPushAllBtn');
+  btn.disabled = true;
+  var done = 0, errs = 0;
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    btn.textContent = 'Pushing ' + (done+1) + '/' + rows.length + '...';
+    try {
+      await callRelay('updateProduct', { productId: row.wixId, product: { priceData: { price: row.csvPrice } } });
+      row.wixPrice = row.csvPrice;
+      done++;
+    } catch(e) { errs++; }
+    await new Promise(function(r) { setTimeout(r, 300); });
+  }
+  btn.disabled = false;
+  btn.textContent = done + ' updated' + (errs ? ' · ' + errs + ' failed' : '');
+  log.textContent = done + ' prices pushed to Wix' + (errs ? ', ' + errs + ' failed' : '');
+  loadGarminWixComparison();
+}
+
+// ═══════════════════════════════════════════════════════
+// GARMIN COMPETITOR PRICE WATCH
+// ═══════════════════════════════════════════════════════
+var gcwProducts = JSON.parse(localStorage.getItem('sc_gcw') || '[]');
+function gcwSave() { localStorage.setItem('sc_gcw', JSON.stringify(gcwProducts)); }
+
+function showGarminCompWatch() {
+  var panel = document.getElementById('garminCompWatch');
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  gcwRender();
+}
+
+function gcwAddFromCSV() {
+  if (!garminProducts.length) { alert('Upload a Garmin CSV first.'); return; }
+  var pub = JSON.parse(localStorage.getItem('sc_pub') || '[]');
+  var pubSkus = new Set(pub.map(function(p) { return p.sku; }));
+  var source = garminProducts.filter(function(p) { return pubSkus.has(p.sku); });
+  if (!source.length) source = garminProducts.slice(0, 20);
+  var added = 0;
+  source.slice(0, 25).forEach(function(p) {
+    if (gcwProducts.find(function(g) { return g.sku === p.sku; })) return;
+    gcwProducts.push({ id: Date.now() + Math.random(), name: p.name, sku: p.sku, myPrice: calcGarminPrice(p), results: [], lastChecked: null });
+    added++;
+  });
+  gcwSave(); gcwRender();
+  if (added === 0) alert('All products already in Competitor Watch.');
+}
+
+async function gcwRefreshAll() {
+  if (!gcwProducts.length) { alert('No products to refresh.'); return; }
+  var btn = document.getElementById('gcwRefreshBtn');
+  btn.disabled = true; btn.textContent = 'Checking...';
+  for (var i = 0; i < gcwProducts.length; i++) {
+    gcwProducts[i].results = await gcwSearch(gcwProducts[i].name);
+    gcwProducts[i].lastChecked = new Date().toISOString();
+    btn.textContent = 'Checking ' + (i+1) + '/' + gcwProducts.length + '...';
+    gcwRender();
+    await new Promise(function(r) { setTimeout(r, 800); });
+  }
+  gcwSave();
+  btn.disabled = false; btn.textContent = '↻ Refresh All';
+}
+
+async function gcwRefreshOne(id) {
+  var item = gcwProducts.find(function(p) { return p.id === id; });
+  if (!item) return;
+  item.results = await gcwSearch(item.name);
+  item.lastChecked = new Date().toISOString();
+  gcwSave(); gcwRender();
+}
+
+async function gcwSearch(name) {
+  try {
+    var r = await callRelay('searchGoogleShopping', { query: name + ' south africa price' });
+    return (r && r.results) || [];
+  } catch(e) { return []; }
+}
+
+function gcwRemove(id) {
+  gcwProducts = gcwProducts.filter(function(p) { return p.id !== id; });
+  gcwSave(); gcwRender();
+}
+
+function gcwClearAll() {
+  if (!confirm('Remove all ' + gcwProducts.length + ' products from Competitor Watch?')) return;
+  gcwProducts = []; gcwSave(); gcwRender();
+}
+
+function gcwRender() {
+  var grid = document.getElementById('gcwGrid');
+  if (!gcwProducts.length) {
+    grid.innerHTML = '<div class="empty" style="padding:30px"><div class="empty-icon">🎯</div><div class="empty-text">Add products from your Garmin CSV to start tracking competitor prices.</div></div>';
+    return;
+  }
+  grid.innerHTML = gcwProducts.map(function(item) {
+    var myPrice = item.myPrice || 0;
+    var validResults = (item.results || []).filter(function(r) { return r.price > 0 && r.title; });
+    var seen = new Set();
+    var deduped = validResults.filter(function(r) {
+      var key = r.price + '|' + r.title.substring(0,20);
+      if (seen.has(key)) return false; seen.add(key); return true;
+    }).sort(function(a,b) { return a.price - b.price; });
+    var minPrice = deduped.length ? deduped[0].price : null;
+    var isCheapest = myPrice > 0 && minPrice && myPrice <= minPrice;
+    var isUndercut = myPrice > 0 && minPrice && !isCheapest && ((myPrice - minPrice) / myPrice) > 0.03;
+    var badge = isCheapest
+      ? '<span style="background:var(--accent2);color:#000;font-family:var(--mono);font-size:8px;font-weight:700;padding:2px 7px;border-radius:2px">✓ LOWEST PRICE</span>'
+      : isUndercut
+      ? '<span style="background:var(--accent3);color:#fff;font-family:var(--mono);font-size:8px;font-weight:700;padding:2px 7px;border-radius:2px">⚠ UNDERCUT ' + (((myPrice-minPrice)/myPrice)*100).toFixed(1) + '%</span>'
+      : deduped.length ? '<span style="background:var(--surface3);color:var(--muted2);font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:2px">COMPETITIVE</span>' : '';
+    var lastChecked = item.lastChecked ? new Date(item.lastChecked).toLocaleString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Not checked';
+    var priceRows = deduped.length === 0
+      ? '<div style="padding:12px 16px;text-align:center;color:var(--muted2);font-family:var(--mono);font-size:10px">No prices found — click ↻ to search</div>'
+      : deduped.slice(0,6).map(function(r) {
+          var diff = myPrice > 0 ? ((myPrice - r.price) / myPrice * 100) : null;
+          var dc = diff === null ? 'var(--muted2)' : diff > 0 ? 'var(--accent2)' : 'var(--accent3)';
+          var ds = diff === null ? '' : diff > 0 ? ('▲ ' + diff.toFixed(1) + '% above') : ('▼ ' + Math.abs(diff).toFixed(1) + '% below you');
+          return '<div style="display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid var(--border)">'
+            + '<div style="flex:1;min-width:0"><div style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + r.title.substring(0,60) + '</div>'
+            + (r.store ? '<div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-top:1px">' + r.store + '</div>' : '')
+            + '</div>'
+            + '<div style="font-family:var(--cond);font-size:18px;font-weight:700;color:' + (r.price===minPrice?'var(--accent4)':'var(--muted2)') + ';flex-shrink:0">R' + r.price.toLocaleString('en-ZA') + '</div>'
+            + (diff !== null ? '<div style="font-family:var(--mono);font-size:9px;color:' + dc + ';flex-shrink:0;min-width:80px;text-align:right">' + ds + '</div>' : '')
+            + (r.url ? '<a href="' + r.url + '" target="_blank" style="color:var(--accent);font-size:10px;flex-shrink:0">↗</a>' : '')
+            + '</div>';
+        }).join('');
+    return '<div style="background:var(--surface);border:1px solid ' + (isUndercut?'var(--accent3)':isCheapest?'var(--accent2)':'var(--border)') + '">'
+      + '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface2)">'
+      + '<div style="flex:1;min-width:0"><div style="font-weight:600">' + item.name + '</div>'
+      + '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">' + item.sku + ' · ' + lastChecked + ' · ' + deduped.length + ' prices found</div></div>'
+      + badge
+      + (myPrice ? '<div style="text-align:right;flex-shrink:0"><div style="font-family:var(--mono);font-size:8px;color:var(--muted)">YOUR PRICE</div><div style="font-family:var(--cond);font-size:18px;font-weight:700;color:var(--accent2)">R' + myPrice.toLocaleString('en-ZA') + '</div></div>' : '')
+      + '<button class="btn btn-ghost btn-sm" onclick="gcwRefreshOne(' + item.id + ')">↻</button>'
+      + '<button class="btn btn-danger btn-sm" onclick="gcwRemove(' + item.id + ')">✕</button>'
+      + '</div>'
+      + priceRows + '</div>';
+  }).join('');
+}
+
+// Init gcw on load
+gcwRender();
 </script>
 </body>
 </html>
