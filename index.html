@@ -380,7 +380,7 @@ select option{background:var(--surface2)}
   color:var(--text);
   margin-bottom:4px;
 }
-.login-logo span{color:var(--accent1);}
+.login-logo span{color:var(--accent);}
 .login-subtitle{text-align:center;font-size:12px;color:var(--muted);margin-top:-12px;}
 .login-field{display:flex;flex-direction:column;gap:6px;}
 .login-field label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
@@ -390,13 +390,13 @@ select option{background:var(--surface2)}
   padding:10px 14px;font-size:14px;outline:none;
   transition:border-color .2s;
 }
-.login-field input:focus{border-color:var(--accent1);}
+.login-field input:focus{border-color:var(--accent);}
 .login-error{
   font-size:12px;color:var(--accent4);
   text-align:center;min-height:16px;
 }
 .login-btn{
-  background:var(--accent1);color:#000;
+  background:var(--accent);color:#000;
   border:none;border-radius:8px;
   padding:12px;font-size:14px;font-weight:700;
   cursor:pointer;transition:opacity .2s;
@@ -411,7 +411,7 @@ select option{background:var(--surface2)}
 }
 #userChip .chip-avatar{
   width:22px;height:22px;border-radius:50%;
-  background:var(--accent1);color:#000;
+  background:var(--accent);color:#000;
   display:flex;align-items:center;justify-content:center;
   font-size:10px;font-weight:700;
 }
@@ -1322,7 +1322,7 @@ select option{background:var(--surface2)}
       <div class="flabel" style="margin-bottom:4px">Pending Changes</div>
       <div id="pricingPendingTxt" style="font-family:var(--mono);font-size:12px;color:var(--muted2)">No changes — load products first</div>
     </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent1);padding:14px 20px;flex:3">
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);padding:14px 20px;flex:3">
       <div class="flabel" style="margin-bottom:4px">How it works</div>
       <div style="font-size:11px;color:var(--muted2);line-height:1.7">
         Wix is set to <b style="color:var(--text)">add VAT at checkout</b> — store prices <b style="color:var(--accent2)">excl VAT</b>.
@@ -1830,7 +1830,9 @@ function renderUserManagement() {
     html += '<div><div style="font-size:13px;font-weight:600">' + u.name + (isYou ? ' <span style="color:var(--accent2);font-size:11px">(you)</span>' : '') + '</div>';
     html += '<div style="font-size:11px;color:var(--muted)">' + email + (u.isAdmin ? ' · Admin' : '') + '</div></div>';
     if (!isYou) {
-      html += '<button class="btn btn-sm btn-ghost" style="color:var(--accent4)" onclick="deleteUser('' + email + '')">Remove</button>';
+      html += '<button class="btn btn-sm btn-ghost" style="color:var(--accent4)" '
+        + 'data-em="' + btoa(email) + '" '
+        + 'onclick="deleteUser(atob(this.dataset.em))">Remove</button>';
     }
     html += '</div>';
   });
@@ -3434,8 +3436,6 @@ async function processTopupFile(file) {
 
     const isPDF = file.type === 'application/pdf';
     const mediaType = isPDF ? 'application/pdf' : file.type || 'image/jpeg';
-    if (msg) msg.textContent = 'Sending to AI for extraction...';
-
     if (msg) msg.textContent = 'Sending to AI for extraction...';
     // Direct Anthropic call with browser-access header (no CORS issue)
     const cfg = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
