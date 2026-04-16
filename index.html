@@ -1381,7 +1381,7 @@ select option{background:var(--surface2)}
         <div style="font-family:var(--cond);font-size:18px;font-weight:800;color:var(--accent);letter-spacing:.06em;margin-bottom:6px">DROP INVOICE HERE</div>
         <div style="font-family:var(--mono);font-size:9px;color:var(--muted2)">PDF or image (JPG/PNG) · AI will extract all details</div>
         <div style="margin-top:8px">
-          <button type="button" class="btn btn-ghost btn-sm" onclick="testTopupRelay()" style="font-size:8px;padding:2px 8px">🔌 Test Relay</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="event.stopPropagation();testTopupRelay()" style="font-size:8px;padding:2px 8px">🔌 Test Relay</button>
           <span id="topupRelayStatus" style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-left:6px"></span>
         </div>
         <input type="file" id="topupFileInput" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="handleTopupFile(this.files[0])">
