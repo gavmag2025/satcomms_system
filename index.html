@@ -1495,7 +1495,7 @@ select option{background:var(--surface2)}
       <div class="flabel" style="margin-bottom:12px">Relay & API Keys</div>
       <div class="mfield">
         <label>GAS Relay URL</label>
-        <input type="text" id="relayUrl" placeholder="https://script.google.com/macros/s/..." value="PASTE_YOUR_SATCOMMS_RELAY_URL_HERE" style="font-family:var(--mono);font-size:10px">
+        <input type="text" id="relayUrlSettings" placeholder="https://script.google.com/macros/s/..." style="font-family:var(--mono);font-size:10px">
       </div>
       <div class="mfield" style="margin-top:10px">
         <label>Anthropic API Key <span style="color:var(--muted2);font-size:10px">(for invoice AI parsing)</span></label>
@@ -1637,8 +1637,10 @@ function switchTab(name) {
 
 async function callRelay(action, body) {
   const cfg = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
-  const url = cfg.relayUrl || document.getElementById('relayUrl')?.value;
-  if (!url || url.includes('PASTE_YOUR')) throw new Error('Relay URL not configured — go to ⚙ Settings');
+  const url = cfg.relayUrl
+    || document.getElementById('relayUrlSettings')?.value
+    || document.getElementById('relayUrl')?.value;
+  if (!url || url.includes('PASTE_YOUR') || !url.startsWith('https://')) throw new Error('Relay URL not configured — go to ⚙ Settings and paste your GAS relay URL');
   const resp = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1651,7 +1653,10 @@ async function callRelay(action, body) {
 
 function loadSettings() {
   const s = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
-  if (s.relayUrl) { const el = document.getElementById('relayUrl'); if (el) el.value = s.relayUrl; }
+  if (s.relayUrl) {
+    const el1 = document.getElementById('relayUrl'); if (el1) el1.value = s.relayUrl;
+    const el2 = document.getElementById('relayUrlSettings'); if (el2) el2.value = s.relayUrl;
+  }
   if (s.anthropicKey) { const el = document.getElementById('anthropicKeyInput'); if (el) el.value = s.anthropicKey; }
   if (s.defaultAiContext) { const el = document.getElementById('defaultAiContext'); if (el) el.value = s.defaultAiContext; }
   if (s.garminMarkup !== undefined) { const el = document.getElementById('garminMarkup'); if (el) el.value = s.garminMarkup; }
@@ -1661,12 +1666,13 @@ function loadSettings() {
 
 function saveSettings() {
   const s = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
-  const relayEl = document.getElementById('relayUrl');
+  const relayEl = document.getElementById('relayUrlSettings');
   const ctxEl = document.getElementById('defaultAiContext');
   const markupEl = document.getElementById('garminMarkup');
   const vatEl = document.getElementById('garminVAT');
   const roundEl = document.getElementById('garminRounding');
-  if (relayEl?.value) s.relayUrl = relayEl.value.trim();
+  const relayVal = relayEl?.value?.trim();
+  if (relayVal && !relayVal.includes('PASTE_YOUR') && relayVal.startsWith('https://')) s.relayUrl = relayVal;
   const anthropicEl = document.getElementById('anthropicKeyInput');
   if (anthropicEl?.value) s.anthropicKey = anthropicEl.value.trim();
   if (ctxEl?.value) s.defaultAiContext = ctxEl.value;
@@ -3385,7 +3391,24 @@ function closeProductEditor() {
 }
 
 // Stubs for features referenced in HTML
-async function saveWix(id, fields) {
+function saveWix() {
+  // Save relay URL from Publish tab input
+  const s = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
+  const el = document.getElementById('relayUrl');
+  const val = el?.value?.trim();
+  if (val && !val.includes('PASTE_YOUR') && val.startsWith('https://')) {
+    s.relayUrl = val;
+    // Also populate settings field
+    const el2 = document.getElementById('relayUrlSettings');
+    if (el2) el2.value = val;
+    localStorage.setItem('sc_cfg', JSON.stringify(s));
+    const status = document.getElementById('wixStatus');
+    if (status) { status.textContent = '✓ Relay URL saved'; status.style.color = 'var(--accent2)'; }
+  } else {
+    alert('Please paste a valid relay URL starting with https://');
+  }
+}
+async function saveWixProduct(id, fields) {
   try {
     await callRelay('updateProduct', { productId: id, product: fields });
     const p = wixProducts.find(x => x.id === id);
