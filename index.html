@@ -356,90 +356,34 @@ select option{background:var(--surface2)}
   .tab{padding:12px 12px;font-size:9px}
 }
 
-/* ═══════════════════════════════════════════════════════
-   LOGIN OVERLAY
-═══════════════════════════════════════════════════════ */
-#loginOverlay {
-  position:fixed;inset:0;z-index:9999;
-  background:var(--bg);
-  display:flex;align-items:center;justify-content:center;
-}
-.login-box {
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:48px 40px 40px;
-  width:380px;
-  box-shadow:0 24px 64px rgba(0,0,0,.5);
-  display:flex;flex-direction:column;gap:20px;
-}
-.login-logo {
-  text-align:center;
-  font-family:'Syne',sans-serif;
-  font-size:26px;font-weight:800;letter-spacing:-1px;
-  color:var(--text);
-  margin-bottom:4px;
-}
-.login-logo span{color:var(--accent);}
-.login-subtitle{text-align:center;font-size:12px;color:var(--muted);margin-top:-12px;}
-.login-field{display:flex;flex-direction:column;gap:6px;}
-.login-field label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
-.login-field input{
-  background:var(--bg);border:1px solid var(--border);
-  color:var(--text);border-radius:8px;
-  padding:10px 14px;font-size:14px;outline:none;
-  transition:border-color .2s;
-}
-.login-field input:focus{border-color:var(--accent);}
-.login-error{
-  font-size:12px;color:var(--accent4);
-  text-align:center;min-height:16px;
-}
-.login-btn{
-  background:var(--accent);color:#000;
-  border:none;border-radius:8px;
-  padding:12px;font-size:14px;font-weight:700;
-  cursor:pointer;transition:opacity .2s;
-}
-.login-btn:hover{opacity:.85;}
-/* user chip in topbar */
-#userChip{
-  display:flex;align-items:center;gap:8px;
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:20px;padding:4px 12px 4px 8px;
-  font-size:12px;cursor:default;
-}
-#userChip .chip-avatar{
-  width:22px;height:22px;border-radius:50%;
-  background:var(--accent);color:#000;
-  display:flex;align-items:center;justify-content:center;
-  font-size:10px;font-weight:700;
-}
-#signOutBtn{
-  font-size:11px;color:var(--muted);
-  background:none;border:none;cursor:pointer;
-  padding:0;margin-left:4px;
-}
-#signOutBtn:hover{color:var(--accent4);}
+#loginOverlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:48px 40px 40px;width:380px;box-shadow:0 24px 64px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:20px}
+.login-logo{text-align:center;font-family:'Syne',sans-serif;font-size:26px;font-weight:800;letter-spacing:-1px;color:var(--text);margin-bottom:4px}
+.login-logo span{color:var(--accent)}
+.login-subtitle{text-align:center;font-size:12px;color:var(--muted);margin-top:-12px}
+.login-field{display:flex;flex-direction:column;gap:6px}
+.login-field label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.login-field input{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 14px;font-size:14px;outline:none;transition:border-color .2s}
+.login-field input:focus{border-color:var(--accent)}
+.login-error{font-size:12px;color:var(--accent4);text-align:center;min-height:16px}
+.login-btn{background:var(--accent);color:#000;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s}
+.login-btn:hover{opacity:.85}
+#userChip{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px 4px 8px;font-size:12px;cursor:default}
+#userChip .chip-avatar{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+#signOutBtn{font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;margin-left:4px}
+#signOutBtn:hover{color:var(--accent4)}
 </style>
 </head>
 <body>
 
 <!-- TOP BAR -->
 
-<!-- ═══════════════ LOGIN OVERLAY ═══════════════ -->
 <div id="loginOverlay">
   <div class="login-box">
     <div class="login-logo">🛰 <em>Sat</em>&nbsp;<span>Comms</span></div>
     <div class="login-subtitle">Product Intelligence System</div>
-    <div class="login-field">
-      <label>Email</label>
-      <input type="email" id="loginEmail" placeholder="you@satcomms.co.za" autocomplete="email">
-    </div>
-    <div class="login-field">
-      <label>Password</label>
-      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
-    </div>
+    <div class="login-field"><label>Email</label><input type="email" id="loginEmail" placeholder="you@satcomms.co.za" autocomplete="email"></div>
+    <div class="login-field"><label>Password</label><input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"></div>
     <div class="login-error" id="loginError"></div>
     <button class="login-btn" onclick="doLogin()">Sign In</button>
   </div>
@@ -1267,8 +1211,8 @@ select option{background:var(--surface2)}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:24px">
     <div style="background:var(--surface);border:1px solid var(--border);padding:20px">
       <div class="flabel" style="margin-bottom:12px">Google Apps Script Relay — SatComms</div>
-      <div class="mfield"><label>Relay URL (your deployed Apps Script)</label>
-        <input type="text" id="relayUrl" placeholder="https://script.google.com/macros/s/..." value="PASTE_YOUR_SATCOMMS_RELAY_URL_HERE">
+      <div class="mfield"><label>GAS Relay URL</label>
+        <input type="text" id="relayUrlSettings" placeholder="https://script.google.com/macros/s/..." style="font-family:var(--mono);font-size:10px">
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-sat btn-sm" onclick="testWix()">Test Connection</button>
@@ -1293,63 +1237,6 @@ select option{background:var(--surface2)}
   <div id="queueEmpty" class="empty" style="padding:30px"><div class="empty-icon">🚀</div><div class="empty-text">No products published yet.</div></div>
   <div id="queueTable"></div>
 </div>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- GLOBAL PRICING TAB -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<div class="panel" id="panel-pricing">
-  <div class="shdr">
-    <div class="stitle">💰 Global <span>Pricing</span></div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <button class="btn btn-ghost btn-sm" onclick="pricingLoad()">📦 Load / Refresh</button>
-      <button class="btn btn-sm" onclick="pricingConvert('excl')" id="pricingBtnExcl">÷1.VAT → Store Excl VAT</button>
-      <button class="btn btn-sm" onclick="pricingConvert('incl')" id="pricingBtnIncl">×1.VAT → Store Incl VAT</button>
-      <button class="btn btn-wix btn-sm" onclick="pricingPushAll()" id="pricingPushBtn" style="display:none">🚀 Push All Changes to Wix</button>
-    </div>
-  </div>
-
-  <!-- Stats strip -->
-  <div style="display:flex;gap:2px;margin-bottom:2px">
-    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 20px;flex:1">
-      <div class="flabel" style="margin-bottom:6px">VAT Rate %</div>
-      <input type="number" id="pricingVAT" value="15" min="0" max="30" style="width:70px;font-family:var(--mono);font-size:14px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:6px 10px;border-radius:var(--radius)" oninput="pricingRender()">
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 20px;flex:1">
-      <div class="flabel" style="margin-bottom:4px">Products</div>
-      <div id="pricingCount" style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent)">—</div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 20px;flex:2">
-      <div class="flabel" style="margin-bottom:4px">Pending Changes</div>
-      <div id="pricingPendingTxt" style="font-family:var(--mono);font-size:12px;color:var(--muted2)">No changes — load products first</div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);padding:14px 20px;flex:3">
-      <div class="flabel" style="margin-bottom:4px">How it works</div>
-      <div style="font-size:11px;color:var(--muted2);line-height:1.7">
-        Wix is set to <b style="color:var(--text)">add VAT at checkout</b> — store prices <b style="color:var(--accent2)">excl VAT</b>.
-        Use <em>÷1.VAT</em> to strip VAT from any incl-VAT prices. Individual prices are editable inline.
-      </div>
-    </div>
-  </div>
-
-  <!-- Progress bar -->
-  <div id="pricingProgress" style="display:none;background:var(--surface);border:1px solid var(--border);padding:12px 20px;margin-bottom:2px">
-    <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:6px" id="pricingProgressTxt">Pushing...</div>
-    <div style="height:4px;background:var(--surface2);border-radius:2px">
-      <div id="pricingProgressBar" style="height:100%;background:var(--accent2);border-radius:2px;transition:width .3s;width:0%"></div>
-    </div>
-  </div>
-
-  <!-- Table -->
-  <div style="background:var(--surface);border:1px solid var(--border)">
-    <div id="pricingTableWrap">
-      <div class="empty" style="padding:60px 20px">
-        <div class="empty-icon">💰</div>
-        <div class="empty-text">Click <b>Load / Refresh</b> to pull all Wix products</div>
-      </div>
-    </div>
-  </div>
-</div>
-
 
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- SETTINGS -->
@@ -1380,10 +1267,7 @@ select option{background:var(--surface2)}
         <div style="font-size:40px;margin-bottom:12px;opacity:.7">🧾</div>
         <div style="font-family:var(--cond);font-size:18px;font-weight:800;color:var(--accent);letter-spacing:.06em;margin-bottom:6px">DROP INVOICE HERE</div>
         <div style="font-family:var(--mono);font-size:9px;color:var(--muted2)">PDF or image (JPG/PNG) · AI will extract all details</div>
-        <div style="margin-top:8px">
-          <button type="button" class="btn btn-ghost btn-sm" onclick="event.stopPropagation();testTopupRelay()" style="font-size:8px;padding:2px 8px">🔌 Test Relay</button>
-          <span id="topupRelayStatus" style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-left:6px"></span>
-        </div>
+        <div style="margin-top:8px"><button type="button" class="btn btn-ghost btn-sm" onclick="event.stopPropagation();testTopupRelay()" style="font-size:8px;padding:2px 8px">🔌 Test Relay</button><span id="topupRelayStatus" style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-left:6px"></span></div>
         <input type="file" id="topupFileInput" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="handleTopupFile(this.files[0])">
       </div>
 
@@ -1483,6 +1367,43 @@ select option{background:var(--surface2)}
   </div>
 </div>
 
+
+<div class="panel" id="panel-pricing">
+  <div class="shdr">
+    <div class="stitle">💰 Global <span>Pricing</span></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="pricingLoad()">📦 Load / Refresh</button>
+      <button class="btn btn-sm" onclick="pricingConvert('excl')">÷VAT Store Excl VAT</button>
+      <button class="btn btn-sm" onclick="pricingConvert('incl')">×VAT Store Incl VAT</button>
+      <button class="btn btn-wix btn-sm" onclick="pricingPushAll()" id="pricingPushBtn" style="display:none">🚀 Push All to Wix</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:2px;margin-bottom:2px">
+    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 20px;flex:1">
+      <div class="flabel" style="margin-bottom:6px">VAT Rate %</div>
+      <input type="number" id="pricingVAT" value="15" min="0" max="30" style="width:70px;font-family:var(--mono);font-size:14px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:6px 10px;border-radius:var(--radius)" oninput="pricingRender()">
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 20px;flex:1">
+      <div class="flabel" style="margin-bottom:4px">Products</div>
+      <div id="pricingCount" style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent)">—</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 20px;flex:2">
+      <div class="flabel" style="margin-bottom:4px">Pending Changes</div>
+      <div id="pricingPendingTxt" style="font-family:var(--mono);font-size:12px;color:var(--muted2)">Load products first</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);padding:14px 20px;flex:3;font-size:11px;color:var(--muted2)">
+      Wix stores prices <b style="color:var(--accent2)">excl VAT</b> — VAT added at checkout. Use ÷VAT to strip from any incl-VAT prices.
+    </div>
+  </div>
+  <div id="pricingProgress" style="display:none;background:var(--surface);border:1px solid var(--border);padding:12px 20px;margin-bottom:2px">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:6px" id="pricingProgressTxt">Pushing...</div>
+    <div style="height:4px;background:var(--surface2);border-radius:2px"><div id="pricingProgressBar" style="height:100%;background:var(--accent2);border-radius:2px;transition:width .3s;width:0%"></div></div>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border)">
+    <div id="pricingTableWrap"><div class="empty" style="padding:60px 20px"><div class="empty-icon">💰</div><div class="empty-text">Click <b>Load / Refresh</b> to pull all Wix products</div></div></div>
+  </div>
+</div>
+
 <div class="panel" id="panel-settings">
   <div class="shdr"><div class="stitle">System <span>Settings</span></div></div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:2px">
@@ -1494,18 +1415,6 @@ select option{background:var(--surface2)}
       <div class="mfield"><label>Price change alert threshold %</label><input type="number" id="priceAlertPct" value="5" min="1" max="50"></div>
       <div class="mfield"><label>Amazon.co.za Fee %</label><input type="number" id="amazonFee" value="5"></div>
       <button class="btn btn-success btn-sm" onclick="saveSettings()">Save Settings</button>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);padding:20px">
-      <div class="flabel" style="margin-bottom:12px">Relay & API Keys</div>
-      <div class="mfield">
-        <label>GAS Relay URL</label>
-        <input type="text" id="relayUrlSettings" placeholder="https://script.google.com/macros/s/..." style="font-family:var(--mono);font-size:10px">
-      </div>
-      <div class="mfield" style="margin-top:10px">
-        <label>Anthropic API Key <span style="color:var(--muted2);font-size:10px">(for invoice AI parsing)</span></label>
-        <input type="password" id="anthropicKeyInput" placeholder="sk-ant-api03-..." style="font-family:var(--mono);font-size:10px">
-      </div>
-      <button class="btn btn-success btn-sm" onclick="saveSettings()" style="margin-top:10px">Save All Settings</button>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);padding:20px">
       <div class="flabel" style="margin-bottom:12px">Store Details</div>
@@ -1523,9 +1432,6 @@ select option{background:var(--surface2)}
         <textarea id="defaultAiContext" rows="5" placeholder="e.g. South Africa's leading satellite communications retailer since 2002. Specialising in Iridium, Inmarsat, Thuraya and Garmin satellite devices. Products suitable for maritime, mining, agriculture, emergency responders and remote travellers.">South Africa's leading satellite communications retailer since 2002. Specialising in Iridium, Inmarsat, Thuraya and Garmin satellite devices. Ideal for maritime, mining, agriculture, emergency response, remote travel and any situation where standard cellular networks are unavailable.</textarea>
       </div>
       <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
-    <div style="background:var(--surface);border:1px solid var(--border);padding:20px;grid-column:1/-1">
-      <div class="flabel" style="margin-bottom:12px">👥 User Management</div>
-      <div id="userMgmtPanel"></div>
     </div>
   </div>
 </div>
@@ -1618,6 +1524,48 @@ select option{background:var(--surface2)}
 
 <!-- ============================================================ -->
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ═══ LOGIN SYSTEM ═══
+var ADMIN_EMAIL = 'gavmag@gmail.com';
+var ALLOWED_DOMAIN = '@satcomms.co.za';
+function getUsers(){return JSON.parse(localStorage.getItem('sc_users')||'{}');}
+function saveUsers(u){localStorage.setItem('sc_users',JSON.stringify(u));}
+function getSession(){return JSON.parse(localStorage.getItem('sc_session')||'null');}
+function saveSession(s){localStorage.setItem('sc_session',JSON.stringify(s));}
+function bootstrapAdmin(){
+  var users=getUsers();
+  users[ADMIN_EMAIL]={name:'Gav (Admin)',password:(users[ADMIN_EMAIL]||{}).password||'satcomms2024',isAdmin:true,
+    tabs:['mywix','garmin','amazon','watchlist','alerts','usd','topup','seo','publish','pricing','settings']};
+  saveUsers(users);
+}
+function doLogin(){
+  var email=document.getElementById('loginEmail').value.trim().toLowerCase();
+  var pass=document.getElementById('loginPassword').value;
+  var err=document.getElementById('loginError');err.textContent='';
+  if(!email){err.textContent='Please enter your email.';return;}
+  if(email!==ADMIN_EMAIL&&!email.endsWith(ALLOWED_DOMAIN)){err.textContent='Only @satcomms.co.za accounts are allowed.';return;}
+  var users=getUsers(),user=users[email];
+  if(!user){err.textContent='Account not found. Default password: satcomms2024';return;}
+  if(user.password!==pass){err.textContent='Incorrect password.';return;}
+  saveSession({email:email,name:user.name,isAdmin:!!user.isAdmin,tabs:user.tabs||[]});
+  showApp();
+}
+function doSignOut(){localStorage.removeItem('sc_session');location.reload();}
+function showApp(){
+  var session=getSession();if(!session)return;
+  var ov=document.getElementById('loginOverlay');if(ov)ov.style.display='none';
+  var chip=document.getElementById('userChip');if(chip)chip.style.display='flex';
+  var cn=document.getElementById('userChipName');if(cn)cn.textContent=session.name;
+  var av=document.getElementById('userAvatar');if(av)av.textContent=session.name.charAt(0).toUpperCase();
+  if(!session.isAdmin){
+    document.querySelectorAll('.tab').forEach(function(tab){
+      var m=(tab.getAttribute('onclick')||'').match(/'(\w+)'/);
+      if(m&&!session.tabs.includes(m[1]))tab.style.display='none';
+    });
+  }
+}
+function checkSession(){bootstrapAdmin();var s=getSession();if(s){showApp();return true;}return false;}
+
+
 // ─────────────────────────────────────────────────────────────
 // CORE — switchTab, callRelay, settings, init
 // ─────────────────────────────────────────────────────────────
@@ -1641,10 +1589,8 @@ function switchTab(name) {
 
 async function callRelay(action, body) {
   const cfg = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
-  const url = cfg.relayUrl
-    || document.getElementById('relayUrlSettings')?.value
-    || document.getElementById('relayUrl')?.value;
-  if (!url || url.includes('PASTE_YOUR') || !url.startsWith('https://')) throw new Error('Relay URL not configured — go to ⚙ Settings and paste your GAS relay URL');
+  const url = cfg.relayUrl || document.getElementById('relayUrlSettings')?.value || document.getElementById('relayUrl')?.value;
+  if (!url || url.includes('PASTE_YOUR') || !url.startsWith('https://')) throw new Error('Relay URL not configured — go to Settings and paste your GAS relay URL');
   const resp = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1661,7 +1607,6 @@ function loadSettings() {
     const el1 = document.getElementById('relayUrl'); if (el1) el1.value = s.relayUrl;
     const el2 = document.getElementById('relayUrlSettings'); if (el2) el2.value = s.relayUrl;
   }
-  if (s.anthropicKey) { const el = document.getElementById('anthropicKeyInput'); if (el) el.value = s.anthropicKey; }
   if (s.defaultAiContext) { const el = document.getElementById('defaultAiContext'); if (el) el.value = s.defaultAiContext; }
   if (s.garminMarkup !== undefined) { const el = document.getElementById('garminMarkup'); if (el) el.value = s.garminMarkup; }
   if (s.garminVAT !== undefined) { const el = document.getElementById('garminVAT'); if (el) el.value = s.garminVAT; }
@@ -1675,10 +1620,7 @@ function saveSettings() {
   const markupEl = document.getElementById('garminMarkup');
   const vatEl = document.getElementById('garminVAT');
   const roundEl = document.getElementById('garminRounding');
-  const relayVal = relayEl?.value?.trim();
-  if (relayVal && !relayVal.includes('PASTE_YOUR') && relayVal.startsWith('https://')) s.relayUrl = relayVal;
-  const anthropicEl = document.getElementById('anthropicKeyInput');
-  if (anthropicEl?.value) s.anthropicKey = anthropicEl.value.trim();
+  const relayVal = relayEl?.value?.trim(); if (relayVal && !relayVal.includes('PASTE_YOUR') && relayVal.startsWith('https://')) s.relayUrl = relayVal;
   if (ctxEl?.value) s.defaultAiContext = ctxEl.value;
   if (markupEl?.value) s.garminMarkup = parseFloat(markupEl.value);
   if (vatEl?.value) s.garminVAT = parseFloat(vatEl.value);
@@ -1688,198 +1630,8 @@ function saveSettings() {
   if (btn) { const orig = btn.textContent; btn.textContent = '✓ Saved'; setTimeout(() => btn.textContent = orig, 1500); }
 }
 
-
-// ═══════════════════════════════════════════════════════════════
-// LOGIN SYSTEM
-// ═══════════════════════════════════════════════════════════════
-const ADMIN_EMAIL = 'gavmag@gmail.com';
-const ALLOWED_DOMAIN = '@satcomms.co.za';
-
-function getUsers() {
-  return JSON.parse(localStorage.getItem('sc_users') || '{}');
-}
-function saveUsers(u) {
-  localStorage.setItem('sc_users', JSON.stringify(u));
-}
-function getSession() {
-  return JSON.parse(localStorage.getItem('sc_session') || 'null');
-}
-function saveSession(s) {
-  localStorage.setItem('sc_session', JSON.stringify(s));
-}
-
-function bootstrapAdmin() {
-  const users = getUsers();
-  // Always ensure admin exists and is admin — update if already exists
-  users[ADMIN_EMAIL] = {
-    name: 'Gav (Admin)',
-    password: users[ADMIN_EMAIL]?.password || 'satcomms2024', // keep existing password if set
-    isAdmin: true,
-    tabs: ['mywix','garmin','amazon','watchlist','alerts','usd','topup','seo','publish','settings','pricing']
-  };
-  saveUsers(users);
-}
-
-function doLogin() {
-  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-  const pass  = document.getElementById('loginPassword').value;
-  const err   = document.getElementById('loginError');
-  err.textContent = '';
-
-  if (!email) { err.textContent = 'Please enter your email.'; return; }
-  if (email !== ADMIN_EMAIL && !email.endsWith(ALLOWED_DOMAIN)) {
-    err.textContent = 'Only @satcomms.co.za accounts are allowed.'; return;
-  }
-  const users = getUsers();
-  const user  = users[email];
-  if (!user) { err.textContent = 'Account not found. If this is your first login, try password: satcomms2024'; return; }
-  if (user.password !== pass) { err.textContent = 'Incorrect password.'; return; }
-
-  saveSession({ email, name: user.name, isAdmin: !!user.isAdmin, tabs: user.tabs || [] });
-  showApp();
-}
-
-function doSignOut() {
-  localStorage.removeItem('sc_session');
-  location.reload();
-}
-
-function showApp() {
-  const session = getSession();
-  if (!session) return;
-
-  // Hide overlay
-  const overlay = document.getElementById('loginOverlay');
-  if (overlay) overlay.style.display = 'none';
-
-  // Show user chip
-  const chip = document.getElementById('userChip');
-  if (chip) chip.style.display = 'flex';
-  const chipName = document.getElementById('userChipName');
-  if (chipName) chipName.textContent = session.name;
-  const avatar = document.getElementById('userAvatar');
-  if (avatar) avatar.textContent = session.name.charAt(0).toUpperCase();
-
-  // Tab visibility — admin sees all, others only their permitted tabs
-  if (!session.isAdmin) {
-    document.querySelectorAll('.tab').forEach(tab => {
-      const m = tab.getAttribute('onclick')?.match(/'(\w+)'/);
-      if (m && !session.tabs.includes(m[1])) {
-        tab.style.display = 'none';
-      }
-    });
-  }
-
-  // Render user management in settings if admin
-  if (session.isAdmin) renderUserManagement();
-}
-
-function checkSession() {
-  bootstrapAdmin();
-  const session = getSession();
-  if (session) {
-    showApp();
-    return true;
-  }
-  return false;
-}
-
-// Enter key on login fields
 document.addEventListener('DOMContentLoaded', () => {
-  ['loginEmail','loginPassword'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-  });
-});
-
-// ── USER MANAGEMENT (admin only, rendered in Settings tab) ──────────────────
-const ALL_TABS = [
-  {id:'mywix',label:'My Products'},
-  {id:'garmin',label:'Garmin Import'},
-  {id:'amazon',label:'Amazon Monitor'},
-  {id:'watchlist',label:'Watchlist'},
-  {id:'alerts',label:'Competitor Prices'},
-  {id:'usd',label:'USD Pricing'},
-  {id:'topup',label:'Topups'},
-  {id:'seo',label:'SEO Agent'},
-  {id:'publish',label:'Publish to Wix'},
-  {id:'settings',label:'Settings'},
-  {id:'pricing',label:'Global Pricing'},
-];
-
-function renderUserManagement() {
-  const container = document.getElementById('userMgmtPanel');
-  if (!container) return;
-  const users = getUsers();
-  const session = getSession();
-  if (!session?.isAdmin) return;
-
-  let html = '<div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">'
-    + '<span style="font-size:13px;color:var(--muted)">Manage system users</span>'
-    + '<button class="btn btn-sm" onclick="showAddUserForm()">+ Add User</button></div>';
-
-  html += '<div id="addUserForm" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">';
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">';
-  html += '<div><label style="font-size:11px;color:var(--muted)">Name</label><input id="nu_name" class="filter-input" placeholder="Full Name" style="width:100%"></div>';
-  html += '<div><label style="font-size:11px;color:var(--muted)">Email</label><input id="nu_email" class="filter-input" placeholder="user@satcomms.co.za" style="width:100%"></div>';
-  html += '</div><div style="margin-bottom:10px"><label style="font-size:11px;color:var(--muted)">Password</label><input id="nu_pass" type="password" class="filter-input" placeholder="Set password" style="width:100%"></div>';
-  html += '<div style="margin-bottom:12px"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px">Tab Access</label><div style="display:flex;flex-wrap:wrap;gap:6px">';
-  ALL_TABS.forEach(t => {
-    html += '<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer">'
-      + '<input type="checkbox" class="nu_tab" value="' + t.id + '"> ' + t.label + '</label>';
-  });
-  html += '</div></div>';
-  html += '<div style="display:flex;gap:8px"><button class="btn btn-sm" onclick="saveNewUser()">Save User</button>'
-    + '<button class="btn btn-sm btn-ghost" onclick="document.getElementById(\'addUserForm\').style.display=\'none\'">Cancel</button></div>';
-  html += '</div>';
-
-  html += '<div style="display:flex;flex-direction:column;gap:8px">';
-  Object.entries(users).forEach(([email, u]) => {
-    const isYou = email === session.email;
-    html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">';
-    html += '<div><div style="font-size:13px;font-weight:600">' + u.name + (isYou ? ' <span style="color:var(--accent2);font-size:11px">(you)</span>' : '') + '</div>';
-    html += '<div style="font-size:11px;color:var(--muted)">' + email + (u.isAdmin ? ' · Admin' : '') + '</div></div>';
-    if (!isYou) {
-      html += '<button class="btn btn-sm btn-ghost" style="color:var(--accent4)" '
-        + 'data-em="' + btoa(email) + '" '
-        + 'onclick="deleteUser(atob(this.dataset.em))">Remove</button>';
-    }
-    html += '</div>';
-  });
-  html += '</div>';
-
-  container.innerHTML = html;
-}
-
-function showAddUserForm() {
-  document.getElementById('addUserForm').style.display = 'block';
-}
-
-function saveNewUser() {
-  const name  = document.getElementById('nu_name').value.trim();
-  const email = document.getElementById('nu_email').value.trim().toLowerCase();
-  const pass  = document.getElementById('nu_pass').value;
-  const tabs  = Array.from(document.querySelectorAll('.nu_tab:checked')).map(c => c.value);
-  if (!name || !email || !pass) { alert('Please fill in name, email and password.'); return; }
-  if (email !== ADMIN_EMAIL && !email.endsWith(ALLOWED_DOMAIN)) {
-    alert('Only @satcomms.co.za emails allowed.'); return;
-  }
-  const users = getUsers();
-  users[email] = { name, password: pass, isAdmin: false, tabs };
-  saveUsers(users);
-  renderUserManagement();
-}
-
-function deleteUser(email) {
-  if (!confirm('Remove user ' + email + '?')) return;
-  const users = getUsers();
-  delete users[email];
-  saveUsers(users);
-  renderUserManagement();
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  if (!checkSession()) return; // stop init if not logged in
+  if (!checkSession()) return;
   loadSettings();
   if (typeof initAutoToggle === 'function') initAutoToggle();
   if (typeof updateCompTabCount === 'function') updateCompTabCount();
@@ -2762,9 +2514,8 @@ async function pushSingleUSD(i){
   if(!u || !u.wixId){ alert('No Wix ID linked. Paste the Wix Product ID first.'); return; }
   if(!u.zarPrice){ alert('No ZAR price calculated. Fetch the live rate then click ✓ to apply.'); return; }
   const status = document.getElementById('usdPushStatus');
-  // Push excl VAT — Wix adds VAT at checkout
   const priceVal = u.zarExclVAT || u.zarPrice;
-  if (!priceVal) { alert('No ZAR price calculated. Fetch the live rate then click ✓ to apply.'); return; }
+  if (!priceVal) { alert('No ZAR price calculated.'); return; }
   const price = parseFloat(priceVal.toFixed(2));
   status.textContent = `Pushing R${price.toLocaleString('en-ZA')} excl VAT for "${u.name.substring(0,30)}"...`;
   status.style.color = 'var(--muted2)';
@@ -2795,7 +2546,7 @@ async function pushSingleUSD(i){
 }
 
 async function pushSelectedUSDPrices(){
-  const toProcess=[...usdSelected].map(i=>({i,u:usdProducts[i]})).filter(({u})=>u&&u.wixId&&(u.zarExclVAT||u.zarPrice));
+  const toProcess=[...usdSelected].map(i=>({i,u:usdProducts[i]})).filter(({u})=>u&&u.wixId&&u.zarPrice);
   if(!toProcess.length){ alert('Select products with Wix IDs and calculated ZAR prices.'); return; }
   const status=document.getElementById('usdPushStatus');
   status.textContent=`Pushing ${toProcess.length} products...`; status.style.color='var(--muted2)';
@@ -2821,10 +2572,10 @@ async function pushSelectedUSDPrices(){
 }
 
 async function pushAllUSDPrices(){
-  const all=usdProducts.filter(u=>u.wixId&&(u.zarExclVAT||u.zarPrice));
+  const all=usdProducts.filter(u=>u.wixId&&u.zarPrice);
   if(!all.length){ alert('No products with Wix IDs linked. Link products first.'); return; }
   if(!confirm(`Push updated ZAR prices for all ${all.length} USD-priced products to Wix?`)) return;
-  usdSelected=new Set(usdProducts.filter(u=>u.wixId&&(u.zarExclVAT||u.zarPrice)).map((_,i)=>i));
+  usdSelected=new Set(usdProducts.filter(u=>u.wixId&&u.zarPrice).map((_,i)=>i));
   await pushSelectedUSDPrices();
 }
 
@@ -3395,24 +3146,7 @@ function closeProductEditor() {
 }
 
 // Stubs for features referenced in HTML
-function saveWix() {
-  // Save relay URL from Publish tab input
-  const s = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
-  const el = document.getElementById('relayUrl');
-  const val = el?.value?.trim();
-  if (val && !val.includes('PASTE_YOUR') && val.startsWith('https://')) {
-    s.relayUrl = val;
-    // Also populate settings field
-    const el2 = document.getElementById('relayUrlSettings');
-    if (el2) el2.value = val;
-    localStorage.setItem('sc_cfg', JSON.stringify(s));
-    const status = document.getElementById('wixStatus');
-    if (status) { status.textContent = '✓ Relay URL saved'; status.style.color = 'var(--accent2)'; }
-  } else {
-    alert('Please paste a valid relay URL starting with https://');
-  }
-}
-async function saveWixProduct(id, fields) {
+async function saveWix(id, fields) {
   try {
     await callRelay('updateProduct', { productId: id, product: fields });
     const p = wixProducts.find(x => x.id === id);
@@ -3464,29 +3198,23 @@ async function processTopupFile(file) {
     const isPDF = file.type === 'application/pdf';
     const mediaType = isPDF ? 'application/pdf' : file.type || 'image/jpeg';
     if (msg) msg.textContent = 'Sending to AI via relay...';
-    // Call relay directly so we can see the full error response
-    const cfg2 = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
-    const relayUrl2 = cfg2.relayUrl
-      || document.getElementById('relayUrlSettings')?.value
-      || document.getElementById('relayUrl')?.value;
-    if (!relayUrl2 || relayUrl2.includes('PASTE_YOUR') || !relayUrl2.startsWith('https://')) {
-      throw new Error('Relay URL not saved — go to ⚙ Settings, paste your GAS relay URL and click Save All Settings');
+    const cfgR = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
+    const relayUrlR = cfgR.relayUrl || document.getElementById('relayUrlSettings')?.value || document.getElementById('relayUrl')?.value;
+    if (!relayUrlR || relayUrlR.includes('PASTE_YOUR') || !relayUrlR.startsWith('https://')) {
+      throw new Error('Relay URL not saved — go to Settings and paste your GAS relay URL');
     }
-    const relayResp = await fetch(relayUrl2, {
+    const relayResp = await fetch(relayUrlR, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'parseInvoice', base64, mediaType, isPDF })
     });
     const relayData = await relayResp.json();
     if (!relayData.success) {
-      const errMsg = relayData.error || JSON.stringify(relayData);
-      if (errMsg.includes('Unknown action')) {
-        throw new Error('parseInvoice not in relay — please add it to your GAS and redeploy');
-      }
-      throw new Error('Relay error: ' + errMsg.substring(0, 120));
+      const em = relayData.error || JSON.stringify(relayData);
+      throw new Error(em.includes('Unknown action') ? 'parseInvoice not in relay — add it to GAS and redeploy' : 'Relay error: ' + em.substring(0,120));
     }
     const parsed = relayData.data;
-    if (!parsed || typeof parsed !== 'object') throw new Error('Relay returned empty data: ' + JSON.stringify(relayData).substring(0, 100));
+    if (!parsed || typeof parsed !== 'object') throw new Error('Relay returned invalid data: ' + JSON.stringify(relayData).substring(0,100));
 
     // Populate form fields
     const set = (id, v) => { const el = document.getElementById(id); if (el && (v || v === 0)) el.value = v; };
@@ -3536,45 +3264,68 @@ async function sendTopupRequest() {
   btn.disabled = true; btn.textContent = '⏳ Sending...';
   status.textContent = ''; status.style.color = 'var(--muted2)';
 
-  // Build email via relay
-  const subject = `Airtime Topup Request${invoice ? ' — ' + invoice : ''} — ${custName || 'Customer'}`;
+  // Build HTML email via relay
+  const subject = 'Airtime Topup Request' + (invoice ? ' - ' + invoice : '') + ' - ' + (custName || 'Customer');
+  const amtFmt = amount ? 'R' + parseFloat(amount).toLocaleString('en-ZA',{minimumFractionDigits:2}) : '-';
+  const ts = new Date().toLocaleString('en-ZA');
+  const devRows = devices.length ? devices.map(function(d,i){
+    return '<tr><td style="padding:8px 12px;border-bottom:1px solid #e8edf2;color:#333;text-align:center">' + (i+1) + '</td>'
+      + '<td style="padding:8px 12px;border-bottom:1px solid #e8edf2;font-family:monospace;color:#0055aa">' + (d.tel||'-') + '</td>'
+      + '<td style="padding:8px 12px;border-bottom:1px solid #e8edf2;font-family:monospace;color:#006644">' + (d.sim||'-') + '</td></tr>';
+  }).join('') : '<tr><td colspan="3" style="padding:8px 12px;color:#999">(none provided)</td></tr>';
 
-  // Build device table lines
-  const deviceLines = devices.length
-    ? devices.map((d, i) => `  Device ${i+1}:  TEL/IMEI: ${d.tel || '—'}   SIM/ICCID: ${d.sim || '—'}`).join('\n')
-    : '  (no device numbers provided)';
+  const htmlBody = '<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f0f4f8;font-family:Arial,sans-serif">'
+    + '<table width="100%" cellpadding="0" cellspacing="0" style="padding:30px 0"><tr><td align="center">'
+    + '<table width="580" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12)">'
 
-  const body = [
-    '=== AIRTIME TOPUP REQUEST ===',
-    '',
-    invoice  ? 'Invoice No:    ' + invoice  : '',
-    date     ? 'Invoice Date:  ' + date     : '',
-    '',
-    '--- CUSTOMER DETAILS ---',
-    custName  ? 'Name:    ' + custName  : '',
-    custEmail ? 'Email:   ' + custEmail : '',
-    custPhone ? 'Phone:   ' + custPhone : '',
-    '',
-    '--- AIRTIME REQUESTED ---',
-    product || '',
-    '',
-    '--- TEL / IMEI & SIM / ICCID ---',
-    deviceLines,
-    '',
-    amount   ? 'Invoice Total: R' + parseFloat(amount).toLocaleString('en-ZA', {minimumFractionDigits:2}) : '',
-    notes    ? '\nNotes: ' + notes : '',
-    '',
-    '---',
-    'Submitted via SatComms Product Intelligence System',
-    new Date().toLocaleString('en-ZA')
-  ].filter(l => l !== undefined && l !== null).join('\n');
+    + '<tr><td style="background:#0a0f1e;padding:24px 28px">'
+    + '<table width="100%"><tr>'
+    + '<td><div style="font-size:20px;font-weight:800;color:#fff">Sat<span style="color:#00b4ff">Comms</span></div>'
+    + '<div style="font-size:10px;color:#5a7a9a;letter-spacing:2px;margin-top:3px">AIRTIME TOPUP REQUEST</div></td>'
+    + '<td align="right"><div style="background:#00b4ff;color:#000;font-size:11px;font-weight:700;padding:5px 12px;border-radius:4px">' + (invoice||'NO REF') + '</div></td>'
+    + '</tr></table></td></tr>'
+
+    + '<tr><td style="padding:24px 28px">'
+
+    + '<div style="font-size:10px;font-weight:700;color:#5a7a9a;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #00b4ff;padding-bottom:5px;margin-bottom:12px">Invoice Details</div>'
+    + '<table width="100%" style="margin-bottom:20px">'
+    + '<tr><td style="padding:4px 0;font-size:13px;color:#666;width:130px">Invoice No</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a1a2e">' + (invoice||'-') + '</td></tr>'
+    + '<tr><td style="padding:4px 0;font-size:13px;color:#666">Date</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a1a2e">' + (date||'-') + '</td></tr>'
+    + '<tr><td style="padding:4px 0;font-size:13px;color:#666">Total</td><td style="padding:4px 0;font-size:18px;font-weight:800;color:#00b4ff">' + amtFmt + '</td></tr>'
+    + '</table>'
+
+    + '<div style="font-size:10px;font-weight:700;color:#5a7a9a;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #00e5b0;padding-bottom:5px;margin-bottom:12px">Customer</div>'
+    + '<table width="100%" style="margin-bottom:20px">'
+    + '<tr><td style="padding:4px 0;font-size:13px;color:#666;width:130px">Name</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a1a2e">' + (custName||'-') + '</td></tr>'
+    + '<tr><td style="padding:4px 0;font-size:13px;color:#666">Email</td><td style="padding:4px 0;font-size:13px;color:#0055aa">' + (custEmail||'-') + '</td></tr>'
+    + '<tr><td style="padding:4px 0;font-size:13px;color:#666">Phone</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a1a2e">' + (custPhone||'-') + '</td></tr>'
+    + '</table>'
+
+    + '<div style="font-size:10px;font-weight:700;color:#5a7a9a;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #ffc84d;padding-bottom:5px;margin-bottom:12px">Airtime Requested</div>'
+    + '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;font-size:13px;color:#1a1a2e;white-space:pre-wrap;margin-bottom:20px">' + (product||'-') + '</div>'
+
+    + '<div style="font-size:10px;font-weight:700;color:#5a7a9a;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #ff4d6d;padding-bottom:5px;margin-bottom:12px">Device Numbers (' + devices.length + ')</div>'
+    + '<table width="100%" style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;margin-bottom:20px">'
+    + '<tr style="background:#f0f4f8">'
+    + '<th style="padding:8px 12px;font-size:10px;font-weight:700;color:#5a7a9a;text-transform:uppercase;text-align:center;width:40px">#</th>'
+    + '<th style="padding:8px 12px;font-size:10px;font-weight:700;color:#5a7a9a;text-transform:uppercase;text-align:left">TEL / IMEI</th>'
+    + '<th style="padding:8px 12px;font-size:10px;font-weight:700;color:#5a7a9a;text-transform:uppercase;text-align:left">SIM / ICCID</th>'
+    + '</tr>' + devRows + '</table>'
+
+    + (notes ? '<div style="font-size:10px;font-weight:700;color:#5a7a9a;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #b97fff;padding-bottom:5px;margin-bottom:8px">Notes</div>'
+    + '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;font-size:13px;color:#1a1a2e;margin-bottom:20px">' + notes + '</div>' : '')
+
+    + '</td></tr>'
+    + '<tr><td style="background:#f0f4f8;padding:14px 28px;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#5a7a9a">'
+    + 'Submitted via SatComms Product Intelligence System &middot; ' + ts
+    + '</td></tr></table></td></tr></table></body></html>';
 
   try {
     await callRelay('sendEmail', {
       to: 'sales@satcomms.co.za',
       subject,
-      body,
-      from: 'noreply@satcomms.co.za'
+      body: htmlBody,
+      isHtml: true
     });
     status.textContent = '✓ Email sent to sales@satcomms.co.za';
     status.style.color = 'var(--accent2)';
@@ -4058,7 +3809,7 @@ function calcGarminPrice(p) {
   if (basis === 'list') return p.list;
   const markup = parseFloat(document.getElementById('garminMarkup')?.value || 12) / 100;
   const round  = parseInt(document.getElementById('garminRounding')?.value || 10);
-  const raw = p.dealer * (1 + markup); // excl VAT — do NOT multiply by VAT
+  const raw = p.dealer * (1 + markup);
   if (round === 0) return Math.round(raw * 100) / 100;
   return Math.ceil(raw / round) * round;
 }
@@ -4849,220 +4600,6 @@ function logAuto(msg, type=''){
   // Keep last 10 log lines
   const lines = el.innerHTML.split('<br>');
   if(lines.length > 10) el.innerHTML = lines.slice(0,10).join('<br>');
-}
-
-
-// ═══════════════════════════════════════════════════════════════════════════
-// GLOBAL PRICING TAB
-// ═══════════════════════════════════════════════════════════════════════════
-let pricingProducts = [];   // [{id, name, sku, currentPrice, newPrice, pending}]
-
-async function pricingLoad() {
-  const wrap = document.getElementById('pricingTableWrap');
-  wrap.innerHTML = '<div style="padding:40px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--muted2)">Loading products from Wix...</div>';
-  document.getElementById('pricingPushBtn').style.display = 'none';
-  try {
-    let all = [], cursor = null, page = 0;
-    do {
-      const res = await callRelay('listProducts', { limit: 100, cursor });
-      const prods = res.products || res.items || [];
-      all = all.concat(prods);
-      cursor = res.nextCursor || res.metadata?.cursor || null;
-      page++;
-    } while (cursor && page < 20);
-
-    pricingProducts = all.map(p => ({
-      id: p.id,
-      name: p.name,
-      sku: p.sku || '',
-      currentPrice: parseFloat(p.priceData?.price || p.price || 0),
-      newPrice: null,
-      pending: false,
-      visible: p.visible !== false,
-    }));
-    document.getElementById('pricingCount').textContent = pricingProducts.length;
-    document.getElementById('pricingPendingTxt').textContent = 'No pending changes';
-    pricingRender();
-  } catch(e) {
-    wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--accent4)">Error: ' + e.message + '</div>';
-  }
-}
-
-function getVATRate() {
-  return 1 + (parseFloat(document.getElementById('pricingVAT')?.value || 15) / 100);
-}
-
-function pricingConvert(mode) {
-  const vat = getVATRate();
-  pricingProducts.forEach(p => {
-    const base = p.newPrice ?? p.currentPrice;
-    if (mode === 'excl') {
-      p.newPrice = Math.round((base / vat) * 100) / 100;
-    } else {
-      p.newPrice = Math.round((base * vat) * 100) / 100;
-    }
-    p.pending = Math.abs(p.newPrice - p.currentPrice) > 0.01;
-  });
-  pricingUpdateCounts();
-  pricingRender();
-}
-
-function pricingUpdateCounts() {
-  const pending = pricingProducts.filter(p => p.pending).length;
-  document.getElementById('pricingPendingTxt').textContent =
-    pending ? pending + ' product' + (pending !== 1 ? 's' : '') + ' with pending price changes' : 'No pending changes';
-  document.getElementById('pricingPushBtn').style.display = pending ? 'inline-flex' : 'none';
-}
-
-function pricingEditPrice(idx, val) {
-  const newVal = parseFloat(val);
-  if (isNaN(newVal) || newVal <= 0) return;
-  pricingProducts[idx].newPrice = Math.round(newVal * 100) / 100;
-  pricingProducts[idx].pending = Math.abs(pricingProducts[idx].newPrice - pricingProducts[idx].currentPrice) > 0.01;
-  pricingUpdateCounts();
-  // Re-render just that row
-  const row = document.getElementById('pr-row-' + idx);
-  if (row) {
-    const p = pricingProducts[idx];
-    const vat = getVATRate();
-    const displayNew = p.newPrice ?? p.currentPrice;
-    const inclNew = Math.round(displayNew * vat * 100) / 100;
-    row.querySelector('.pr-new-excl').textContent = 'R' + displayNew.toLocaleString('en-ZA', {minimumFractionDigits:2,maximumFractionDigits:2});
-    row.querySelector('.pr-new-incl').textContent = 'incl: R' + inclNew.toLocaleString('en-ZA', {minimumFractionDigits:2,maximumFractionDigits:2});
-    row.querySelector('.pr-badge').style.display = p.pending ? 'inline' : 'none';
-  }
-}
-
-function pricingRender() {
-  const wrap = document.getElementById('pricingTableWrap');
-  if (!pricingProducts.length) return;
-  const vat = getVATRate();
-
-  let t = '<table style="width:100%;border-collapse:collapse;font-size:12px">';
-  t += '<thead><tr style="background:var(--surface2);font-family:var(--mono);font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:.05em">';
-  t += '<th style="padding:10px 16px;text-align:left;border-bottom:1px solid var(--border)">Product</th>';
-  t += '<th style="padding:10px 16px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap">Current (Excl VAT)</th>';
-  t += '<th style="padding:10px 16px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap">New Price (Excl VAT)</th>';
-  t += '<th style="padding:10px 16px;text-align:center;border-bottom:1px solid var(--border)">Change</th>';
-  t += '</tr></thead><tbody>';
-
-  pricingProducts.forEach((p, i) => {
-    const currentIncl = Math.round(p.currentPrice * vat * 100) / 100;
-    const displayNew  = p.newPrice ?? p.currentPrice;
-    const inclNew     = Math.round(displayNew * vat * 100) / 100;
-    const delta       = p.newPrice ? ((p.newPrice - p.currentPrice) / p.currentPrice * 100) : 0;
-    const arrowColor  = delta > 0 ? 'var(--accent4)' : delta < 0 ? 'var(--accent2)' : 'var(--muted2)';
-    const arrowIcon   = delta > 0 ? '↑' : delta < 0 ? '↓' : '—';
-
-    t += '<tr id="pr-row-' + i + '" style="border-bottom:1px solid var(--border);' + (p.pending ? 'background:rgba(255,200,77,.04)' : '') + '">';
-    // Name + SKU
-    t += '<td style="padding:10px 16px">';
-    t += '<div style="font-weight:500;color:var(--text)">' + p.name.substring(0,60) + (p.name.length>60?'…':'') + '</div>';
-    if (p.sku) t += '<div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">' + p.sku + '</div>';
-    t += '</td>';
-    // Current price
-    t += '<td style="padding:10px 16px;text-align:right;font-family:var(--mono)">';
-    t += '<div style="color:var(--text)">R' + p.currentPrice.toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</div>';
-    t += '<div style="font-size:10px;color:var(--muted2)">incl: R' + currentIncl.toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</div>';
-    t += '</td>';
-    // New price (editable)
-    t += '<td style="padding:8px 16px;text-align:right">';
-    t += '<div style="display:flex;align-items:center;justify-content:flex-end;gap:6px">';
-    t += '<span class="pr-badge" style="display:' + (p.pending?'inline':'none') + ';font-family:var(--mono);font-size:9px;background:var(--accent4);color:#000;padding:2px 5px;border-radius:3px">PENDING</span>';
-    t += '<div><input type="number" value="' + displayNew.toFixed(2) + '" step="0.01" min="0" '
-      + 'style="width:100px;font-family:var(--mono);font-size:12px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:var(--radius);text-align:right" '
-      + 'onchange="pricingEditPrice(' + i + ',this.value)">'
-      + '<div class="pr-new-excl" style="display:none">R' + displayNew.toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</div>'
-      + '<div class="pr-new-incl" style="font-size:10px;color:var(--muted2);text-align:right">incl: R' + inclNew.toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</div>'
-      + '</div>';
-    t += '</div></td>';
-    // Change arrow
-    t += '<td style="padding:10px 16px;text-align:center;font-family:var(--mono);font-size:13px;color:' + arrowColor + '">';
-    if (delta !== 0) t += arrowIcon + ' ' + Math.abs(delta).toFixed(1) + '%';
-    else t += '—';
-    t += '</td>';
-    t += '</tr>';
-  });
-
-  t += '</tbody></table>';
-  wrap.innerHTML = t;
-}
-
-async function pricingPushAll() {
-  const pending = pricingProducts.filter(p => p.pending);
-  if (!pending.length) { alert('No pending changes to push.'); return; }
-  if (!confirm('Push ' + pending.length + ' price changes to Wix?')) return;
-
-  const prog = document.getElementById('pricingProgress');
-  const bar  = document.getElementById('pricingProgressBar');
-  const txt  = document.getElementById('pricingProgressTxt');
-  prog.style.display = 'block';
-  document.getElementById('pricingPushBtn').disabled = true;
-
-  let done = 0, failed = 0;
-  for (const p of pending) {
-    txt.textContent = 'Pushing ' + (done+1) + ' / ' + pending.length + ' — ' + p.name.substring(0,40);
-    bar.style.width = Math.round(((done) / pending.length) * 100) + '%';
-    try {
-      await callRelay('updateProduct', { productId: p.id, product: { priceData: { price: p.newPrice } } });
-      p.currentPrice = p.newPrice;
-      p.newPrice = null;
-      p.pending = false;
-      done++;
-    } catch(e) {
-      failed++;
-      done++;
-    }
-  }
-  bar.style.width = '100%';
-  txt.textContent = '✓ Done — ' + (done-failed) + ' updated' + (failed ? ', ' + failed + ' failed' : '');
-  document.getElementById('pricingPushBtn').disabled = false;
-  pricingUpdateCounts();
-  pricingRender();
-  setTimeout(() => { prog.style.display = 'none'; }, 4000);
-}
-
-
-// ── TOPUP RELAY TEST ──────────────────────────────────────────
-async function testTopupRelay() {
-  const statusEl = document.getElementById('topupRelayStatus');
-  if (statusEl) { statusEl.textContent = 'Testing...'; statusEl.style.color = 'var(--muted)'; }
-  const cfg = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
-  const url = cfg.relayUrl
-    || document.getElementById('relayUrlSettings')?.value
-    || document.getElementById('relayUrl')?.value;
-  if (!url || url.includes('PASTE_YOUR') || !url.startsWith('https://')) {
-    if (statusEl) { statusEl.textContent = '✗ No relay URL saved — go to ⚙ Settings'; statusEl.style.color = 'var(--accent3)'; }
-    return;
-  }
-  try {
-    const r = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'test' })
-    });
-    const d = await r.json();
-    if (statusEl) {
-      statusEl.textContent = d.success !== false
-        ? '✓ Relay connected · ' + (d.data?.message || 'OK')
-        : '✗ Relay error: ' + (d.error || 'unknown');
-      statusEl.style.color = d.success !== false ? 'var(--accent2)' : 'var(--accent3)';
-    }
-    // Also check if parseInvoice action exists
-    const r2 = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'parseInvoice', base64: '', mediaType: 'image/jpeg', isPDF: false })
-    });
-    const d2 = await r2.json();
-    const hasParseInvoice = !(d2.error || '').includes('Unknown action');
-    if (statusEl) {
-      statusEl.textContent += hasParseInvoice ? ' · parseInvoice ✓' : ' · parseInvoice ✗ NOT IN RELAY';
-      if (!hasParseInvoice) statusEl.style.color = 'var(--accent4)';
-    }
-  } catch(e) {
-    if (statusEl) { statusEl.textContent = '✗ ' + e.message.substring(0, 60); statusEl.style.color = 'var(--accent3)'; }
-  }
 }
 
 </script>
