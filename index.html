@@ -1700,15 +1700,14 @@ function saveSession(s) {
 
 function bootstrapAdmin() {
   const users = getUsers();
-  if (!users[ADMIN_EMAIL]) {
-    users[ADMIN_EMAIL] = {
-      name: 'Gav (Admin)',
-      password: 'satcomms2024',
-      isAdmin: true,
-      tabs: ['mywix','garmin','amazon','watchlist','alerts','usd','topup','seo','publish','settings']
-    };
-    saveUsers(users);
-  }
+  // Always ensure admin exists and is admin — update if already exists
+  users[ADMIN_EMAIL] = {
+    name: 'Gav (Admin)',
+    password: users[ADMIN_EMAIL]?.password || 'satcomms2024', // keep existing password if set
+    isAdmin: true,
+    tabs: ['mywix','garmin','amazon','watchlist','alerts','usd','topup','seo','publish','settings','pricing']
+  };
+  saveUsers(users);
 }
 
 function doLogin() {
@@ -1723,7 +1722,7 @@ function doLogin() {
   }
   const users = getUsers();
   const user  = users[email];
-  if (!user) { err.textContent = 'Account not found. Ask your admin.'; return; }
+  if (!user) { err.textContent = 'Account not found. If this is your first login, try password: satcomms2024'; return; }
   if (user.password !== pass) { err.textContent = 'Incorrect password.'; return; }
 
   saveSession({ email, name: user.name, isAdmin: !!user.isAdmin, tabs: user.tabs || [] });
@@ -1795,6 +1794,7 @@ const ALL_TABS = [
   {id:'seo',label:'SEO Agent'},
   {id:'publish',label:'Publish to Wix'},
   {id:'settings',label:'Settings'},
+  {id:'pricing',label:'Global Pricing'},
 ];
 
 function renderUserManagement() {
