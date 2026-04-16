@@ -1380,6 +1380,10 @@ select option{background:var(--surface2)}
         <div style="font-size:40px;margin-bottom:12px;opacity:.7">🧾</div>
         <div style="font-family:var(--cond);font-size:18px;font-weight:800;color:var(--accent);letter-spacing:.06em;margin-bottom:6px">DROP INVOICE HERE</div>
         <div style="font-family:var(--mono);font-size:9px;color:var(--muted2)">PDF or image (JPG/PNG) · AI will extract all details</div>
+        <div style="margin-top:8px">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="testTopupRelay()" style="font-size:8px;padding:2px 8px">🔌 Test Relay</button>
+          <span id="topupRelayStatus" style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-left:6px"></span>
+        </div>
         <input type="file" id="topupFileInput" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="handleTopupFile(this.files[0])">
       </div>
 
@@ -3460,9 +3464,29 @@ async function processTopupFile(file) {
     const isPDF = file.type === 'application/pdf';
     const mediaType = isPDF ? 'application/pdf' : file.type || 'image/jpeg';
     if (msg) msg.textContent = 'Sending to AI via relay...';
-    // Route through GAS relay — runs server-side, no CORS issue
-    const parsed = await callRelay('parseInvoice', { base64, mediaType, isPDF });
-    if (!parsed || typeof parsed !== 'object') throw new Error('Relay returned invalid data');
+    // Call relay directly so we can see the full error response
+    const cfg2 = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
+    const relayUrl2 = cfg2.relayUrl
+      || document.getElementById('relayUrlSettings')?.value
+      || document.getElementById('relayUrl')?.value;
+    if (!relayUrl2 || relayUrl2.includes('PASTE_YOUR') || !relayUrl2.startsWith('https://')) {
+      throw new Error('Relay URL not saved — go to ⚙ Settings, paste your GAS relay URL and click Save All Settings');
+    }
+    const relayResp = await fetch(relayUrl2, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'parseInvoice', base64, mediaType, isPDF })
+    });
+    const relayData = await relayResp.json();
+    if (!relayData.success) {
+      const errMsg = relayData.error || JSON.stringify(relayData);
+      if (errMsg.includes('Unknown action')) {
+        throw new Error('parseInvoice not in relay — please add it to your GAS and redeploy');
+      }
+      throw new Error('Relay error: ' + errMsg.substring(0, 120));
+    }
+    const parsed = relayData.data;
+    if (!parsed || typeof parsed !== 'object') throw new Error('Relay returned empty data: ' + JSON.stringify(relayData).substring(0, 100));
 
     // Populate form fields
     const set = (id, v) => { const el = document.getElementById(id); if (el && (v || v === 0)) el.value = v; };
@@ -4996,6 +5020,49 @@ async function pricingPushAll() {
   pricingUpdateCounts();
   pricingRender();
   setTimeout(() => { prog.style.display = 'none'; }, 4000);
+}
+
+
+// ── TOPUP RELAY TEST ──────────────────────────────────────────
+async function testTopupRelay() {
+  const statusEl = document.getElementById('topupRelayStatus');
+  if (statusEl) { statusEl.textContent = 'Testing...'; statusEl.style.color = 'var(--muted)'; }
+  const cfg = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
+  const url = cfg.relayUrl
+    || document.getElementById('relayUrlSettings')?.value
+    || document.getElementById('relayUrl')?.value;
+  if (!url || url.includes('PASTE_YOUR') || !url.startsWith('https://')) {
+    if (statusEl) { statusEl.textContent = '✗ No relay URL saved — go to ⚙ Settings'; statusEl.style.color = 'var(--accent3)'; }
+    return;
+  }
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'test' })
+    });
+    const d = await r.json();
+    if (statusEl) {
+      statusEl.textContent = d.success !== false
+        ? '✓ Relay connected · ' + (d.data?.message || 'OK')
+        : '✗ Relay error: ' + (d.error || 'unknown');
+      statusEl.style.color = d.success !== false ? 'var(--accent2)' : 'var(--accent3)';
+    }
+    // Also check if parseInvoice action exists
+    const r2 = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'parseInvoice', base64: '', mediaType: 'image/jpeg', isPDF: false })
+    });
+    const d2 = await r2.json();
+    const hasParseInvoice = !(d2.error || '').includes('Unknown action');
+    if (statusEl) {
+      statusEl.textContent += hasParseInvoice ? ' · parseInvoice ✓' : ' · parseInvoice ✗ NOT IN RELAY';
+      if (!hasParseInvoice) statusEl.style.color = 'var(--accent4)';
+    }
+  } catch(e) {
+    if (statusEl) { statusEl.textContent = '✗ ' + e.message.substring(0, 60); statusEl.style.color = 'var(--accent3)'; }
+  }
 }
 
 </script>
