@@ -1492,6 +1492,18 @@ select option{background:var(--surface2)}
       <button class="btn btn-success btn-sm" onclick="saveSettings()">Save Settings</button>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);padding:20px">
+      <div class="flabel" style="margin-bottom:12px">Relay & API Keys</div>
+      <div class="mfield">
+        <label>GAS Relay URL</label>
+        <input type="text" id="relayUrl" placeholder="https://script.google.com/macros/s/..." value="PASTE_YOUR_SATCOMMS_RELAY_URL_HERE" style="font-family:var(--mono);font-size:10px">
+      </div>
+      <div class="mfield" style="margin-top:10px">
+        <label>Anthropic API Key <span style="color:var(--muted2);font-size:10px">(for invoice AI parsing)</span></label>
+        <input type="password" id="anthropicKeyInput" placeholder="sk-ant-api03-..." style="font-family:var(--mono);font-size:10px">
+      </div>
+      <button class="btn btn-success btn-sm" onclick="saveSettings()" style="margin-top:10px">Save All Settings</button>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);padding:20px">
       <div class="flabel" style="margin-bottom:12px">Store Details</div>
       <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);line-height:2;padding:12px;background:var(--surface2);border:1px solid var(--border)">
         <span style="color:var(--accent)">satcomms.co.za</span><br>
@@ -1640,6 +1652,7 @@ async function callRelay(action, body) {
 function loadSettings() {
   const s = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
   if (s.relayUrl) { const el = document.getElementById('relayUrl'); if (el) el.value = s.relayUrl; }
+  if (s.anthropicKey) { const el = document.getElementById('anthropicKeyInput'); if (el) el.value = s.anthropicKey; }
   if (s.defaultAiContext) { const el = document.getElementById('defaultAiContext'); if (el) el.value = s.defaultAiContext; }
   if (s.garminMarkup !== undefined) { const el = document.getElementById('garminMarkup'); if (el) el.value = s.garminMarkup; }
   if (s.garminVAT !== undefined) { const el = document.getElementById('garminVAT'); if (el) el.value = s.garminVAT; }
@@ -1654,6 +1667,8 @@ function saveSettings() {
   const vatEl = document.getElementById('garminVAT');
   const roundEl = document.getElementById('garminRounding');
   if (relayEl?.value) s.relayUrl = relayEl.value.trim();
+  const anthropicEl = document.getElementById('anthropicKeyInput');
+  if (anthropicEl?.value) s.anthropicKey = anthropicEl.value.trim();
   if (ctxEl?.value) s.defaultAiContext = ctxEl.value;
   if (markupEl?.value) s.garminMarkup = parseFloat(markupEl.value);
   if (vatEl?.value) s.garminVAT = parseFloat(vatEl.value);
@@ -3421,10 +3436,43 @@ async function processTopupFile(file) {
     const mediaType = isPDF ? 'application/pdf' : file.type || 'image/jpeg';
     if (msg) msg.textContent = 'Sending to AI for extraction...';
 
-    // Route through GAS relay — avoids CORS block on GitHub Pages
-    if (msg) msg.textContent = 'Sending to AI via relay...';
-    const parsed = await callRelay('parseInvoice', { base64, mediaType, isPDF });
-    if (!parsed || typeof parsed !== 'object') throw new Error('Relay returned invalid data');
+    if (msg) msg.textContent = 'Sending to AI for extraction...';
+    // Direct Anthropic call with browser-access header (no CORS issue)
+    const cfg = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
+    const apiKey = cfg.anthropicKey || '';
+    if (!apiKey) throw new Error('No Anthropic API key set. Go to Settings → Relay & API and paste your key.');
+
+    const contentBlock = isPDF
+      ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }
+      : { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } };
+
+    const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
+        system: 'You are an invoice parser. Return ONLY valid JSON, no markdown, no explanation. Start with { and end with }.',
+        messages: [{ role: 'user', content: [
+          contentBlock,
+          { type: 'text', text: 'Extract all details from this invoice and return ONLY this JSON:\n{"invoiceNumber":"","date":"YYYY-MM-DD","customerName":"","customerEmail":"","customerPhone":"","amount":0,"airtimeProduct":"all line items and quantities","devices":[{"tel":"TEL or IMEI","sim":"SIM or ICCID"}],"notes":""}\nCRITICAL: Find ALL TEL/IMEI and SIM/ICCID entries in the entire document. Put every one in the devices array. If none found use []. Missing fields use empty string or 0.' }
+        ]}]
+      })
+    });
+    if (!aiResp.ok) {
+      const errText = await aiResp.text();
+      throw new Error('Anthropic API error ' + aiResp.status + ': ' + errText.substring(0, 120));
+    }
+    const aiData = await aiResp.json();
+    const aiText = (aiData.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    const js = aiText.indexOf('{'), je = aiText.lastIndexOf('}');
+    if (js < 0 || je < js) throw new Error('Could not parse AI response: ' + aiText.substring(0, 100));
+    const parsed = JSON.parse(aiText.substring(js, je + 1));
 
     // Populate form fields
     const set = (id, v) => { const el = document.getElementById(id); if (el && (v || v === 0)) el.value = v; };
