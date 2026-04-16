@@ -355,20 +355,110 @@ select option{background:var(--surface2)}
   .pgrid{grid-template-columns:1fr}
   .tab{padding:12px 12px;font-size:9px}
 }
+
+/* ═══════════════════════════════════════════════════════
+   LOGIN OVERLAY
+═══════════════════════════════════════════════════════ */
+#loginOverlay {
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+}
+.login-box {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:48px 40px 40px;
+  width:380px;
+  box-shadow:0 24px 64px rgba(0,0,0,.5);
+  display:flex;flex-direction:column;gap:20px;
+}
+.login-logo {
+  text-align:center;
+  font-family:'Syne',sans-serif;
+  font-size:26px;font-weight:800;letter-spacing:-1px;
+  color:var(--text);
+  margin-bottom:4px;
+}
+.login-logo span{color:var(--accent1);}
+.login-subtitle{text-align:center;font-size:12px;color:var(--muted);margin-top:-12px;}
+.login-field{display:flex;flex-direction:column;gap:6px;}
+.login-field label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.login-field input{
+  background:var(--bg);border:1px solid var(--border);
+  color:var(--text);border-radius:8px;
+  padding:10px 14px;font-size:14px;outline:none;
+  transition:border-color .2s;
+}
+.login-field input:focus{border-color:var(--accent1);}
+.login-error{
+  font-size:12px;color:var(--accent4);
+  text-align:center;min-height:16px;
+}
+.login-btn{
+  background:var(--accent1);color:#000;
+  border:none;border-radius:8px;
+  padding:12px;font-size:14px;font-weight:700;
+  cursor:pointer;transition:opacity .2s;
+}
+.login-btn:hover{opacity:.85;}
+/* user chip in topbar */
+#userChip{
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:4px 12px 4px 8px;
+  font-size:12px;cursor:default;
+}
+#userChip .chip-avatar{
+  width:22px;height:22px;border-radius:50%;
+  background:var(--accent1);color:#000;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;
+}
+#signOutBtn{
+  font-size:11px;color:var(--muted);
+  background:none;border:none;cursor:pointer;
+  padding:0;margin-left:4px;
+}
+#signOutBtn:hover{color:var(--accent4);}
 </style>
 </head>
 <body>
 
 <!-- TOP BAR -->
+
+<!-- ═══════════════ LOGIN OVERLAY ═══════════════ -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">🛰 <em>Sat</em>&nbsp;<span>Comms</span></div>
+    <div class="login-subtitle">Product Intelligence System</div>
+    <div class="login-field">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="you@satcomms.co.za" autocomplete="email">
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+  </div>
+</div>
+
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:14px;min-width:0">
     <div class="logo"><span class="logo-icon">🛰</span><em>Sat</em>&nbsp;Comms</div>
-    <div class="sys-badge">Product Intelligence System</div>
+    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v1.6 · 2026-04-16</div>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><span class="pulse"></span><span id="feedStatusText">Ready</span></div>
     <div id="feedTime"></div>
     <button class="btn btn-ghost btn-sm" onclick="loadMyWixProducts()">↻ Sync Wix</button>
+    <div id="userChip" style="display:none">
+      <div class="chip-avatar" id="userAvatar">?</div>
+      <span id="userChipName">—</span>
+      <button id="signOutBtn" onclick="doSignOut()">Sign out</button>
+    </div>
   </div>
 </div>
 
@@ -383,6 +473,7 @@ select option{background:var(--surface2)}
   <div class="tab" onclick="switchTab('topup')">📶 Topups <span class="tab-count r" id="tc-topup" style="display:none">0</span></div>
   <div class="tab" onclick="switchTab('seo')">🔍 SEO Agent</div>
   <div class="tab" onclick="switchTab('publish')">🚀 Publish to Wix</div>
+  <div class="tab" onclick="switchTab('pricing')">💰 Global Pricing</div>
   <div class="tab" onclick="switchTab('settings')">⚙ Settings</div>
 </div>
 
@@ -435,7 +526,7 @@ select option{background:var(--surface2)}
     <div style="background:var(--surface);border:1px solid var(--border);padding:12px 16px;margin-bottom:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
       <div>
         <div class="flabel" style="margin-bottom:4px">Markup %</div>
-        <input type="number" id="garminMarkup" value="35" min="0" max="500" style="width:80px" oninput="refreshGarminPrices()">
+        <input type="number" id="garminMarkup" value="12" min="0" max="500" style="width:80px" oninput="refreshGarminPrices()">
       </div>
       <div>
         <div class="flabel" style="margin-bottom:4px">VAT %</div>
@@ -1204,6 +1295,63 @@ select option{background:var(--surface2)}
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
+<!-- GLOBAL PRICING TAB -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-pricing">
+  <div class="shdr">
+    <div class="stitle">💰 Global <span>Pricing</span></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="pricingLoad()">📦 Load / Refresh</button>
+      <button class="btn btn-sm" onclick="pricingConvert('excl')" id="pricingBtnExcl">÷1.VAT → Store Excl VAT</button>
+      <button class="btn btn-sm" onclick="pricingConvert('incl')" id="pricingBtnIncl">×1.VAT → Store Incl VAT</button>
+      <button class="btn btn-wix btn-sm" onclick="pricingPushAll()" id="pricingPushBtn" style="display:none">🚀 Push All Changes to Wix</button>
+    </div>
+  </div>
+
+  <!-- Stats strip -->
+  <div style="display:flex;gap:2px;margin-bottom:2px">
+    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 20px;flex:1">
+      <div class="flabel" style="margin-bottom:6px">VAT Rate %</div>
+      <input type="number" id="pricingVAT" value="15" min="0" max="30" style="width:70px;font-family:var(--mono);font-size:14px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:6px 10px;border-radius:var(--radius)" oninput="pricingRender()">
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 20px;flex:1">
+      <div class="flabel" style="margin-bottom:4px">Products</div>
+      <div id="pricingCount" style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent)">—</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 20px;flex:2">
+      <div class="flabel" style="margin-bottom:4px">Pending Changes</div>
+      <div id="pricingPendingTxt" style="font-family:var(--mono);font-size:12px;color:var(--muted2)">No changes — load products first</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent1);padding:14px 20px;flex:3">
+      <div class="flabel" style="margin-bottom:4px">How it works</div>
+      <div style="font-size:11px;color:var(--muted2);line-height:1.7">
+        Wix is set to <b style="color:var(--text)">add VAT at checkout</b> — store prices <b style="color:var(--accent2)">excl VAT</b>.
+        Use <em>÷1.VAT</em> to strip VAT from any incl-VAT prices. Individual prices are editable inline.
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div id="pricingProgress" style="display:none;background:var(--surface);border:1px solid var(--border);padding:12px 20px;margin-bottom:2px">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:6px" id="pricingProgressTxt">Pushing...</div>
+    <div style="height:4px;background:var(--surface2);border-radius:2px">
+      <div id="pricingProgressBar" style="height:100%;background:var(--accent2);border-radius:2px;transition:width .3s;width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div style="background:var(--surface);border:1px solid var(--border)">
+    <div id="pricingTableWrap">
+      <div class="empty" style="padding:60px 20px">
+        <div class="empty-icon">💰</div>
+        <div class="empty-text">Click <b>Load / Refresh</b> to pull all Wix products</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
 <!-- SETTINGS -->
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -1359,6 +1507,9 @@ select option{background:var(--surface2)}
         <textarea id="defaultAiContext" rows="5" placeholder="e.g. South Africa's leading satellite communications retailer since 2002. Specialising in Iridium, Inmarsat, Thuraya and Garmin satellite devices. Products suitable for maritime, mining, agriculture, emergency responders and remote travellers.">South Africa's leading satellite communications retailer since 2002. Specialising in Iridium, Inmarsat, Thuraya and Garmin satellite devices. Ideal for maritime, mining, agriculture, emergency response, remote travel and any situation where standard cellular networks are unavailable.</textarea>
       </div>
       <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
+    <div style="background:var(--surface);border:1px solid var(--border);padding:20px;grid-column:1/-1">
+      <div class="flabel" style="margin-bottom:12px">👥 User Management</div>
+      <div id="userMgmtPanel"></div>
     </div>
   </div>
 </div>
@@ -1468,6 +1619,7 @@ function switchTab(name) {
   if (name === 'publish' && typeof renderQueue === 'function') renderQueue();
   if (name === 'watchlist' && typeof renderWatchlist === 'function') renderWatchlist();
   if (name === 'topup' && typeof renderTopupQueue === 'function') renderTopupQueue();
+  if (name === 'pricing' && typeof pricingLoad === 'function') pricingLoad();
   if (name === 'mywix' && typeof loadWixProducts === 'function' && !wixProducts.length) loadWixProducts();
 }
 
@@ -1511,7 +1663,196 @@ function saveSettings() {
   if (btn) { const orig = btn.textContent; btn.textContent = '✓ Saved'; setTimeout(() => btn.textContent = orig, 1500); }
 }
 
+
+// ═══════════════════════════════════════════════════════════════
+// LOGIN SYSTEM
+// ═══════════════════════════════════════════════════════════════
+const ADMIN_EMAIL = 'gavmag@gmail.com';
+const ALLOWED_DOMAIN = '@satcomms.co.za';
+
+function getUsers() {
+  return JSON.parse(localStorage.getItem('sc_users') || '{}');
+}
+function saveUsers(u) {
+  localStorage.setItem('sc_users', JSON.stringify(u));
+}
+function getSession() {
+  return JSON.parse(localStorage.getItem('sc_session') || 'null');
+}
+function saveSession(s) {
+  localStorage.setItem('sc_session', JSON.stringify(s));
+}
+
+function bootstrapAdmin() {
+  const users = getUsers();
+  if (!users[ADMIN_EMAIL]) {
+    users[ADMIN_EMAIL] = {
+      name: 'Gav (Admin)',
+      password: 'satcomms2024',
+      isAdmin: true,
+      tabs: ['mywix','garmin','amazon','watchlist','alerts','usd','topup','seo','publish','settings']
+    };
+    saveUsers(users);
+  }
+}
+
+function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const pass  = document.getElementById('loginPassword').value;
+  const err   = document.getElementById('loginError');
+  err.textContent = '';
+
+  if (!email) { err.textContent = 'Please enter your email.'; return; }
+  if (email !== ADMIN_EMAIL && !email.endsWith(ALLOWED_DOMAIN)) {
+    err.textContent = 'Only @satcomms.co.za accounts are allowed.'; return;
+  }
+  const users = getUsers();
+  const user  = users[email];
+  if (!user) { err.textContent = 'Account not found. Ask your admin.'; return; }
+  if (user.password !== pass) { err.textContent = 'Incorrect password.'; return; }
+
+  saveSession({ email, name: user.name, isAdmin: !!user.isAdmin, tabs: user.tabs || [] });
+  showApp();
+}
+
+function doSignOut() {
+  localStorage.removeItem('sc_session');
+  location.reload();
+}
+
+function showApp() {
+  const session = getSession();
+  if (!session) return;
+
+  // Hide overlay
+  const overlay = document.getElementById('loginOverlay');
+  if (overlay) overlay.style.display = 'none';
+
+  // Show user chip
+  const chip = document.getElementById('userChip');
+  if (chip) chip.style.display = 'flex';
+  const chipName = document.getElementById('userChipName');
+  if (chipName) chipName.textContent = session.name;
+  const avatar = document.getElementById('userAvatar');
+  if (avatar) avatar.textContent = session.name.charAt(0).toUpperCase();
+
+  // Tab visibility — admin sees all, others only their permitted tabs
+  if (!session.isAdmin) {
+    document.querySelectorAll('.tab').forEach(tab => {
+      const m = tab.getAttribute('onclick')?.match(/'(\w+)'/);
+      if (m && !session.tabs.includes(m[1])) {
+        tab.style.display = 'none';
+      }
+    });
+  }
+
+  // Render user management in settings if admin
+  if (session.isAdmin) renderUserManagement();
+}
+
+function checkSession() {
+  bootstrapAdmin();
+  const session = getSession();
+  if (session) {
+    showApp();
+    return true;
+  }
+  return false;
+}
+
+// Enter key on login fields
 document.addEventListener('DOMContentLoaded', () => {
+  ['loginEmail','loginPassword'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  });
+});
+
+// ── USER MANAGEMENT (admin only, rendered in Settings tab) ──────────────────
+const ALL_TABS = [
+  {id:'mywix',label:'My Products'},
+  {id:'garmin',label:'Garmin Import'},
+  {id:'amazon',label:'Amazon Monitor'},
+  {id:'watchlist',label:'Watchlist'},
+  {id:'alerts',label:'Competitor Prices'},
+  {id:'usd',label:'USD Pricing'},
+  {id:'topup',label:'Topups'},
+  {id:'seo',label:'SEO Agent'},
+  {id:'publish',label:'Publish to Wix'},
+  {id:'settings',label:'Settings'},
+];
+
+function renderUserManagement() {
+  const container = document.getElementById('userMgmtPanel');
+  if (!container) return;
+  const users = getUsers();
+  const session = getSession();
+  if (!session?.isAdmin) return;
+
+  let html = '<div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">'
+    + '<span style="font-size:13px;color:var(--muted)">Manage system users</span>'
+    + '<button class="btn btn-sm" onclick="showAddUserForm()">+ Add User</button></div>';
+
+  html += '<div id="addUserForm" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">';
+  html += '<div><label style="font-size:11px;color:var(--muted)">Name</label><input id="nu_name" class="filter-input" placeholder="Full Name" style="width:100%"></div>';
+  html += '<div><label style="font-size:11px;color:var(--muted)">Email</label><input id="nu_email" class="filter-input" placeholder="user@satcomms.co.za" style="width:100%"></div>';
+  html += '</div><div style="margin-bottom:10px"><label style="font-size:11px;color:var(--muted)">Password</label><input id="nu_pass" type="password" class="filter-input" placeholder="Set password" style="width:100%"></div>';
+  html += '<div style="margin-bottom:12px"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px">Tab Access</label><div style="display:flex;flex-wrap:wrap;gap:6px">';
+  ALL_TABS.forEach(t => {
+    html += '<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer">'
+      + '<input type="checkbox" class="nu_tab" value="' + t.id + '"> ' + t.label + '</label>';
+  });
+  html += '</div></div>';
+  html += '<div style="display:flex;gap:8px"><button class="btn btn-sm" onclick="saveNewUser()">Save User</button>'
+    + '<button class="btn btn-sm btn-ghost" onclick="document.getElementById(\'addUserForm\').style.display=\'none\'">Cancel</button></div>';
+  html += '</div>';
+
+  html += '<div style="display:flex;flex-direction:column;gap:8px">';
+  Object.entries(users).forEach(([email, u]) => {
+    const isYou = email === session.email;
+    html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">';
+    html += '<div><div style="font-size:13px;font-weight:600">' + u.name + (isYou ? ' <span style="color:var(--accent2);font-size:11px">(you)</span>' : '') + '</div>';
+    html += '<div style="font-size:11px;color:var(--muted)">' + email + (u.isAdmin ? ' · Admin' : '') + '</div></div>';
+    if (!isYou) {
+      html += '<button class="btn btn-sm btn-ghost" style="color:var(--accent4)" onclick="deleteUser('' + email + '')">Remove</button>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
+function showAddUserForm() {
+  document.getElementById('addUserForm').style.display = 'block';
+}
+
+function saveNewUser() {
+  const name  = document.getElementById('nu_name').value.trim();
+  const email = document.getElementById('nu_email').value.trim().toLowerCase();
+  const pass  = document.getElementById('nu_pass').value;
+  const tabs  = Array.from(document.querySelectorAll('.nu_tab:checked')).map(c => c.value);
+  if (!name || !email || !pass) { alert('Please fill in name, email and password.'); return; }
+  if (email !== ADMIN_EMAIL && !email.endsWith(ALLOWED_DOMAIN)) {
+    alert('Only @satcomms.co.za emails allowed.'); return;
+  }
+  const users = getUsers();
+  users[email] = { name, password: pass, isAdmin: false, tabs };
+  saveUsers(users);
+  renderUserManagement();
+}
+
+function deleteUser(email) {
+  if (!confirm('Remove user ' + email + '?')) return;
+  const users = getUsers();
+  delete users[email];
+  saveUsers(users);
+  renderUserManagement();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!checkSession()) return; // stop init if not logged in
   loadSettings();
   if (typeof initAutoToggle === 'function') initAutoToggle();
   if (typeof updateCompTabCount === 'function') updateCompTabCount();
@@ -2394,8 +2735,11 @@ async function pushSingleUSD(i){
   if(!u || !u.wixId){ alert('No Wix ID linked. Paste the Wix Product ID first.'); return; }
   if(!u.zarPrice){ alert('No ZAR price calculated. Fetch the live rate then click ✓ to apply.'); return; }
   const status = document.getElementById('usdPushStatus');
-  const price = parseFloat(u.zarPrice.toFixed(2));
-  status.textContent = `Pushing R${price.toLocaleString('en-ZA')} for "${u.name.substring(0,30)}"...`;
+  // Push excl VAT — Wix adds VAT at checkout
+  const priceVal = u.zarExclVAT || u.zarPrice;
+  if (!priceVal) { alert('No ZAR price calculated. Fetch the live rate then click ✓ to apply.'); return; }
+  const price = parseFloat(priceVal.toFixed(2));
+  status.textContent = `Pushing R${price.toLocaleString('en-ZA')} excl VAT for "${u.name.substring(0,30)}"...`;
   status.style.color = 'var(--muted2)';
   try{
     // Mirror saveWixPrice exactly — same action and payload that works in My Products tab
@@ -2424,7 +2768,7 @@ async function pushSingleUSD(i){
 }
 
 async function pushSelectedUSDPrices(){
-  const toProcess=[...usdSelected].map(i=>({i,u:usdProducts[i]})).filter(({u})=>u&&u.wixId&&u.zarPrice);
+  const toProcess=[...usdSelected].map(i=>({i,u:usdProducts[i]})).filter(({u})=>u&&u.wixId&&(u.zarExclVAT||u.zarPrice));
   if(!toProcess.length){ alert('Select products with Wix IDs and calculated ZAR prices.'); return; }
   const status=document.getElementById('usdPushStatus');
   status.textContent=`Pushing ${toProcess.length} products...`; status.style.color='var(--muted2)';
@@ -2450,10 +2794,10 @@ async function pushSelectedUSDPrices(){
 }
 
 async function pushAllUSDPrices(){
-  const all=usdProducts.filter(u=>u.wixId&&u.zarPrice);
+  const all=usdProducts.filter(u=>u.wixId&&(u.zarExclVAT||u.zarPrice));
   if(!all.length){ alert('No products with Wix IDs linked. Link products first.'); return; }
   if(!confirm(`Push updated ZAR prices for all ${all.length} USD-priced products to Wix?`)) return;
-  usdSelected=new Set(usdProducts.filter(u=>u.wixId&&u.zarPrice).map((_,i)=>i));
+  usdSelected=new Set(usdProducts.filter(u=>u.wixId&&(u.zarExclVAT||u.zarPrice)).map((_,i)=>i));
   await pushSelectedUSDPrices();
 }
 
@@ -3077,25 +3421,10 @@ async function processTopupFile(file) {
     const mediaType = isPDF ? 'application/pdf' : file.type || 'image/jpeg';
     if (msg) msg.textContent = 'Sending to AI for extraction...';
 
-    // Direct Anthropic call — works from browser with valid API key
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: 'You are an invoice parser for a South African satellite communications company. Return ONLY valid JSON, no markdown, no explanation. Start with { and end with }.',
-        messages: [{ role: 'user', content: [
-          { type: isPDF ? 'document' : 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-          { type: 'text', text: 'Extract all details from this invoice and return ONLY this JSON:\n{"invoiceNumber":"","date":"YYYY-MM-DD","customerName":"","customerEmail":"","customerPhone":"","amount":0,"airtimeProduct":"all line items and quantities","devices":[{"tel":"TEL or IMEI number","sim":"SIM or ICCID number"}],"notes":""}\nCRITICAL: The devices array must contain ALL TEL/IMEI and SIM/ICCID entries found anywhere in the document. Scan every row of every table — do NOT stop at the first one. If no devices found use []. If a field is missing use empty string or 0.' }
-        ]}]
-      })
-    });
-    const data = await response.json();
-    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-    const js = text.indexOf('{'), je = text.lastIndexOf('}');
-    if (js < 0 || je < js) throw new Error('Could not parse AI response: ' + text.substring(0,100));
-    const parsed = JSON.parse(text.substring(js, je + 1));
+    // Route through GAS relay — avoids CORS block on GitHub Pages
+    if (msg) msg.textContent = 'Sending to AI via relay...';
+    const parsed = await callRelay('parseInvoice', { base64, mediaType, isPDF });
+    if (!parsed || typeof parsed !== 'object') throw new Error('Relay returned invalid data');
 
     // Populate form fields
     const set = (id, v) => { const el = document.getElementById(id); if (el && (v || v === 0)) el.value = v; };
@@ -3662,12 +3991,12 @@ function parseCSVLine(line) {
 }
 
 function calcGarminPrice(p) {
+  // Returns EXCL VAT — Wix adds VAT at checkout
   const basis = document.getElementById('garminPriceBasis')?.value || 'dealer';
   if (basis === 'list') return p.list;
-  const markup = parseFloat(document.getElementById('garminMarkup')?.value || 35) / 100;
-  const vat    = parseFloat(document.getElementById('garminVAT')?.value || 15) / 100;
+  const markup = parseFloat(document.getElementById('garminMarkup')?.value || 12) / 100;
   const round  = parseInt(document.getElementById('garminRounding')?.value || 10);
-  const raw = p.dealer * (1 + markup) * (1 + vat);
+  const raw = p.dealer * (1 + markup); // excl VAT — do NOT multiply by VAT
   if (round === 0) return Math.round(raw * 100) / 100;
   return Math.ceil(raw / round) * round;
 }
@@ -4458,6 +4787,177 @@ function logAuto(msg, type=''){
   // Keep last 10 log lines
   const lines = el.innerHTML.split('<br>');
   if(lines.length > 10) el.innerHTML = lines.slice(0,10).join('<br>');
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GLOBAL PRICING TAB
+// ═══════════════════════════════════════════════════════════════════════════
+let pricingProducts = [];   // [{id, name, sku, currentPrice, newPrice, pending}]
+
+async function pricingLoad() {
+  const wrap = document.getElementById('pricingTableWrap');
+  wrap.innerHTML = '<div style="padding:40px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--muted2)">Loading products from Wix...</div>';
+  document.getElementById('pricingPushBtn').style.display = 'none';
+  try {
+    let all = [], cursor = null, page = 0;
+    do {
+      const res = await callRelay('listProducts', { limit: 100, cursor });
+      const prods = res.products || res.items || [];
+      all = all.concat(prods);
+      cursor = res.nextCursor || res.metadata?.cursor || null;
+      page++;
+    } while (cursor && page < 20);
+
+    pricingProducts = all.map(p => ({
+      id: p.id,
+      name: p.name,
+      sku: p.sku || '',
+      currentPrice: parseFloat(p.priceData?.price || p.price || 0),
+      newPrice: null,
+      pending: false,
+      visible: p.visible !== false,
+    }));
+    document.getElementById('pricingCount').textContent = pricingProducts.length;
+    document.getElementById('pricingPendingTxt').textContent = 'No pending changes';
+    pricingRender();
+  } catch(e) {
+    wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--accent4)">Error: ' + e.message + '</div>';
+  }
+}
+
+function getVATRate() {
+  return 1 + (parseFloat(document.getElementById('pricingVAT')?.value || 15) / 100);
+}
+
+function pricingConvert(mode) {
+  const vat = getVATRate();
+  pricingProducts.forEach(p => {
+    const base = p.newPrice ?? p.currentPrice;
+    if (mode === 'excl') {
+      p.newPrice = Math.round((base / vat) * 100) / 100;
+    } else {
+      p.newPrice = Math.round((base * vat) * 100) / 100;
+    }
+    p.pending = Math.abs(p.newPrice - p.currentPrice) > 0.01;
+  });
+  pricingUpdateCounts();
+  pricingRender();
+}
+
+function pricingUpdateCounts() {
+  const pending = pricingProducts.filter(p => p.pending).length;
+  document.getElementById('pricingPendingTxt').textContent =
+    pending ? pending + ' product' + (pending !== 1 ? 's' : '') + ' with pending price changes' : 'No pending changes';
+  document.getElementById('pricingPushBtn').style.display = pending ? 'inline-flex' : 'none';
+}
+
+function pricingEditPrice(idx, val) {
+  const newVal = parseFloat(val);
+  if (isNaN(newVal) || newVal <= 0) return;
+  pricingProducts[idx].newPrice = Math.round(newVal * 100) / 100;
+  pricingProducts[idx].pending = Math.abs(pricingProducts[idx].newPrice - pricingProducts[idx].currentPrice) > 0.01;
+  pricingUpdateCounts();
+  // Re-render just that row
+  const row = document.getElementById('pr-row-' + idx);
+  if (row) {
+    const p = pricingProducts[idx];
+    const vat = getVATRate();
+    const displayNew = p.newPrice ?? p.currentPrice;
+    const inclNew = Math.round(displayNew * vat * 100) / 100;
+    row.querySelector('.pr-new-excl').textContent = 'R' + displayNew.toLocaleString('en-ZA', {minimumFractionDigits:2,maximumFractionDigits:2});
+    row.querySelector('.pr-new-incl').textContent = 'incl: R' + inclNew.toLocaleString('en-ZA', {minimumFractionDigits:2,maximumFractionDigits:2});
+    row.querySelector('.pr-badge').style.display = p.pending ? 'inline' : 'none';
+  }
+}
+
+function pricingRender() {
+  const wrap = document.getElementById('pricingTableWrap');
+  if (!pricingProducts.length) return;
+  const vat = getVATRate();
+
+  let t = '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  t += '<thead><tr style="background:var(--surface2);font-family:var(--mono);font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:.05em">';
+  t += '<th style="padding:10px 16px;text-align:left;border-bottom:1px solid var(--border)">Product</th>';
+  t += '<th style="padding:10px 16px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap">Current (Excl VAT)</th>';
+  t += '<th style="padding:10px 16px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap">New Price (Excl VAT)</th>';
+  t += '<th style="padding:10px 16px;text-align:center;border-bottom:1px solid var(--border)">Change</th>';
+  t += '</tr></thead><tbody>';
+
+  pricingProducts.forEach((p, i) => {
+    const currentIncl = Math.round(p.currentPrice * vat * 100) / 100;
+    const displayNew  = p.newPrice ?? p.currentPrice;
+    const inclNew     = Math.round(displayNew * vat * 100) / 100;
+    const delta       = p.newPrice ? ((p.newPrice - p.currentPrice) / p.currentPrice * 100) : 0;
+    const arrowColor  = delta > 0 ? 'var(--accent4)' : delta < 0 ? 'var(--accent2)' : 'var(--muted2)';
+    const arrowIcon   = delta > 0 ? '↑' : delta < 0 ? '↓' : '—';
+
+    t += '<tr id="pr-row-' + i + '" style="border-bottom:1px solid var(--border);' + (p.pending ? 'background:rgba(255,200,77,.04)' : '') + '">';
+    // Name + SKU
+    t += '<td style="padding:10px 16px">';
+    t += '<div style="font-weight:500;color:var(--text)">' + p.name.substring(0,60) + (p.name.length>60?'…':'') + '</div>';
+    if (p.sku) t += '<div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">' + p.sku + '</div>';
+    t += '</td>';
+    // Current price
+    t += '<td style="padding:10px 16px;text-align:right;font-family:var(--mono)">';
+    t += '<div style="color:var(--text)">R' + p.currentPrice.toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</div>';
+    t += '<div style="font-size:10px;color:var(--muted2)">incl: R' + currentIncl.toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</div>';
+    t += '</td>';
+    // New price (editable)
+    t += '<td style="padding:8px 16px;text-align:right">';
+    t += '<div style="display:flex;align-items:center;justify-content:flex-end;gap:6px">';
+    t += '<span class="pr-badge" style="display:' + (p.pending?'inline':'none') + ';font-family:var(--mono);font-size:9px;background:var(--accent4);color:#000;padding:2px 5px;border-radius:3px">PENDING</span>';
+    t += '<div><input type="number" value="' + displayNew.toFixed(2) + '" step="0.01" min="0" '
+      + 'style="width:100px;font-family:var(--mono);font-size:12px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:var(--radius);text-align:right" '
+      + 'onchange="pricingEditPrice(' + i + ',this.value)">'
+      + '<div class="pr-new-excl" style="display:none">R' + displayNew.toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</div>'
+      + '<div class="pr-new-incl" style="font-size:10px;color:var(--muted2);text-align:right">incl: R' + inclNew.toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</div>'
+      + '</div>';
+    t += '</div></td>';
+    // Change arrow
+    t += '<td style="padding:10px 16px;text-align:center;font-family:var(--mono);font-size:13px;color:' + arrowColor + '">';
+    if (delta !== 0) t += arrowIcon + ' ' + Math.abs(delta).toFixed(1) + '%';
+    else t += '—';
+    t += '</td>';
+    t += '</tr>';
+  });
+
+  t += '</tbody></table>';
+  wrap.innerHTML = t;
+}
+
+async function pricingPushAll() {
+  const pending = pricingProducts.filter(p => p.pending);
+  if (!pending.length) { alert('No pending changes to push.'); return; }
+  if (!confirm('Push ' + pending.length + ' price changes to Wix?')) return;
+
+  const prog = document.getElementById('pricingProgress');
+  const bar  = document.getElementById('pricingProgressBar');
+  const txt  = document.getElementById('pricingProgressTxt');
+  prog.style.display = 'block';
+  document.getElementById('pricingPushBtn').disabled = true;
+
+  let done = 0, failed = 0;
+  for (const p of pending) {
+    txt.textContent = 'Pushing ' + (done+1) + ' / ' + pending.length + ' — ' + p.name.substring(0,40);
+    bar.style.width = Math.round(((done) / pending.length) * 100) + '%';
+    try {
+      await callRelay('updateProduct', { productId: p.id, product: { priceData: { price: p.newPrice } } });
+      p.currentPrice = p.newPrice;
+      p.newPrice = null;
+      p.pending = false;
+      done++;
+    } catch(e) {
+      failed++;
+      done++;
+    }
+  }
+  bar.style.width = '100%';
+  txt.textContent = '✓ Done — ' + (done-failed) + ' updated' + (failed ? ', ' + failed + ' failed' : '');
+  document.getElementById('pricingPushBtn').disabled = false;
+  pricingUpdateCounts();
+  pricingRender();
+  setTimeout(() => { prog.style.display = 'none'; }, 4000);
 }
 
 </script>
