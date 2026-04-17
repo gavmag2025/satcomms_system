@@ -805,15 +805,16 @@ select option{background:var(--surface2)}
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
       <div style="flex:2;min-width:220px">
         <div class="flabel">Amazon.co.za product URL</div>
-        <input type="text" id="amzUrlInput" placeholder="https://www.amazon.co.za/dp/ASIN...">
+        <input type="text" id="amzUrlInput" placeholder="https://www.amazon.co.za/dp/B0C... (paste URL)">
       </div>
       <div style="flex:1;min-width:160px">
-        <div class="flabel">Your label (optional)</div>
-        <input type="text" id="amzLabelInput" placeholder="e.g. Iridium 9575A">
+        <div class="flabel">Product name / search term <span style="color:var(--muted2);font-size:9px">(helps find it)</span></div>
+        <input type="text" id="amzLabelInput" placeholder="e.g. Iridium 9575A Extreme">
       </div>
       <button class="btn btn-primary" onclick="fetchAmazonProduct()" id="amzFetchBtn">Fetch Product</button>
     </div>
     <div id="amzFetchStatus" style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:8px"></div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px">Paste an Amazon.co.za URL + enter the product name, or just enter a product name to search. Prices pulled via Google Shopping.</div>
   </div>
 
   <div id="amzEmpty" class="empty"><div class="empty-icon">🛒</div><div class="empty-text">No Amazon products tracked yet.<br>Paste an Amazon.co.za URL above to start monitoring price &amp; availability.</div></div>
@@ -3647,30 +3648,101 @@ let amazonProducts = JSON.parse(localStorage.getItem('sc_amz') || '[]');
 function saveAmazon() { localStorage.setItem('sc_amz', JSON.stringify(amazonProducts)); }
 
 async function fetchAmazonProduct() {
-  const urlEl = document.getElementById('amzUrl');
+  const urlEl = document.getElementById('amzUrlInput');
+  const labelEl = document.getElementById('amzLabelInput');
   const url = urlEl?.value?.trim();
-  if (!url) { alert('Enter an Amazon.co.za product URL'); return; }
+  const label = labelEl?.value?.trim();
+  const status = document.getElementById('amzFetchStatus');
+  if (!url) { if(status) { status.textContent = 'Please paste an Amazon.co.za URL or enter a product name to search.'; status.style.color='var(--accent3)'; } return; }
+
   const btn = document.getElementById('amzFetchBtn');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Fetching...'; }
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Searching...'; }
+  if (status) { status.textContent = 'Searching Amazon.co.za via Google Shopping...'; status.style.color='var(--muted2)'; }
+
   try {
-    const r = await callRelay('fetchAmazon', { url });
-    if (r) {
-      amazonProducts.push({ ...r, url, addedAt: new Date().toISOString(), lastChecked: new Date().toISOString() });
-      saveAmazon(); renderAmazon();
-      if (urlEl) urlEl.value = '';
+    // Extract ASIN from URL if possible
+    const asinMatch = url.match(/\/dp\/([A-Z0-9]{10})/);
+    const asin = asinMatch ? asinMatch[1] : null;
+
+    // Build search query — use label if provided, otherwise extract from URL or use ASIN
+    let searchQuery = label || '';
+    if (!searchQuery && asin) searchQuery = 'Amazon ' + asin + ' site:amazon.co.za';
+    if (!searchQuery) {
+      // Try to extract product name from URL path
+      const pathParts = url.replace(/https?:\/\/[^\/]+/, '').split('/').filter(Boolean);
+      const namePart = pathParts.find(p => p.length > 5 && p !== 'dp' && !/^[A-Z0-9]{10}$/.test(p));
+      searchQuery = (namePart ? namePart.replace(/-/g,' ') : 'product') + ' amazon.co.za';
     }
-  } catch(e) { alert('Fetch failed: ' + e.message); }
-  if (btn) { btn.disabled = false; btn.textContent = '+ Add'; }
+
+    // Use Google Shopping search via relay (same as Competitor Prices tab)
+    const results = await callRelay('searchGoogleShopping', { query: searchQuery + ' amazon.co.za' });
+    const items = (results && results.results) || [];
+
+    // Filter to Amazon results only
+    const amzResults = items.filter(function(r) {
+      return r.store && r.store.toLowerCase().includes('amazon');
+    });
+    const allResults = amzResults.length ? amzResults : items.slice(0, 3);
+
+    if (!allResults.length) {
+      if (status) { status.textContent = 'No results found. Try adding a product label/name in the label field.'; status.style.color='var(--accent4)'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Fetch Product'; }
+      return;
+    }
+
+    const best = allResults[0];
+    const product = {
+      name: label || best.title || searchQuery,
+      asin: asin || '',
+      price: best.price || 0,
+      url: best.url || url,
+      store: best.store || 'Amazon.co.za',
+      allPrices: allResults.map(function(r) { return { title: r.title, price: r.price, url: r.url, store: r.store }; }),
+      addedAt: new Date().toISOString(),
+      lastChecked: new Date().toISOString()
+    };
+
+    // Check if already tracking
+    const existing = amazonProducts.find(function(p) { return p.asin && p.asin === asin; });
+    if (existing) {
+      Object.assign(existing, product);
+      if (status) { status.textContent = 'Updated existing product: ' + product.name.substring(0,50); status.style.color='var(--accent2)'; }
+    } else {
+      amazonProducts.push(product);
+      if (status) { status.textContent = 'Added: ' + product.name.substring(0,50) + (product.price ? ' — R' + product.price.toLocaleString('en-ZA') : ''); status.style.color='var(--accent2)'; }
+    }
+
+    saveAmazon(); renderAmazon();
+    if (urlEl) urlEl.value = '';
+    if (labelEl) labelEl.value = '';
+  } catch(e) {
+    if (status) { status.textContent = 'Error: ' + e.message; status.style.color='var(--accent3)'; }
+  }
+  if (btn) { btn.disabled = false; btn.textContent = 'Fetch Product'; }
 }
 
 async function syncAllAmazon() {
-  for (const p of amazonProducts) {
+  const btn = document.getElementById('amzSyncBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Syncing...'; }
+  for (let i = 0; i < amazonProducts.length; i++) {
+    const p = amazonProducts[i];
+    if (btn) btn.textContent = 'Syncing ' + (i+1) + '/' + amazonProducts.length + '...';
     try {
-      const r = await callRelay('fetchAmazon', { url: p.url });
-      if (r) { Object.assign(p, r); p.lastChecked = new Date().toISOString(); }
+      const searchQ = p.name + ' amazon.co.za';
+      const results = await callRelay('searchGoogleShopping', { query: searchQ });
+      const items = ((results && results.results) || []).filter(function(r) {
+        return r.store && r.store.toLowerCase().includes('amazon');
+      });
+      if (items.length) {
+        p.price = items[0].price;
+        p.allPrices = items.map(function(r) { return { title: r.title, price: r.price, url: r.url, store: r.store }; });
+      }
+      p.lastChecked = new Date().toISOString();
     } catch(e) {}
+    await new Promise(function(r) { setTimeout(r, 800); });
   }
   saveAmazon(); renderAmazon();
+  if (btn) { btn.disabled = false; btn.textContent = '↻ Sync All'; }
 }
 
 function clearAllAmazon() {
@@ -3684,18 +3756,53 @@ function renderAmazon() {
   if (!grid) return;
   if (!amazonProducts.length) { grid.innerHTML = ''; if (empty) empty.style.display = 'flex'; return; }
   if (empty) empty.style.display = 'none';
-  grid.innerHTML = amazonProducts.map((p, i) => `
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border)">
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name||p.asin||'—'}</div>
-        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">${p.asin||''} · Last checked: ${p.lastChecked?new Date(p.lastChecked).toLocaleDateString('en-ZA'):'Never'}</div>
+  grid.innerHTML = amazonProducts.map((p, i) => {
+    const lastChecked = p.lastChecked ? new Date(p.lastChecked).toLocaleString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Never';
+    const allPrices = p.allPrices || [];
+    const priceRows = allPrices.slice(0,4).map(r =>
+      `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.title||''}">${(r.title||'').substring(0,55)}</div>
+        <div style="font-family:var(--cond);font-size:15px;font-weight:700;color:var(--accent4)">${r.price?'R'+r.price.toLocaleString('en-ZA'):'—'}</div>
+        ${r.url ? `<a href="${r.url}" target="_blank" style="font-size:10px;color:var(--accent)">↗</a>` : ''}
+      </div>`
+    ).join('');
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface2)">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name||p.asin||'—'}</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">${p.asin||'no ASIN'} · ${lastChecked}</div>
+        </div>
+        <div style="font-family:var(--cond);font-size:24px;font-weight:700;color:var(--accent4)">${p.price?'R'+p.price.toLocaleString('en-ZA'):'—'}</div>
+        <button class="btn btn-ghost btn-sm" onclick="syncOneAmazon(${i})">↻</button>
+        ${p.url ? `<a href="${p.url}" target="_blank" class="btn btn-ghost btn-sm">↗</a>` : ''}
+        <button class="btn btn-danger btn-sm" onclick="removeAmazon(${i})">✕</button>
       </div>
-      <div style="font-family:var(--cond);font-size:20px;font-weight:700;color:var(--accent4)">${p.price?'R'+p.price.toLocaleString('en-ZA'):'—'}</div>
-      <a href="${p.url}" target="_blank" class="btn btn-ghost btn-sm">↗</a>
-      <button class="btn btn-danger btn-sm" onclick="removeAmazon(${i})">✕</button>
-    </div>`).join('');
+      ${priceRows ? `<div style="padding:8px 16px">${priceRows}</div>` : ''}
+    </div>`;
+  }).join('');
   const tc = document.getElementById('tc-amz');
   if (tc) tc.textContent = amazonProducts.length;
+}
+
+async function syncOneAmazon(i) {
+  const p = amazonProducts[i];
+  if (!p) return;
+  try {
+    const status = document.getElementById('amzFetchStatus');
+    if (status) { status.textContent = 'Refreshing ' + p.name.substring(0,30) + '...'; status.style.color='var(--muted2)'; }
+    const results = await callRelay('searchGoogleShopping', { query: p.name + ' amazon.co.za' });
+    const items = ((results && results.results) || []).filter(function(r) { return r.store && r.store.toLowerCase().includes('amazon'); });
+    if (items.length) {
+      p.price = items[0].price;
+      p.allPrices = items.map(function(r) { return { title: r.title, price: r.price, url: r.url, store: r.store }; });
+    }
+    p.lastChecked = new Date().toISOString();
+    saveAmazon(); renderAmazon();
+    if (status) { status.textContent = 'Updated: ' + p.name.substring(0,40); status.style.color='var(--accent2)'; }
+  } catch(e) {
+    const status = document.getElementById('amzFetchStatus');
+    if (status) { status.textContent = 'Error: ' + e.message; status.style.color='var(--accent3)'; }
+  }
 }
 
 function removeAmazon(i) {
