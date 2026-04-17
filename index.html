@@ -804,8 +804,8 @@ select option{background:var(--surface2)}
     <div class="flabel" style="color:var(--accent4);margin-bottom:10px">+ Track an Amazon.co.za Product</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
       <div style="flex:2;min-width:220px">
-        <div class="flabel">Amazon.co.za product URL</div>
-        <input type="text" id="amzUrlInput" placeholder="https://www.amazon.co.za/dp/B0C... (paste URL)">
+        <div class="flabel">Amazon.com product URL <span style="color:var(--muted2);font-size:9px">(optional)</span></div>
+        <input type="text" id="amzUrlInput" placeholder="https://www.amazon.com/dp/B0C... or just enter product name below">
       </div>
       <div style="flex:1;min-width:160px">
         <div class="flabel">Product name / search term <span style="color:var(--muted2);font-size:9px">(helps find it)</span></div>
@@ -814,10 +814,10 @@ select option{background:var(--surface2)}
       <button class="btn btn-primary" onclick="fetchAmazonProduct()" id="amzFetchBtn">Fetch Product</button>
     </div>
     <div id="amzFetchStatus" style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:8px"></div>
-    <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px">Paste an Amazon.co.za URL + enter the product name, or just enter a product name to search. Prices pulled via Google Shopping.</div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px">Paste an Amazon.co.za URL + enter the product name, or just enter a product name to search. Searches amazon.com via Google Shopping.</div>
   </div>
 
-  <div id="amzEmpty" class="empty"><div class="empty-icon">🛒</div><div class="empty-text">No Amazon products tracked yet.<br>Paste an Amazon.co.za URL above to start monitoring price &amp; availability.</div></div>
+  <div id="amzEmpty" class="empty"><div class="empty-icon">🛒</div><div class="empty-text">No Amazon products tracked yet.<br>Paste an Amazon.com URL above to start monitoring price &amp; availability.</div></div>
   <div class="pgrid" id="amzGrid"></div>
 </div>
 
@@ -3675,7 +3675,7 @@ async function fetchAmazonProduct() {
     }
 
     // Use Google Shopping search via relay (same as Competitor Prices tab)
-    const results = await callRelay('searchGoogleShopping', { query: searchQuery + ' amazon.co.za' });
+    const results = await callRelay('searchGoogleShopping', { query: searchQuery + ' amazon.com' });
     const items = (results && results.results) || [];
 
     // Filter to Amazon results only
@@ -3728,7 +3728,7 @@ async function syncAllAmazon() {
     const p = amazonProducts[i];
     if (btn) btn.textContent = 'Syncing ' + (i+1) + '/' + amazonProducts.length + '...';
     try {
-      const searchQ = p.name + ' amazon.co.za';
+      const searchQ = p.name + ' amazon.com';
       const results = await callRelay('searchGoogleShopping', { query: searchQ });
       const items = ((results && results.results) || []).filter(function(r) {
         return r.store && r.store.toLowerCase().includes('amazon');
@@ -3790,7 +3790,7 @@ async function syncOneAmazon(i) {
   try {
     const status = document.getElementById('amzFetchStatus');
     if (status) { status.textContent = 'Refreshing ' + p.name.substring(0,30) + '...'; status.style.color='var(--muted2)'; }
-    const results = await callRelay('searchGoogleShopping', { query: p.name + ' amazon.co.za' });
+    const results = await callRelay('searchGoogleShopping', { query: p.name + ' amazon.com' });
     const items = ((results && results.results) || []).filter(function(r) { return r.store && r.store.toLowerCase().includes('amazon'); });
     if (items.length) {
       p.price = items[0].price;
