@@ -801,11 +801,11 @@ select option{background:var(--surface2)}
   </div>
 
   <div style="background:var(--surface);border:1px solid var(--accent4);padding:16px;margin-bottom:16px">
-    <div class="flabel" style="color:var(--accent4);margin-bottom:10px">+ Track an Amazon.co.za Product</div>
+    <div class="flabel" style="color:var(--accent4);margin-bottom:10px">+ Track an Amazon.com Product</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
       <div style="flex:2;min-width:220px">
         <div class="flabel">Amazon.com product URL <span style="color:var(--muted2);font-size:9px">(optional)</span></div>
-        <input type="text" id="amzUrlInput" placeholder="https://www.amazon.com/dp/B0C... or just enter product name below">
+        <input type="text" id="amzUrlInput" placeholder="https://www.amazon.com/dp/B0XXXXXX... or just the ASIN (e.g. B0C2CDR4)">
       </div>
       <div style="flex:1;min-width:160px">
         <div class="flabel">Product name / search term <span style="color:var(--muted2);font-size:9px">(helps find it)</span></div>
@@ -814,7 +814,7 @@ select option{background:var(--surface2)}
       <button class="btn btn-primary" onclick="fetchAmazonProduct()" id="amzFetchBtn">Fetch Product</button>
     </div>
     <div id="amzFetchStatus" style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:8px"></div>
-    <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px">Paste an Amazon.co.za URL + enter the product name, or just enter a product name to search. Searches amazon.com via Google Shopping.</div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px">Paste an Amazon.com URL + product name, or just enter a product name to search. Searches amazon.com via Google Shopping.</div>
   </div>
 
   <div id="amzEmpty" class="empty"><div class="empty-icon">🛒</div><div class="empty-text">No Amazon products tracked yet.<br>Paste an Amazon.com URL above to start monitoring price &amp; availability.</div></div>
@@ -1453,7 +1453,7 @@ select option{background:var(--surface2)}
       <div class="mfield"><label>VAT Rate %</label><input type="number" id="vatRate" value="15" min="0" max="30"></div>
       <div class="mfield"><label>Stock Alert Threshold (units)</label><input type="number" id="stockThreshold" value="2" min="1" max="20"></div>
       <div class="mfield"><label>Price change alert threshold %</label><input type="number" id="priceAlertPct" value="5" min="1" max="50"></div>
-      <div class="mfield"><label>Amazon.co.za Fee %</label><input type="number" id="amazonFee" value="5"></div>
+      <div class="mfield"><label>Amazon.com Fee %</label><input type="number" id="amazonFee" value="5"></div>
       <button class="btn btn-success btn-sm" onclick="saveSettings()">Save Settings</button>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);padding:20px">
@@ -3653,35 +3653,48 @@ async function fetchAmazonProduct() {
   const url = urlEl?.value?.trim();
   const label = labelEl?.value?.trim();
   const status = document.getElementById('amzFetchStatus');
-  if (!url) { if(status) { status.textContent = 'Please paste an Amazon.co.za URL or enter a product name to search.'; status.style.color='var(--accent3)'; } return; }
+  if (!url) { if(status) { status.textContent = 'Please paste an Amazon.com URL or enter a product name to search.'; status.style.color='var(--accent3)'; } return; }
 
   const btn = document.getElementById('amzFetchBtn');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Searching...'; }
-  if (status) { status.textContent = 'Searching Amazon.co.za via Google Shopping...'; status.style.color='var(--muted2)'; }
+  if (status) { status.textContent = 'Searching Amazon.com via Google Shopping...'; status.style.color='var(--muted2)'; }
 
   try {
-    // Extract ASIN from URL if possible
-    const asinMatch = url.match(/\/dp\/([A-Z0-9]{10})/);
-    const asin = asinMatch ? asinMatch[1] : null;
+    // Extract ASIN from URL if possible (10-char alphanumeric after /dp/)
+    const asinMatch = url.match(/\/dp\/([A-Z0-9]{10})/i) || url.match(/([A-Z0-9]{10})(?:[\/?]|$)/);
+    const asin = asinMatch ? asinMatch[1].toUpperCase() : null;
 
-    // Build search query — use label if provided, otherwise extract from URL or use ASIN
-    let searchQuery = label || '';
-    if (!searchQuery && asin) searchQuery = 'Amazon ' + asin + ' site:amazon.co.za';
-    if (!searchQuery) {
-      // Try to extract product name from URL path
-      const pathParts = url.replace(/https?:\/\/[^\/]+/, '').split('/').filter(Boolean);
-      const namePart = pathParts.find(p => p.length > 5 && p !== 'dp' && !/^[A-Z0-9]{10}$/.test(p));
-      searchQuery = (namePart ? namePart.replace(/-/g,' ') : 'product') + ' amazon.co.za';
+    // Also check if user typed an ASIN directly in the URL field (no URL, just ASIN)
+    const bareAsin = /^[A-Z0-9]{10}$/i.test(url.trim()) ? url.trim().toUpperCase() : null;
+    const finalAsin = asin || bareAsin;
+
+    // Build search query — ASIN-first for precision
+    let searchQuery;
+    if (finalAsin) {
+      // ASIN search is most precise — finds exact product on Amazon
+      searchQuery = finalAsin + ' amazon.com';
+      if (status) status.textContent = 'Searching Amazon.com by ASIN ' + finalAsin + '...';
+    } else if (label) {
+      // Label/product name provided
+      searchQuery = label + ' amazon.com';
+    } else {
+      // Try to extract product name from URL slug
+      const pathParts = (url.replace(/https?:\/\/[^\/]+/, '').split('/') || []).filter(Boolean);
+      const namePart = pathParts.find(function(p) { return p.length > 5 && p !== 'dp' && !/^[A-Z0-9]{10}$/i.test(p); });
+      searchQuery = (namePart ? namePart.replace(/-/g,' ') : label || 'amazon product') + ' amazon.com';
     }
 
-    // Use Google Shopping search via relay (same as Competitor Prices tab)
-    const results = await callRelay('searchGoogleShopping', { query: searchQuery + ' amazon.com' });
+    // Search via relay
+    const results = await callRelay('searchGoogleShopping', { query: searchQuery });
     const items = (results && results.results) || [];
 
-    // Filter to Amazon results only
-    const amzResults = items.filter(function(r) {
-      return r.store && r.store.toLowerCase().includes('amazon');
+    // Filter to Amazon results — prefer exact ASIN match in title/URL
+    let amzResults = items.filter(function(r) {
+      const isAmz = (r.store || '').toLowerCase().includes('amazon') || (r.url || '').includes('amazon.com');
+      const hasAsin = finalAsin ? ((r.title || '').includes(finalAsin) || (r.url || '').includes(finalAsin)) : true;
+      return isAmz;
     });
+    if (!amzResults.length) amzResults = items.filter(function(r) { return (r.url||'').includes('amazon'); });
     const allResults = amzResults.length ? amzResults : items.slice(0, 3);
 
     if (!allResults.length) {
@@ -3692,11 +3705,11 @@ async function fetchAmazonProduct() {
 
     const best = allResults[0];
     const product = {
-      name: label || best.title || searchQuery,
-      asin: asin || '',
+      name: label || (finalAsin && best.title && best.title.length > 5 ? best.title : finalAsin ? 'ASIN: ' + finalAsin : best.title) || searchQuery,
+      asin: finalAsin || '',
       price: best.price || 0,
-      url: best.url || url,
-      store: best.store || 'Amazon.co.za',
+      url: best.url || (finalAsin ? 'https://www.amazon.com/dp/' + finalAsin : url),
+      store: best.store || 'Amazon.com',
       allPrices: allResults.map(function(r) { return { title: r.title, price: r.price, url: r.url, store: r.store }; }),
       addedAt: new Date().toISOString(),
       lastChecked: new Date().toISOString()
@@ -3728,7 +3741,7 @@ async function syncAllAmazon() {
     const p = amazonProducts[i];
     if (btn) btn.textContent = 'Syncing ' + (i+1) + '/' + amazonProducts.length + '...';
     try {
-      const searchQ = p.name + ' amazon.com';
+      const searchQ = (p.asin ? p.asin + ' amazon.com' : p.name + ' amazon.com');
       const results = await callRelay('searchGoogleShopping', { query: searchQ });
       const items = ((results && results.results) || []).filter(function(r) {
         return r.store && r.store.toLowerCase().includes('amazon');
@@ -3790,8 +3803,9 @@ async function syncOneAmazon(i) {
   try {
     const status = document.getElementById('amzFetchStatus');
     if (status) { status.textContent = 'Refreshing ' + p.name.substring(0,30) + '...'; status.style.color='var(--muted2)'; }
-    const results = await callRelay('searchGoogleShopping', { query: p.name + ' amazon.com' });
-    const items = ((results && results.results) || []).filter(function(r) { return r.store && r.store.toLowerCase().includes('amazon'); });
+    const syncQuery = (p.asin ? p.asin + ' amazon.com' : p.name + ' amazon.com');
+    const results = await callRelay('searchGoogleShopping', { query: syncQuery });
+    const items = ((results && results.results) || []).filter(function(r) { return (r.store||'').toLowerCase().includes('amazon') || (r.url||'').includes('amazon.com'); });
     if (items.length) {
       p.price = items[0].price;
       p.allPrices = items.map(function(r) { return { title: r.title, price: r.price, url: r.url, store: r.store }; });
