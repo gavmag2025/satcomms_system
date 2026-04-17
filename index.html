@@ -2586,13 +2586,13 @@ async function pushSingleUSD(i){
 }
 
 async function pushSelectedUSDPrices(){
-  const toProcess=[...usdSelected].map(i=>({i,u:usdProducts[i]})).filter(({u})=>u&&u.wixId&&u.zarPrice);
+  const toProcess=[...usdSelected].map(i=>({i,u:usdProducts[i]})).filter(({u})=>u&&u.wixId&&(u.zarExclVAT||u.zarPrice));
   if(!toProcess.length){ alert('Select products with Wix IDs and calculated ZAR prices.'); return; }
   const status=document.getElementById('usdPushStatus');
   status.textContent=`Pushing ${toProcess.length} products...`; status.style.color='var(--muted2)';
   let done=0, errs=0, errMsgs=[];
   for(const {i,u} of toProcess){
-    const priceToSend = parseFloat(u.zarPrice.toFixed(2));
+    const priceToSend = parseFloat((u.zarExclVAT || u.zarPrice).toFixed(2));
     try{
       await callRelay('updateProduct',{productId:u.wixId, product:{priceData:{price: priceToSend}}});
       u.lastPushed=new Date().toISOString();
@@ -2612,10 +2612,10 @@ async function pushSelectedUSDPrices(){
 }
 
 async function pushAllUSDPrices(){
-  const all=usdProducts.filter(u=>u.wixId&&u.zarPrice);
+  const all=usdProducts.filter(u=>u.wixId&&(u.zarExclVAT||u.zarPrice));
   if(!all.length){ alert('No products with Wix IDs linked. Link products first.'); return; }
-  if(!confirm(`Push updated ZAR prices for all ${all.length} USD-priced products to Wix?`)) return;
-  usdSelected=new Set(usdProducts.filter(u=>u.wixId&&u.zarPrice).map((_,i)=>i));
+  if(!confirm(`Push updated ZAR prices (excl VAT) for all ${all.length} USD-priced products to Wix?`)) return;
+  usdSelected=new Set(usdProducts.filter(u=>u.wixId&&(u.zarExclVAT||u.zarPrice)).map((_,i)=>i));
   await pushSelectedUSDPrices();
 }
 
@@ -4761,12 +4761,12 @@ async function runAutoPricing(){
   // 3. Push each to Wix
   let done = 0, errs = 0;
   for(const u of products){
-    const price = parseFloat(u.zarPrice.toFixed(2));
+    const price = parseFloat((u.zarExclVAT || u.zarPrice).toFixed(2));
     try{
       await callRelay('updateProduct', {productId: u.wixId, product: {priceData: {price}}});
       u.lastPushed = new Date().toISOString();
       done++;
-      logAuto(`✓ ${u.name.substring(0,35)} → R${price.toLocaleString('en-ZA')}`);
+      logAuto(`✓ ${u.name.substring(0,35)} → R${price.toLocaleString('en-ZA')} excl VAT`);
     }catch(e){
       errs++;
       logAuto(`✗ ${u.name.substring(0,35)}: ${e.message}`, 'err');
