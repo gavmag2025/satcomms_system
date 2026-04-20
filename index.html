@@ -392,7 +392,7 @@ select option{background:var(--surface2)}
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:14px;min-width:0">
     <div class="logo"><span class="logo-icon">🛰</span><em>Sat</em>&nbsp;Comms</div>
-    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v2.1 · 2026-04-20</div>
+    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v2.2 · 2026-04-20</div>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><span class="pulse"></span><span id="feedStatusText">Ready</span></div>
@@ -3316,7 +3316,6 @@ async function sendTopupRequest() {
   btn.disabled = true; btn.textContent = '⏳ Sending...';
   status.textContent = ''; status.style.color = 'var(--muted2)';
 
-  // Build HTML email via relay
   const subject = 'Airtime Topup Request' + (invoice ? ' - ' + invoice : '') + ' - ' + (custName || 'Customer');
   const amtFmt = amount ? 'R' + parseFloat(amount).toLocaleString('en-ZA',{minimumFractionDigits:2}) : '-';
   const ts = new Date().toLocaleString('en-ZA');
@@ -3326,51 +3325,7 @@ async function sendTopupRequest() {
       + '<td style="padding:8px 12px;border-bottom:1px solid #e8edf2;font-family:monospace;color:#006644">' + (d.sim||'-') + '</td></tr>';
   }).join('') : '<tr><td colspan="3" style="padding:8px 12px;color:#999">(none provided)</td></tr>';
 
-  const htmlBody = '<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f0f4f8;font-family:Arial,sans-serif">'
-    + '<table width="100%" cellpadding="0" cellspacing="0" style="padding:30px 0"><tr><td align="center">'
-    + '<table width="580" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12)">'
-
-    + '<tr><td style="background:#0a0f1e;padding:24px 28px">'
-    + '<table width="100%"><tr>'
-    + '<td><div style="font-size:20px;font-weight:800;color:#fff">Sat<span style="color:#00b4ff">Comms</span></div>'
-    + '<div style="font-size:10px;color:#5a7a9a;letter-spacing:2px;margin-top:3px">AIRTIME TOPUP REQUEST</div></td>'
-    + '<td align="right"><div style="background:#00b4ff;color:#000;font-size:11px;font-weight:700;padding:5px 12px;border-radius:4px">' + (invoice||'NO REF') + '</div></td>'
-    + '</tr></table></td></tr>'
-
-    + '<tr><td style="padding:24px 28px">'
-
-    + '<div style="font-size:10px;font-weight:700;color:#5a7a9a;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #00b4ff;padding-bottom:5px;margin-bottom:12px">Invoice Details</div>'
-    + '<table width="100%" style="margin-bottom:20px">'
-    + '<tr><td style="padding:4px 0;font-size:13px;color:#666;width:130px">Invoice No</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a1a2e">' + (invoice||'-') + '</td></tr>'
-    + '<tr><td style="padding:4px 0;font-size:13px;color:#666">Date</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a1a2e">' + (date||'-') + '</td></tr>'
-    + '<tr><td style="padding:4px 0;font-size:13px;color:#666">Total</td><td style="padding:4px 0;font-size:18px;font-weight:800;color:#00b4ff">' + amtFmt + '</td></tr>'
-    + '</table>'
-
-    + '<div style="font-size:10px;font-weight:700;color:#5a7a9a;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #00e5b0;padding-bottom:5px;margin-bottom:12px">Customer</div>'
-    + '<table width="100%" style="margin-bottom:20px">'
-    + '<tr><td style="padding:4px 0;font-size:13px;color:#666;width:130px">Name</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a1a2e">' + (custName||'-') + '</td></tr>'
-    + '<tr><td style="padding:4px 0;font-size:13px;color:#666">Email</td><td style="padding:4px 0;font-size:13px;color:#0055aa">' + (custEmail||'-') + '</td></tr>'
-    + '<tr><td style="padding:4px 0;font-size:13px;color:#666">Phone</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a1a2e">' + (custPhone||'-') + '</td></tr>'
-    + '</table>'
-
-    + '<div style="font-size:10px;font-weight:700;color:#5a7a9a;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #ffc84d;padding-bottom:5px;margin-bottom:12px">Airtime Requested</div>'
-    + '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;font-size:13px;color:#1a1a2e;white-space:pre-wrap;margin-bottom:20px">' + (product||'-') + '</div>'
-
-    + '<div style="font-size:10px;font-weight:700;color:#5a7a9a;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #ff4d6d;padding-bottom:5px;margin-bottom:12px">Device Numbers (' + devices.length + ')</div>'
-    + '<table width="100%" style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;margin-bottom:20px">'
-    + '<tr style="background:#f0f4f8">'
-    + '<th style="padding:8px 12px;font-size:10px;font-weight:700;color:#5a7a9a;text-transform:uppercase;text-align:center;width:40px">#</th>'
-    + '<th style="padding:8px 12px;font-size:10px;font-weight:700;color:#5a7a9a;text-transform:uppercase;text-align:left">TEL / IMEI</th>'
-    + '<th style="padding:8px 12px;font-size:10px;font-weight:700;color:#5a7a9a;text-transform:uppercase;text-align:left">SIM / ICCID</th>'
-    + '</tr>' + devRows + '</table>'
-
-    + (notes ? '<div style="font-size:10px;font-weight:700;color:#5a7a9a;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #b97fff;padding-bottom:5px;margin-bottom:8px">Notes</div>'
-    + '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;font-size:13px;color:#1a1a2e;margin-bottom:20px">' + notes + '</div>' : '')
-
-    + '</td></tr>'
-    + '<tr><td style="background:#f0f4f8;padding:14px 28px;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#5a7a9a">'
-    + 'Submitted via SatComms Product Intelligence System &middot; ' + ts
-    + '</td></tr></table></td></tr></table></body></html>';
+  const htmlBody = buildTopupEmail({ invoice, date, custName, custEmail, custPhone, amount: amtFmt, product, devices, notes, ts, devRows });
 
   try {
     await callRelay('sendEmail', {
@@ -3599,7 +3554,7 @@ async function resendTopupEmail(id) {
   const subject = `Airtime Topup Request${r.invoice ? ' — ' + r.invoice : ''} — ${r.custName || 'Customer'} (RESEND)`;
   const ts = new Date().toLocaleString('en-ZA');
   const amtFmt = r.amount ? 'R' + parseFloat(r.amount).toLocaleString('en-ZA',{minimumFractionDigits:2}) : '-';
-  const devRows = (r.devices && r.devices.length)
+  const devRows2 = (r.devices && r.devices.length)
     ? r.devices.map(function(d,i){
         return '<tr><td style="padding:8px 12px;border-bottom:1px solid #e8edf2;color:#333;text-align:center">' + (i+1) + '</td>'
           + '<td style="padding:8px 12px;border-bottom:1px solid #e8edf2;font-family:monospace;color:#0055aa">' + (d.tel||'-') + '</td>'
@@ -3607,41 +3562,11 @@ async function resendTopupEmail(id) {
       }).join('')
     : '<tr><td colspan="3" style="padding:8px 12px;color:#999">(none provided)</td></tr>';
 
-  const htmlBody = '<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f0f4f8;font-family:Arial,sans-serif">'
-    + '<table width="100%" cellpadding="0" cellspacing="0" style="padding:30px 0"><tr><td align="center">'
-    + '<table width="580" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12)">'
-    + '<tr><td style="background:#0a0f1e;padding:24px 28px">'
-    + '<table width="100%"><tr>'
-    + '<td><div style="font-size:20px;font-weight:800;color:#fff">Sat<span style="color:#00b4ff">Comms</span></div>'
-    + '<div style="font-size:10px;color:#5a7a9a;letter-spacing:2px;margin-top:3px">AIRTIME TOPUP REQUEST (RESEND)</div></td>'
-    + '<td align="right"><div style="background:#00b4ff;color:#000;font-size:11px;font-weight:700;padding:5px 12px;border-radius:4px">' + (r.invoice||'NO REF') + '</div></td>'
-    + '</tr></table></td></tr>'
-    + '<tr><td style="padding:24px 28px">'
-    + '<div style="font-size:10px;font-weight:700;color:#5a7a9a;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #00b4ff;padding-bottom:5px;margin-bottom:12px">Invoice Details</div>'
-    + '<table width="100%" style="margin-bottom:20px">'
-    + '<tr><td style="padding:4px 0;font-size:13px;color:#666;width:130px">Invoice No</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a1a2e">' + (r.invoice||'-') + '</td></tr>'
-    + '<tr><td style="padding:4px 0;font-size:13px;color:#666">Date</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a1a2e">' + (r.date||'-') + '</td></tr>'
-    + '<tr><td style="padding:4px 0;font-size:13px;color:#666">Total</td><td style="padding:4px 0;font-size:18px;font-weight:800;color:#00b4ff">' + amtFmt + '</td></tr>'
-    + '</table>'
-    + '<div style="font-size:10px;font-weight:700;color:#5a7a9a;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #00e5b0;padding-bottom:5px;margin-bottom:12px">Customer</div>'
-    + '<table width="100%" style="margin-bottom:20px">'
-    + '<tr><td style="padding:4px 0;font-size:13px;color:#666;width:130px">Name</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a1a2e">' + (r.custName||'-') + '</td></tr>'
-    + '<tr><td style="padding:4px 0;font-size:13px;color:#666">Email</td><td style="padding:4px 0;font-size:13px;color:#0055aa">' + (r.custEmail||'-') + '</td></tr>'
-    + '<tr><td style="padding:4px 0;font-size:13px;color:#666">Phone</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a1a2e">' + (r.custPhone||'-') + '</td></tr>'
-    + '</table>'
-    + '<div style="font-size:10px;font-weight:700;color:#5a7a9a;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #ffc84d;padding-bottom:5px;margin-bottom:12px">Airtime Requested</div>'
-    + '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;font-size:13px;color:#1a1a2e;white-space:pre-wrap;margin-bottom:20px">' + (r.product||'-') + '</div>'
-    + '<div style="font-size:10px;font-weight:700;color:#5a7a9a;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #ff4d6d;padding-bottom:5px;margin-bottom:12px">Device Numbers (' + (r.devices&&r.devices.length||0) + ')</div>'
-    + '<table width="100%" style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;margin-bottom:20px">'
-    + '<tr style="background:#f0f4f8">'
-    + '<th style="padding:8px 12px;font-size:10px;font-weight:700;color:#5a7a9a;text-transform:uppercase;text-align:center;width:40px">#</th>'
-    + '<th style="padding:8px 12px;font-size:10px;font-weight:700;color:#5a7a9a;text-transform:uppercase;text-align:left">TEL / IMEI</th>'
-    + '<th style="padding:8px 12px;font-size:10px;font-weight:700;color:#5a7a9a;text-transform:uppercase;text-align:left">SIM / ICCID</th>'
-    + '</tr>' + devRows + '</table>'
-    + '</td></tr>'
-    + '<tr><td style="background:#f0f4f8;padding:14px 28px;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#5a7a9a">'
-    + 'RESENT via SatComms Product Intelligence System &middot; ' + ts
-    + '</td></tr></table></td></tr></table></body></html>';
+  const htmlBody = buildTopupEmail({
+    invoice: r.invoice, date: r.date, custName: r.custName, custEmail: r.custEmail,
+    custPhone: r.custPhone, amount: amtFmt, product: r.product,
+    devices: r.devices, notes: r.notes, ts, devRows: devRows2
+  });
 
   const plainBody = 'Topup Request (Resend)\nInvoice: ' + (r.invoice||'-') + '\nCustomer: ' + (r.custName||'-') + '\nProduct: ' + (r.product||'-');
   try {
@@ -5304,6 +5229,114 @@ function gcwRender() {
 
 // Init gcw on load
 gcwRender();
+
+// ─────────────────────────────────────────────────────────────
+// TOPUP EMAIL BUILDER — full branded HTML template
+// ─────────────────────────────────────────────────────────────
+function buildTopupEmail(d) {
+  var invoice  = d.invoice  || '';
+  var date     = d.date     || '';
+  var custName = d.custName || '';
+  var custEmail= d.custEmail|| '';
+  var custPhone= d.custPhone|| '';
+  var amount   = d.amount   || '-';
+  var product  = d.product  || '-';
+  var notes    = d.notes    || '';
+  var ts       = d.ts       || new Date().toLocaleString('en-ZA');
+  var devRows  = d.devRows  || '<tr><td colspan="3" style="padding:8px 12px;color:#999">(none provided)</td></tr>';
+  var devCount = (d.devices && d.devices.length) || 0;
+
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"></head>'
+  + '<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif">'
+  + '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:28px 0">'
+  + '<tr><td align="center">'
+  + '<table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.12)">'
+
+  // ── Header ──
+  + '<tr><td style="background:#0b1018;padding:28px 32px">'
+  + '<table width="100%" cellpadding="0" cellspacing="0"><tr>'
+  + '<td>'
+  + '<div style="font-size:11px;letter-spacing:3px;color:#00b4ff;text-transform:uppercase;margin-bottom:4px">Satellite Communications</div>'
+  + '<div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-0.5px">Sat<span style="color:#00b4ff">Comms</span></div>'
+  + '</td>'
+  + '<td align="right">'
+  + '<div style="font-size:10px;letter-spacing:2px;color:#5a7a9a;text-transform:uppercase;margin-bottom:6px">Airtime Topup Request</div>'
+  + (invoice ? '<div style="background:#00b4ff;color:#000;font-size:13px;font-weight:800;padding:6px 16px;border-radius:20px;display:inline-block">' + invoice + '</div>' : '')
+  + '</td>'
+  + '</tr></table>'
+  + '</td></tr>'
+
+  // ── Date bar ──
+  + (date ? '<tr><td style="background:#00b4ff;padding:8px 32px;font-size:12px;color:#000;font-weight:600">Invoice Date: ' + date + '</td></tr>' : '')
+
+  // ── Body ──
+  + '<tr><td style="padding:28px 32px">'
+
+  // Invoice details
+  + '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px">'
+  + '<tr><td colspan="2" style="font-size:11px;font-weight:700;color:#00b4ff;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #00b4ff;padding-bottom:6px;margin-bottom:10px">Invoice Details</td></tr>'
+  + '<tr><td style="font-size:12px;color:#888;width:130px;padding:7px 0;border-bottom:1px solid #f0f0f0">Invoice No</td><td style="font-size:13px;font-weight:700;color:#111;padding:7px 0;border-bottom:1px solid #f0f0f0">' + (invoice||'-') + '</td></tr>'
+  + '<tr><td style="font-size:12px;color:#888;padding:7px 0;border-bottom:1px solid #f0f0f0">Date</td><td style="font-size:13px;font-weight:600;color:#111;padding:7px 0;border-bottom:1px solid #f0f0f0">' + (date||'-') + '</td></tr>'
+  + '<tr><td style="font-size:12px;color:#888;padding:7px 0">Total</td><td style="font-size:20px;font-weight:900;color:#00b4ff;padding:7px 0">' + amount + '</td></tr>'
+  + '</table>'
+
+  // Customer details
+  + '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px">'
+  + '<tr><td colspan="2" style="font-size:11px;font-weight:700;color:#00e5b0;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #00e5b0;padding-bottom:6px">Customer Details</td></tr>'
+  + '<tr><td style="font-size:12px;color:#888;width:130px;padding:7px 0;border-bottom:1px solid #f0f0f0">Name</td><td style="font-size:13px;font-weight:700;color:#111;padding:7px 0;border-bottom:1px solid #f0f0f0">' + (custName||'-') + '</td></tr>'
+  + '<tr><td style="font-size:12px;color:#888;padding:7px 0;border-bottom:1px solid #f0f0f0">Email</td><td style="font-size:13px;color:#0055cc;padding:7px 0;border-bottom:1px solid #f0f0f0">' + (custEmail||'-') + '</td></tr>'
+  + '<tr><td style="font-size:12px;color:#888;padding:7px 0">Phone</td><td style="font-size:13px;font-weight:600;color:#111;padding:7px 0">' + (custPhone||'-') + '</td></tr>'
+  + '</table>'
+
+  // Airtime product
+  + '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px">'
+  + '<tr><td style="font-size:11px;font-weight:700;color:#ffc84d;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #ffc84d;padding-bottom:6px;margin-bottom:10px">Airtime Requested</td></tr>'
+  + '<tr><td style="padding-top:10px">'
+  + '<div style="background:#fffbf0;border:1px solid #ffc84d;border-left:4px solid #ffc84d;border-radius:6px;padding:14px 16px;font-size:14px;font-weight:700;color:#1a1a2e">' + product + '</div>'
+  + '</td></tr>'
+  + '</table>'
+
+  // Device numbers table
+  + '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px">'
+  + '<tr><td colspan="3" style="font-size:11px;font-weight:700;color:#ff4d6d;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #ff4d6d;padding-bottom:6px">Device Numbers (' + devCount + ')</td></tr>'
+  + '</table>'
+  + '<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e8edf2;border-radius:6px;overflow:hidden;margin-bottom:24px">'
+  + '<tr style="background:#f5f7fa">'
+  + '<th style="padding:9px 12px;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;text-align:center;width:36px;border-bottom:1px solid #e8edf2">#</th>'
+  + '<th style="padding:9px 12px;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;text-align:left;border-bottom:1px solid #e8edf2">TEL / IMEI</th>'
+  + '<th style="padding:9px 12px;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;text-align:left;border-bottom:1px solid #e8edf2">SIM / ICCID</th>'
+  + '</tr>'
+  + devRows
+  + '</table>'
+
+  // Notes
+  + (notes
+    ? '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px">'
+    + '<tr><td style="font-size:11px;font-weight:700;color:#b97fff;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #b97fff;padding-bottom:6px;margin-bottom:10px">Notes</td></tr>'
+    + '<tr><td style="padding-top:10px"><div style="background:#faf8ff;border:1px solid #d8c8ff;border-radius:6px;padding:12px 16px;font-size:13px;color:#1a1a2e">' + notes + '</div></td></tr>'
+    + '</table>'
+    : '')
+
+  // Reply button
+  + (custEmail
+    ? '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px"><tr><td align="center" style="padding:8px 0">'
+    + '<a href="mailto:' + custEmail + '" style="display:inline-block;background:#00e5b0;color:#000;font-size:13px;font-weight:800;padding:13px 32px;border-radius:25px;text-decoration:none;letter-spacing:0.5px">Reply to Customer ↗</a>'
+    + '</td></tr></table>'
+    : '')
+
+  + '</td></tr>'
+
+  // ── Footer ──
+  + '<tr><td style="background:#0b1018;padding:18px 32px;border-top:3px solid #00b4ff">'
+  + '<table width="100%" cellpadding="0" cellspacing="0"><tr>'
+  + '<td style="font-size:11px;color:#5a7a9a">Submitted via SatComms Product Intelligence System &middot; ' + ts + '</td>'
+  + '<td align="right" style="font-size:11px;color:#5a7a9a">084 514 1652 &middot; sales@satcomms.co.za</td>'
+  + '</tr></table>'
+  + '</td></tr>'
+
+  + '</table></td></tr></table>'
+  + '</body></html>';
+}
 </script>
 </body>
 </html>
