@@ -392,7 +392,7 @@ select option{background:var(--surface2)}
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:14px;min-width:0">
     <div class="logo"><span class="logo-icon">🛰</span><em>Sat</em>&nbsp;Comms</div>
-    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v2.4 · 2026-04-20</div>
+    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v2.5 · 2026-04-20</div>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><span class="pulse"></span><span id="feedStatusText">Ready</span></div>
@@ -3375,12 +3375,14 @@ async function sendTopupRequest() {
     status.textContent = '✓ Email sent to sales@satcomms.co.za';
     status.style.color = 'var(--accent2)';
   } catch(e) {
-    // Relay may not have sendEmail — fall back to mailto
-    status.textContent = 'Note: relay sendEmail not configured — opening email client';
-    status.style.color = 'var(--accent4)';
-    const plainBody = 'Topup Request\nInvoice: ' + (invoice||'-') + '\nCustomer: ' + (custName||'-') + '\nProduct: ' + (product||'-') + '\nDevices: ' + devices.map(d=>'TEL:'+d.tel+' SIM:'+d.sim).join(', ');
-    const mailto = `mailto:sales@satcomms.co.za?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainBody)}`;
-    window.open(mailto, '_blank');
+    status.textContent = '✗ Send failed: ' + e.message;
+    status.style.color = 'var(--accent3)';
+    console.error('sendEmail failed:', e);
+    // Only fall back to mailto if relay is completely unconfigured
+    if (e.message.includes('not configured') || e.message.includes('Relay URL')) {
+      const plainBody = 'Topup Request\nInvoice: ' + (invoice||'-') + '\nCustomer: ' + (custName||'-') + '\nProduct: ' + (product||'-');
+      window.open('mailto:sales@satcomms.co.za?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(plainBody), '_blank');
+    }
   }
 
   // Save to queue regardless
@@ -5266,7 +5268,14 @@ function gcwRender() {
 }
 
 // Init gcw on load
-gcwRender();
+try {
+  // Sanitise any stored gcwProducts with non-array results field
+  gcwProducts = gcwProducts.map(function(p) {
+    if (!Array.isArray(p.results)) p.results = [];
+    return p;
+  });
+  gcwRender();
+} catch(e) { console.warn('gcwRender init error:', e.message); }
 
 // ─────────────────────────────────────────────────────────────
 // TOPUP EMAIL BUILDER — full branded HTML template
