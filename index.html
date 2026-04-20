@@ -392,7 +392,7 @@ select option{background:var(--surface2)}
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:14px;min-width:0">
     <div class="logo"><span class="logo-icon">🛰</span><em>Sat</em>&nbsp;Comms</div>
-    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v1.6 · 2026-04-16</div>
+    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v1.7 · 2026-04-20</div>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><span class="pulse"></span><span id="feedStatusText">Ready</span></div>
@@ -3644,8 +3644,8 @@ function removeFromWatch(i) {
 // ─────────────────────────────────────────────────────────────
 // AMAZON MONITOR
 // ─────────────────────────────────────────────────────────────
-let amazonProducts = JSON.parse(localStorage.getItem('sc_amz') || '[]');
-function saveAmazon() { localStorage.setItem('sc_amz', JSON.stringify(amazonProducts)); }
+let amazonProducts = (() => { try { return JSON.parse(localStorage.getItem('sc_amz') || '[]') || []; } catch(e) { return []; } })();
+function saveAmazon() { try { localStorage.setItem('sc_amz', JSON.stringify(amazonProducts)); } catch(e) { console.error('saveAmazon failed:', e); } }
 
 async function fetchAmazonProduct() {
   const urlEl = document.getElementById('amzUrlInput');
@@ -3731,7 +3731,7 @@ async function fetchAmazonProduct() {
     }
 
     // Check if already tracking
-    const existing = amazonProducts.find(function(p) { return p.asin && p.asin === asin; });
+    const existing = amazonProducts.find(function(p) { return p.asin && product.asin && p.asin === product.asin; });
     if (existing) {
       Object.assign(existing, product);
       if (status) { status.textContent = 'Updated existing product: ' + product.name.substring(0,50); status.style.color='var(--accent2)'; }
