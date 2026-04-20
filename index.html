@@ -392,7 +392,7 @@ select option{background:var(--surface2)}
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:14px;min-width:0">
     <div class="logo"><span class="logo-icon">🛰</span><em>Sat</em>&nbsp;Comms</div>
-    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v1.7 · 2026-04-20</div>
+    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v2.0 · 2026-04-20</div>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><span class="pulse"></span><span id="feedStatusText">Ready</span></div>
@@ -798,6 +798,17 @@ select option{background:var(--surface2)}
       <button class="btn btn-primary btn-sm" onclick="syncAllAmazon()" id="amzSyncBtn">↻ Sync All</button>
       <button class="btn btn-ghost btn-sm" onclick="clearAllAmazon()">Clear All</button>
     </div>
+  </div>
+
+  <!-- Stock auto-check status bar -->
+  <div id="amzStockBar" style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent2);padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:7px">
+      <span id="amzStockDot" style="width:8px;height:8px;border-radius:50%;background:var(--accent2);display:inline-block;box-shadow:0 0 6px rgba(0,229,176,.5)"></span>
+      <span style="font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent2);letter-spacing:.06em;text-transform:uppercase">Stock Auto-Check ON</span>
+    </div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted2)" id="amzStockLast">Last check: —</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted2)" id="amzStockNext">Next check: —</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-left:auto">Checks every 6 hours · <span id="amzStockCount">0</span> product(s) monitored</div>
   </div>
 
   <div style="background:var(--surface);border:1px solid var(--accent4);padding:16px;margin-bottom:16px">
@@ -1679,6 +1690,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof renderQueue === 'function') renderQueue();
   if (typeof renderWatchlist === 'function') renderWatchlist();
   if (typeof renderAmazon === 'function') renderAmazon();
+  if (typeof scheduleAmazonStockCheck === 'function') scheduleAmazonStockCheck();
   if (typeof updateRateDisplay === 'function') updateRateDisplay();
   if (typeof renderUSDTable === 'function') renderUSDTable();
   if (typeof updateGarminStats === 'function') updateGarminStats();
@@ -3683,13 +3695,16 @@ async function fetchAmazonProduct() {
       try {
         const r = await callRelay('fetchAmazon', { url: amzUrl });
         if (r && (r.name || r.title || r.price)) {
+          const resolvedAsin = finalAsin || r.asin || '';
           product = {
-            name: label || r.name || r.title || (finalAsin ? 'ASIN ' + finalAsin : 'Amazon Product'),
-            asin: finalAsin || r.asin || '',
+            name: label || r.name || r.title || (resolvedAsin ? 'ASIN ' + resolvedAsin : 'Amazon Product'),
+            asin: resolvedAsin,
             price: r.price || 0,
             currency: r.currency || 'USD',
             url: amzUrl,
             store: 'Amazon.com',
+            image: r.image || r.imageUrl || r.thumbnail || (resolvedAsin ? 'https://images-na.ssl-images-amazon.com/images/P/' + resolvedAsin + '.01.L.jpg' : ''),
+            inStock: r.inStock !== undefined ? r.inStock : true,
             allPrices: [{ title: r.name || r.title || '', price: r.price || 0, url: amzUrl, store: 'Amazon.com' }],
             addedAt: new Date().toISOString(),
             lastChecked: new Date().toISOString()
@@ -3724,6 +3739,8 @@ async function fetchAmazonProduct() {
         currency: 'USD',
         url: best.url || amzUrl || url,
         store: best.store || 'Amazon.com',
+        image: best.image || best.imageUrl || best.thumbnail || (finalAsin ? 'https://images-na.ssl-images-amazon.com/images/P/' + finalAsin + '.01.L.jpg' : ''),
+        inStock: best.inStock !== undefined ? best.inStock : true,
         allPrices: amzItems.slice(0,4).map(function(r) { return { title: r.title, price: r.price, url: r.url, store: r.store }; }),
         addedAt: new Date().toISOString(),
         lastChecked: new Date().toISOString()
@@ -3784,21 +3801,42 @@ function renderAmazon() {
   if (!grid) return;
   if (!amazonProducts.length) { grid.innerHTML = ''; if (empty) empty.style.display = 'flex'; return; }
   if (empty) empty.style.display = 'none';
+  // Backfill image for any stored product that has an ASIN but no image yet
+  let backfilled = false;
+  amazonProducts.forEach(p => {
+    if (!p.image && p.asin) {
+      p.image = 'https://images-na.ssl-images-amazon.com/images/P/' + p.asin + '.01.L.jpg';
+      backfilled = true;
+    }
+  });
+  if (backfilled) saveAmazon();
   grid.innerHTML = amazonProducts.map((p, i) => {
     const lastChecked = p.lastChecked ? new Date(p.lastChecked).toLocaleString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Never';
     const allPrices = p.allPrices || [];
     const priceRows = allPrices.slice(0,4).map(r =>
       `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border)">
         <div style="flex:1;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.title||''}">${(r.title||'').substring(0,55)}</div>
-        <div style="font-family:var(--cond);font-size:15px;font-weight:700;color:var(--accent4)">${r.price?'R'+r.price.toLocaleString('en-ZA'):'—'}</div>
+        <div style="font-family:var(--cond);font-size:15px;font-weight:700;color:var(--accent4)">${r.price?'$'+r.price.toLocaleString('en-ZA'):'—'}</div>
         ${r.url ? `<a href="${r.url}" target="_blank" style="font-size:10px;color:var(--accent)">↗</a>` : ''}
       </div>`
     ).join('');
-    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:8px">
+    const imgHtml = p.image
+      ? `<img src="${p.image}" alt="${p.name||''}" style="width:64px;height:64px;object-fit:contain;border-radius:4px;background:var(--surface3);flex-shrink:0;border:1px solid var(--border)" onerror="this.style.display='none'">`
+      : `<div style="width:64px;height:64px;border-radius:4px;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📦</div>`;
+    const stockBadge = p.inStock === false
+      ? `<span style="font-family:var(--mono);font-size:9px;font-weight:700;background:rgba(255,77,109,.15);color:var(--accent3);border:1px solid rgba(255,77,109,.35);border-radius:3px;padding:2px 7px;letter-spacing:.06em;text-transform:uppercase">OUT OF STOCK</span>`
+      : `<span style="font-family:var(--mono);font-size:9px;font-weight:700;background:rgba(0,229,176,.12);color:var(--accent2);border:1px solid rgba(0,229,176,.3);border-radius:3px;padding:2px 7px;letter-spacing:.06em;text-transform:uppercase">In Stock</span>`;
+    const stockChecked = p.stockChecked ? ' · checked ' + new Date(p.stockChecked).toLocaleString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div style="background:var(--surface);border:1px solid ${p.inStock === false ? 'rgba(255,77,109,.4)' : 'var(--border)'};border-radius:6px;overflow:hidden;margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface2)">
+        ${imgHtml}
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name||p.asin||'—'}</div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">${p.asin||'no ASIN'} · ${lastChecked}</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span>${p.asin||'no ASIN'} · ${lastChecked}</span>
+            ${stockBadge}
+            <span style="color:var(--muted);font-size:9px">${stockChecked}</span>
+          </div>
         </div>
         <div style="font-family:var(--cond);font-size:24px;font-weight:700;color:var(--accent4)">${p.price ? (p.currency === 'USD' ? '$' : 'R') + p.price.toLocaleString('en-ZA') : '—'}</div>
         <button class="btn btn-ghost btn-sm" onclick="syncOneAmazon(${i})">↻</button>
@@ -3810,6 +3848,8 @@ function renderAmazon() {
   }).join('');
   const tc = document.getElementById('tc-amz');
   if (tc) tc.textContent = amazonProducts.length;
+  const sc = document.getElementById('amzStockCount');
+  if (sc) sc.textContent = amazonProducts.length;
 }
 
 async function syncOneAmazon(i) {
@@ -3827,6 +3867,8 @@ async function syncOneAmazon(i) {
         if (fr && fr.price) {
           p.price = fr.price;
           p.currency = fr.currency || 'USD';
+          p.inStock = fr.inStock !== undefined ? fr.inStock : p.inStock;
+          p.image = fr.image || fr.imageUrl || fr.thumbnail || p.image || (p.asin ? 'https://images-na.ssl-images-amazon.com/images/P/' + p.asin + '.01.L.jpg' : '');
           p.allPrices = [{ title: fr.name || fr.title || p.name, price: fr.price, url: amzFetchUrl, store: 'Amazon.com' }];
           refreshed = true;
         }
@@ -3853,6 +3895,156 @@ async function syncOneAmazon(i) {
 function removeAmazon(i) {
   amazonProducts.splice(i, 1);
   saveAmazon(); renderAmazon();
+}
+
+// ─────────────────────────────────────────────────────────────
+// AMAZON STOCK AUTO-CHECK (every 6 hours)
+// ─────────────────────────────────────────────────────────────
+const AMZ_STOCK_INTERVAL = 6 * 60 * 60 * 1000; // 6 hours in ms
+let amzStockTimer = null;
+
+async function checkAllAmazonStock() {
+  if (!amazonProducts.length) return;
+  const dot = document.getElementById('amzStockDot');
+  const lastEl = document.getElementById('amzStockLast');
+  const nextEl = document.getElementById('amzStockNext');
+  if (dot) { dot.style.background = 'var(--accent4)'; dot.style.boxShadow = '0 0 6px rgba(255,200,77,.6)'; }
+  if (lastEl) lastEl.textContent = 'Checking now...';
+
+  let changed = 0;
+  // Snapshot current stock state before checking so we can detect transitions
+  amazonProducts.forEach(p => { p._wasInStock = p.inStock; });
+  for (let i = 0; i < amazonProducts.length; i++) {
+    const p = amazonProducts[i];
+    try {
+      const checkUrl = p.url || (p.asin ? 'https://www.amazon.com/dp/' + p.asin : null);
+      if (!checkUrl) continue;
+      const fr = await callRelay('fetchAmazon', { url: checkUrl });
+      if (fr) {
+        const wasInStock = p.inStock;
+        p.inStock = fr.inStock !== undefined ? fr.inStock : p.inStock;
+        p.price = fr.price || p.price;
+        p.currency = fr.currency || p.currency || 'USD';
+        if (fr.image || fr.imageUrl) p.image = fr.image || fr.imageUrl;
+        p.stockChecked = new Date().toISOString();
+        p.lastChecked = new Date().toISOString();
+        if (wasInStock !== p.inStock) changed++;
+      }
+    } catch(e) { console.log('Stock check failed for', p.name, e.message); }
+    await new Promise(r => setTimeout(r, 600));
+  }
+
+  saveAmazon(); renderAmazon();
+
+  const now = new Date();
+  const nextRun = new Date(now.getTime() + AMZ_STOCK_INTERVAL);
+  localStorage.setItem('sc_amz_stock_last', now.toISOString());
+
+  if (dot) { dot.style.background = 'var(--accent2)'; dot.style.boxShadow = '0 0 6px rgba(0,229,176,.5)'; }
+  if (lastEl) lastEl.textContent = 'Last check: ' + now.toLocaleString('en-ZA', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  if (nextEl) nextEl.textContent = 'Next check: ' + nextRun.toLocaleTimeString('en-ZA', {hour:'2-digit',minute:'2-digit'});
+
+  // Send out-of-stock email alert for any products that just went OOS
+  const newlyOOS = amazonProducts.filter(p => p.inStock === false && p._wasInStock !== false);
+  if (newlyOOS.length > 0) {
+    const checkedTime = now.toLocaleString('en-ZA', {weekday:'short',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const rows = newlyOOS.map(p => `
+      <tr>
+        <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0">
+          ${p.image ? `<img src="${p.image}" style="width:48px;height:48px;object-fit:contain;vertical-align:middle;margin-right:12px">` : ''}
+          <strong style="color:#1a202c">${p.name||p.asin||'Unknown'}</strong><br>
+          <span style="font-family:monospace;font-size:11px;color:#718096">${p.asin ? 'ASIN: '+p.asin : ''}</span>
+        </td>
+        <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;text-align:center">
+          <span style="background:#fff5f5;color:#c53030;border:1px solid #fed7d7;border-radius:4px;padding:3px 10px;font-size:12px;font-weight:700">OUT OF STOCK</span>
+        </td>
+        <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;text-align:right">
+          <strong style="color:#2d3748;font-size:16px">${p.price ? '$'+p.price.toLocaleString('en-ZA') : '—'}</strong>
+        </td>
+        <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0">
+          ${p.url ? `<a href="${p.url}" style="color:#3182ce;text-decoration:none;font-size:12px">View on Amazon ↗</a>` : ''}
+        </td>
+      </tr>`).join('');
+
+    const htmlBody = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f7fafc;font-family:Arial,sans-serif">
+      <div style="max-width:640px;margin:32px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)">
+        <div style="background:#c53030;padding:20px 28px;display:flex;align-items:center;gap:12px">
+          <span style="font-size:28px">⚠️</span>
+          <div>
+            <div style="color:#fff;font-size:18px;font-weight:700">Amazon Stock Alert</div>
+            <div style="color:rgba(255,255,255,.8);font-size:12px;margin-top:2px">SatComms Product Intelligence System</div>
+          </div>
+        </div>
+        <div style="padding:24px 28px">
+          <p style="color:#2d3748;font-size:14px;margin:0 0 20px">
+            The following <strong>${newlyOOS.length} product${newlyOOS.length!==1?'s are':' is'} now OUT OF STOCK</strong> on Amazon.com as of <strong>${checkedTime}</strong>:
+          </p>
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead>
+              <tr style="background:#f7fafc">
+                <th style="padding:10px 16px;text-align:left;font-size:11px;color:#718096;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #e2e8f0">Product</th>
+                <th style="padding:10px 16px;text-align:center;font-size:11px;color:#718096;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #e2e8f0">Status</th>
+                <th style="padding:10px 16px;text-align:right;font-size:11px;color:#718096;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #e2e8f0">Last Price</th>
+                <th style="padding:10px 16px;font-size:11px;color:#718096;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #e2e8f0">Link</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <div style="margin-top:24px;padding:16px;background:#fffbeb;border:1px solid #f6e05e;border-radius:6px;font-size:13px;color:#744210">
+            💡 <strong>Action required:</strong> Check your Wix store and update product availability if these are listed for sale on satcomms.co.za.
+          </div>
+        </div>
+        <div style="padding:16px 28px;background:#f7fafc;border-top:1px solid #e2e8f0;font-size:11px;color:#a0aec0">
+          Sent automatically by SatComms Product Intelligence System · Amazon Monitor · Next check in 6 hours
+        </div>
+      </div>
+    </body></html>`;
+
+    const subject = `⚠ Stock Alert: ${newlyOOS.length} Amazon product${newlyOOS.length!==1?'s':''} out of stock`;
+    try {
+      await callRelay('sendEmail', {
+        to: 'gavmag@satcomms.co.za',
+        subject,
+        body: `Stock Alert: ${newlyOOS.map(p=>p.name||p.asin).join(', ')} — OUT OF STOCK on Amazon as of ${checkedTime}`,
+        htmlBody
+      });
+      const status = document.getElementById('amzFetchStatus');
+      if (status) { status.textContent = `⚠ ${newlyOOS.length} product(s) went out of stock — alert sent to gavmag@satcomms.co.za`; status.style.color = 'var(--accent4)'; }
+    } catch(e) {
+      console.error('Failed to send OOS alert email:', e);
+    }
+  } else if (changed > 0) {
+    const status = document.getElementById('amzFetchStatus');
+    if (status) { status.textContent = '⚠ Stock status changed on ' + changed + ' product(s) — check the monitor.'; status.style.color = 'var(--accent4)'; }
+  }
+}
+
+function scheduleAmazonStockCheck() {
+  if (amzStockTimer) clearTimeout(amzStockTimer);
+  const lastRun = localStorage.getItem('sc_amz_stock_last');
+  const now = Date.now();
+  let delay = AMZ_STOCK_INTERVAL;
+  if (lastRun) {
+    const elapsed = now - new Date(lastRun).getTime();
+    delay = Math.max(0, AMZ_STOCK_INTERVAL - elapsed);
+    // Update last check display immediately
+    const lastEl = document.getElementById('amzStockLast');
+    if (lastEl) lastEl.textContent = 'Last check: ' + new Date(lastRun).toLocaleString('en-ZA', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  }
+  const nextRun = new Date(now + delay);
+  const nextEl = document.getElementById('amzStockNext');
+  if (nextEl) nextEl.textContent = 'Next check: ' + nextRun.toLocaleTimeString('en-ZA', {hour:'2-digit',minute:'2-digit'});
+
+  amzStockTimer = setTimeout(() => {
+    checkAllAmazonStock();
+    // Re-schedule after each run
+    amzStockTimer = setInterval(checkAllAmazonStock, AMZ_STOCK_INTERVAL);
+  }, delay);
+
+  // If overdue (no last run or >6h ago), run immediately
+  if (!lastRun || (now - new Date(lastRun).getTime()) >= AMZ_STOCK_INTERVAL) {
+    if (amazonProducts.length) checkAllAmazonStock();
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
