@@ -392,11 +392,12 @@ select option{background:var(--surface2)}
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:14px;min-width:0">
     <div class="logo"><span class="logo-icon">🛰</span><em>Sat</em>&nbsp;Comms</div>
-    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v2.2 · 2026-04-20</div>
+    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v2.4 · 2026-04-20</div>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><span class="pulse"></span><span id="feedStatusText">Ready</span></div>
     <div id="feedTime"></div>
+    <a href="./sim-report.html" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none;border-color:rgba(0,229,176,.3);color:var(--accent2)">📡 SIM Reports</a>
     <button class="btn btn-ghost btn-sm" onclick="loadMyWixProducts()">↻ Sync Wix</button>
     <div id="userChip" style="display:none">
       <div class="chip-avatar" id="userAvatar">?</div>
@@ -1459,7 +1460,19 @@ select option{background:var(--surface2)}
   <div class="shdr"><div class="stitle">System <span>Settings</span></div></div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:2px">
     <div style="background:var(--surface);border:1px solid var(--border);padding:20px">
-      <div class="flabel" style="margin-bottom:12px">Pricing Rules</div>
+      <div class="flabel" style="margin-bottom:12px">Relay &amp; API</div>
+      <div class="mfield"><label>GAS Relay URL</label>
+        <input type="text" id="relayUrl" placeholder="https://script.google.com/macros/s/..." style="font-family:var(--mono);font-size:10px">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn btn-success btn-sm" onclick="saveSettings()">Save</button>
+        <button class="btn btn-ghost btn-sm" onclick="testRelay()">Test Relay</button>
+      </div>
+      <div id="relayTestStatus" style="font-family:var(--mono);font-size:10px;margin-top:8px;color:var(--muted2)"></div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px;line-height:1.8">
+        Your GAS relay URL from<br>Apps Script → Deploy → Manage Deployments
+      </div>
+    </div>
       <div class="mfield"><label>Default Markup % on cost excl VAT</label><input type="number" id="defaultMarkup" value="35" min="5" max="300"></div>
       <div class="mfield"><label>VAT Rate %</label><input type="number" id="vatRate" value="15" min="0" max="30"></div>
       <div class="mfield"><label>Stock Alert Threshold (units)</label><input type="number" id="stockThreshold" value="2" min="1" max="20"></div>
@@ -1639,9 +1652,10 @@ function switchTab(name) {
 }
 
 async function callRelay(action, body) {
+  const HARDCODED_RELAY = 'https://script.google.com/macros/s/AKfycbwL6dSBkfSvx60QnAV1viZD2xaVA1Qrl6en2qRSuhz_L-60tYMVulRd2IUNvUMKGdI/exec';
   const cfg = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
-  const url = cfg.relayUrl || document.getElementById('relayUrlSettings')?.value || document.getElementById('relayUrl')?.value;
-  if (!url || url.includes('PASTE_YOUR') || !url.startsWith('https://')) throw new Error('Relay URL not configured — go to Settings and paste your GAS relay URL');
+  const url = cfg.relayUrl || document.getElementById('relayUrlSettings')?.value || document.getElementById('relayUrl')?.value || HARDCODED_RELAY;
+  if (!url || !url.startsWith('https://')) throw new Error('Relay URL not configured — go to Settings and paste your GAS relay URL');
   const resp = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1653,11 +1667,15 @@ async function callRelay(action, body) {
 }
 
 function loadSettings() {
+  const HARDCODED_RELAY = 'https://script.google.com/macros/s/AKfycbwL6dSBkfSvx60QnAV1viZD2xaVA1Qrl6en2qRSuhz_L-60tYMVulRd2IUNvUMKGdI/exec';
   const s = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
-  if (s.relayUrl) {
-    const el1 = document.getElementById('relayUrl'); if (el1) el1.value = s.relayUrl;
-    const el2 = document.getElementById('relayUrlSettings'); if (el2) el2.value = s.relayUrl;
+  // Auto-seed relay URL from hardcoded value if not set — works on any machine instantly
+  if (!s.relayUrl) {
+    s.relayUrl = HARDCODED_RELAY;
+    localStorage.setItem('sc_cfg', JSON.stringify(s));
   }
+  const el1 = document.getElementById('relayUrl'); if (el1) el1.value = s.relayUrl;
+  const el2 = document.getElementById('relayUrlSettings'); if (el2) el2.value = s.relayUrl;
   if (s.defaultAiContext) { const el = document.getElementById('defaultAiContext'); if (el) el.value = s.defaultAiContext; }
   if (s.garminMarkup !== undefined) { const el = document.getElementById('garminMarkup'); if (el) el.value = s.garminMarkup; }
   if (s.garminVAT !== undefined) { const el = document.getElementById('garminVAT'); if (el) el.value = s.garminVAT; }
@@ -1666,19 +1684,38 @@ function loadSettings() {
 
 function saveSettings() {
   const s = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
-  const relayEl = document.getElementById('relayUrlSettings');
+  // Read relay URL from either field (Settings tab or Publish tab)
+  const relayEl = document.getElementById('relayUrl') || document.getElementById('relayUrlSettings');
+  const relayElAlt = document.getElementById('relayUrlSettings');
+  const relayVal = (relayEl?.value || relayElAlt?.value || '').trim();
+  if (relayVal && !relayVal.includes('PASTE_YOUR') && relayVal.startsWith('https://')) {
+    s.relayUrl = relayVal;
+    // Sync both fields
+    const el1 = document.getElementById('relayUrl'); if (el1) el1.value = relayVal;
+    const el2 = document.getElementById('relayUrlSettings'); if (el2) el2.value = relayVal;
+  }
   const ctxEl = document.getElementById('defaultAiContext');
   const markupEl = document.getElementById('garminMarkup');
   const vatEl = document.getElementById('garminVAT');
   const roundEl = document.getElementById('garminRounding');
-  const relayVal = relayEl?.value?.trim(); if (relayVal && !relayVal.includes('PASTE_YOUR') && relayVal.startsWith('https://')) s.relayUrl = relayVal;
   if (ctxEl?.value) s.defaultAiContext = ctxEl.value;
   if (markupEl?.value) s.garminMarkup = parseFloat(markupEl.value);
   if (vatEl?.value) s.garminVAT = parseFloat(vatEl.value);
   if (roundEl?.value) s.garminRounding = parseInt(roundEl.value);
   localStorage.setItem('sc_cfg', JSON.stringify(s));
-  const btn = document.querySelector('[onclick="saveSettings()"]');
-  if (btn) { const orig = btn.textContent; btn.textContent = '✓ Saved'; setTimeout(() => btn.textContent = orig, 1500); }
+  const btns = document.querySelectorAll('[onclick="saveSettings()"]');
+  btns.forEach(btn => { const orig = btn.textContent; btn.textContent = '✓ Saved'; setTimeout(() => btn.textContent = orig, 1500); });
+}
+
+async function testRelay() {
+  const statusEl = document.getElementById('relayTestStatus');
+  if (statusEl) { statusEl.textContent = 'Testing...'; statusEl.style.color = 'var(--muted2)'; }
+  try {
+    const r = await callRelay('test', {});
+    if (statusEl) { statusEl.textContent = '✓ Relay connected — ' + (r.status || 'OK'); statusEl.style.color = 'var(--accent2)'; }
+  } catch(e) {
+    if (statusEl) { statusEl.textContent = '✗ ' + e.message.substring(0, 80); statusEl.style.color = 'var(--accent3)'; }
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -3251,8 +3288,9 @@ async function processTopupFile(file) {
     const mediaType = isPDF ? 'application/pdf' : file.type || 'image/jpeg';
     if (msg) msg.textContent = 'Sending to AI via relay...';
     const cfgR = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
-    const relayUrlR = cfgR.relayUrl || document.getElementById('relayUrlSettings')?.value || document.getElementById('relayUrl')?.value;
-    if (!relayUrlR || relayUrlR.includes('PASTE_YOUR') || !relayUrlR.startsWith('https://')) {
+    const HARDCODED_RELAY = 'https://script.google.com/macros/s/AKfycbwL6dSBkfSvx60QnAV1viZD2xaVA1Qrl6en2qRSuhz_L-60tYMVulRd2IUNvUMKGdI/exec';
+    const relayUrlR = cfgR.relayUrl || document.getElementById('relayUrlSettings')?.value || document.getElementById('relayUrl')?.value || HARDCODED_RELAY;
+    if (!relayUrlR || !relayUrlR.startsWith('https://')) {
       throw new Error('Relay URL not saved — go to Settings and paste your GAS relay URL');
     }
     const relayResp = await fetch(relayUrlR, {
