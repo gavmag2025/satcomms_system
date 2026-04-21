@@ -392,7 +392,7 @@ select option{background:var(--surface2)}
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:14px;min-width:0">
     <div class="logo"><span class="logo-icon">🛰</span><em>Sat</em>&nbsp;Comms</div>
-    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v2.8 · 2026-04-20</div>
+    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v3.0 · 2026-04-21</div>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><span class="pulse"></span><span id="feedStatusText">Ready</span></div>
@@ -1604,7 +1604,7 @@ select option{background:var(--surface2)}
 // ═══ LOGIN SYSTEM ═══
 var ADMIN_EMAIL = 'gavmag@gmail.com';
 var ALLOWED_DOMAIN = '@satcomms.co.za';
-var HARDCODED_RELAY_AUTH = 'https://script.google.com/macros/s/AKfycbwL6dSBkfSvx60QnAV1viZD2xaVA1Qrl6en2qRSuhz_L-60tYMVulRd2IUNvUMKGdI/exec';
+var HARDCODED_RELAY_AUTH = 'https://script.google.com/macros/s/AKfycbwL6dSBkfSvx60QnAV1viZD2xaVA1QrI6en2qRSuhz_L-6OtYMVuIRd2IUNvUMKGdI/exec';
 
 // ── User cache ──
 var _usersCache = null;
@@ -1756,7 +1756,7 @@ function switchTab(name) {
 }
 
 async function callRelay(action, body) {
-  const HARDCODED_RELAY = 'https://script.google.com/macros/s/AKfycbwL6dSBkfSvx60QnAV1viZD2xaVA1Qrl6en2qRSuhz_L-60tYMVulRd2IUNvUMKGdI/exec';
+  const HARDCODED_RELAY = 'https://script.google.com/macros/s/AKfycbwL6dSBkfSvx60QnAV1viZD2xaVA1QrI6en2qRSuhz_L-6OtYMVuIRd2IUNvUMKGdI/exec';
   const cfg = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
   const url = cfg.relayUrl || document.getElementById('relayUrlSettings')?.value || document.getElementById('relayUrl')?.value || HARDCODED_RELAY;
   if (!url || !url.startsWith('https://')) throw new Error('Relay URL not configured — go to Settings and paste your GAS relay URL');
@@ -1771,7 +1771,7 @@ async function callRelay(action, body) {
 }
 
 function loadSettings() {
-  const HARDCODED_RELAY = 'https://script.google.com/macros/s/AKfycbwL6dSBkfSvx60QnAV1viZD2xaVA1Qrl6en2qRSuhz_L-60tYMVulRd2IUNvUMKGdI/exec';
+  const HARDCODED_RELAY = 'https://script.google.com/macros/s/AKfycbwL6dSBkfSvx60QnAV1viZD2xaVA1QrI6en2qRSuhz_L-6OtYMVuIRd2IUNvUMKGdI/exec';
   const s = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
   // Auto-seed relay URL from hardcoded value if not set — works on any machine instantly
   if (!s.relayUrl) {
@@ -3403,7 +3403,7 @@ async function processTopupFile(file) {
     const mediaType = isPDF ? 'application/pdf' : file.type || 'image/jpeg';
     if (msg) msg.textContent = 'Sending to AI via relay...';
     const cfgR = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
-    const HARDCODED_RELAY = 'https://script.google.com/macros/s/AKfycbwL6dSBkfSvx60QnAV1viZD2xaVA1Qrl6en2qRSuhz_L-60tYMVulRd2IUNvUMKGdI/exec';
+    const HARDCODED_RELAY = 'https://script.google.com/macros/s/AKfycbwL6dSBkfSvx60QnAV1viZD2xaVA1QrI6en2qRSuhz_L-6OtYMVuIRd2IUNvUMKGdI/exec';
     const relayUrlR = cfgR.relayUrl || document.getElementById('relayUrlSettings')?.value || document.getElementById('relayUrl')?.value || HARDCODED_RELAY;
     if (!relayUrlR || !relayUrlR.startsWith('https://')) {
       throw new Error('Relay URL not saved — go to Settings and paste your GAS relay URL');
@@ -3496,7 +3496,7 @@ async function sendTopupRequest() {
     // Only fall back to mailto if relay is completely unconfigured
     if (e.message.includes('not configured') || e.message.includes('Relay URL')) {
       const plainBody = 'Topup Request\nInvoice: ' + (invoice||'-') + '\nCustomer: ' + (custName||'-') + '\nProduct: ' + (product||'-');
-      window.open('mailto:sales@satcomms.co.za?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(plainBody), '_blank');
+      window.open('mailto:gavmag@gmail.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(plainBody), '_blank');
     }
   }
 
@@ -3733,7 +3733,7 @@ async function resendTopupEmail(id) {
     });
     alert('✓ Resent to sales@satcomms.co.za');
   } catch(e) {
-    window.open(`mailto:sales@satcomms.co.za?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainBody)}`, '_blank');
+    window.open(`mailto:gavmag@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainBody)}`, '_blank');
   }
 }
 
