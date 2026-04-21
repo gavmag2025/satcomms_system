@@ -392,7 +392,7 @@ select option{background:var(--surface2)}
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:14px;min-width:0">
     <div class="logo"><span class="logo-icon">🛰</span><em>Sat</em>&nbsp;Comms</div>
-    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v2.5 · 2026-04-20</div>
+    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v2.8 · 2026-04-20</div>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><span class="pulse"></span><span id="feedStatusText">Ready</span></div>
@@ -1498,10 +1498,23 @@ select option{background:var(--surface2)}
       <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
     </div>
   </div>
+  <!-- User Management — admin only, cloud-synced -->
+  <div id="userMgmtSection" style="display:none;margin-top:2px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-top:2px solid var(--accent5);padding:20px">
+      <div class="flabel" style="margin-bottom:4px;color:var(--accent5)">👥 User Management</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:14px">Synced to cloud via GAS relay — same users on every machine</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end">
+        <div class="mfield" style="flex:1;min-width:160px;margin-bottom:0"><label>Email</label><input type="email" id="umEmail" placeholder="user@satcomms.co.za"></div>
+        <div class="mfield" style="width:140px;margin-bottom:0"><label>Name</label><input type="text" id="umName" placeholder="Full name"></div>
+        <div class="mfield" style="width:130px;margin-bottom:0"><label>Password</label><input type="text" id="umPassword" placeholder="temp password"></div>
+        <button class="btn btn-primary btn-sm" onclick="umAddUser()">+ Add User</button>
+        <button class="btn btn-ghost btn-sm" onclick="renderUserManagement()">↻ Refresh</button>
+      </div>
+      <div id="umError" style="font-family:var(--mono);font-size:10px;color:var(--accent3);margin-bottom:8px"></div>
+      <div id="umGrid"></div>
+    </div>
+  </div>
 </div>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- PRODUCT EDITOR MODAL -->
 <!-- ═══════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="productEditorModal" style="display:none" onclick="if(event.target===this)closeProductEditor()">
 <div class="modal" style="max-width:760px">
@@ -1591,29 +1604,113 @@ select option{background:var(--surface2)}
 // ═══ LOGIN SYSTEM ═══
 var ADMIN_EMAIL = 'gavmag@gmail.com';
 var ALLOWED_DOMAIN = '@satcomms.co.za';
-function getUsers(){return JSON.parse(localStorage.getItem('sc_users')||'{}');}
-function saveUsers(u){localStorage.setItem('sc_users',JSON.stringify(u));}
+var HARDCODED_RELAY_AUTH = 'https://script.google.com/macros/s/AKfycbwL6dSBkfSvx60QnAV1viZD2xaVA1Qrl6en2qRSuhz_L-60tYMVulRd2IUNvUMKGdI/exec';
+
+// ── User cache ──
+var _usersCache = null;
+
 function getSession(){return JSON.parse(localStorage.getItem('sc_session')||'null');}
 function saveSession(s){localStorage.setItem('sc_session',JSON.stringify(s));}
-function bootstrapAdmin(){
-  var users=getUsers();
-  users[ADMIN_EMAIL]={name:'Gav (Admin)',password:(users[ADMIN_EMAIL]||{}).password||'satcomms2024',isAdmin:true,
-    tabs:['mywix','garmin','amazon','watchlist','alerts','usd','topup','seo','publish','pricing','settings']};
+
+// Always read from localStorage first — relay sync is optional enhancement
+function getUsers() {
+  if (_usersCache) return _usersCache;
+  _usersCache = JSON.parse(localStorage.getItem('sc_users')||'{}');
+  return _usersCache;
+}
+function saveUsers(u) {
+  _usersCache = u;
+  localStorage.setItem('sc_users', JSON.stringify(u));
+  // Try to sync to relay in background — don't block or fail if unavailable
+  try {
+    var cfg = JSON.parse(localStorage.getItem('sc_cfg')||'{}');
+    var url = cfg.relayUrl || HARDCODED_RELAY_AUTH;
+    Object.entries(u).forEach(function([email, userData]) {
+      fetch(url, {
+        method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'saveUser', email, userData})
+      }).catch(function(){});  // silent — localStorage is source of truth
+    });
+  } catch(e) {}
+}
+
+// Try to pull latest users from relay — updates localStorage cache if successful
+async function syncUsersFromRelay() {
+  try {
+    var cfg = JSON.parse(localStorage.getItem('sc_cfg')||'{}');
+    var url = cfg.relayUrl || HARDCODED_RELAY_AUTH;
+    var resp = await fetch(url, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({action:'getUsers'})
+    });
+    var d = await resp.json();
+    if (d.success && d.data && Object.keys(d.data).length) {
+      _usersCache = d.data;
+      localStorage.setItem('sc_users', JSON.stringify(_usersCache));
+      console.log('Users synced from relay:', Object.keys(_usersCache).length, 'users');
+    }
+  } catch(e) {
+    console.log('Relay user sync unavailable — using localStorage:', e.message);
+  }
+}
+
+// Save a single user to relay in background
+function saveUserToRelay(email, userData) {
+  var users = getUsers();
+  users[email] = userData;
   saveUsers(users);
 }
-function doLogin(){
-  var email=document.getElementById('loginEmail').value.trim().toLowerCase();
-  var pass=document.getElementById('loginPassword').value;
-  var err=document.getElementById('loginError');err.textContent='';
-  if(!email){err.textContent='Please enter your email.';return;}
-  if(email!==ADMIN_EMAIL&&!email.endsWith(ALLOWED_DOMAIN)){err.textContent='Only @satcomms.co.za accounts are allowed.';return;}
-  var users=getUsers(),user=users[email];
-  if(!user){err.textContent='Account not found. Default password: satcomms2024';return;}
-  if(user.password!==pass){err.textContent='Incorrect password.';return;}
-  saveSession({email:email,name:user.name,isAdmin:!!user.isAdmin,tabs:user.tabs||[]});
-  showApp();
+
+// Delete a user from relay
+function deleteUserFromRelay(email) {
+  var users = getUsers();
+  delete users[email];
+  saveUsers(users);
+  try {
+    var cfg = JSON.parse(localStorage.getItem('sc_cfg')||'{}');
+    var url = cfg.relayUrl || HARDCODED_RELAY_AUTH;
+    fetch(url, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({action:'deleteUser', email})
+    }).catch(function(){});
+  } catch(e) {}
 }
+
+function bootstrapAdmin() {
+  var users = getUsers();
+  if (!users[ADMIN_EMAIL]) {
+    users[ADMIN_EMAIL] = {
+      name:'Gav (Admin)', password:'satcomms2024', isAdmin:true,
+      tabs:['mywix','garmin','amazon','watchlist','alerts','usd','topup','seo','publish','pricing','settings']
+    };
+    saveUsers(users);
+  }
+}
+
+function doLogin() {
+  var email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  var pass  = document.getElementById('loginPassword').value;
+  var err   = document.getElementById('loginError');
+  err.textContent = '';
+  if (!email) { err.textContent = 'Please enter your email.'; return; }
+  if (email !== ADMIN_EMAIL && !email.endsWith(ALLOWED_DOMAIN)) {
+    err.textContent = 'Only @satcomms.co.za accounts are allowed.'; return;
+  }
+  var users = getUsers();
+  var user  = users[email];
+  if (!user) { err.textContent = 'Account not found. Default password: satcomms2024'; return; }
+  if (user.password !== pass) { err.textContent = 'Incorrect password.'; return; }
+  saveSession({email:email, name:user.name, isAdmin:!!user.isAdmin, tabs:user.tabs||[]});
+  showApp();
+  // After login, sync users from relay in background to get latest
+  syncUsersFromRelay().then(function() {
+    // If relay had updated users, re-render user management if open
+    if (document.getElementById('umGrid')) renderUserManagement();
+  }).catch(function(){});
+}
+
 function doSignOut(){localStorage.removeItem('sc_session');location.reload();}
+
 function showApp(){
   var session=getSession();if(!session)return;
   var ov=document.getElementById('loginOverlay');if(ov)ov.style.display='none';
@@ -1626,8 +1723,15 @@ function showApp(){
       if(m&&!session.tabs.includes(m[1]))tab.style.display='none';
     });
   }
+  if(session.isAdmin) renderUserManagement();
 }
-function checkSession(){bootstrapAdmin();var s=getSession();if(s){showApp();return true;}return false;}
+
+function checkSession(){
+  bootstrapAdmin();
+  var s=getSession();
+  if(s){showApp();return true;}
+  return false;
+}
 
 
 // ─────────────────────────────────────────────────────────────
@@ -1715,6 +1819,17 @@ async function testRelay() {
     if (statusEl) { statusEl.textContent = '✓ Relay connected — ' + (r.status || 'OK'); statusEl.style.color = 'var(--accent2)'; }
   } catch(e) {
     if (statusEl) { statusEl.textContent = '✗ ' + e.message.substring(0, 80); statusEl.style.color = 'var(--accent3)'; }
+  }
+}
+
+async function testTopupRelay() {
+  const statusEl = document.getElementById('topupRelayStatus');
+  if (statusEl) { statusEl.textContent = 'Testing...'; statusEl.style.color = 'var(--muted2)'; }
+  try {
+    const r = await callRelay('test', {});
+    if (statusEl) { statusEl.textContent = '✓ Relay OK'; statusEl.style.color = 'var(--accent2)'; }
+  } catch(e) {
+    if (statusEl) { statusEl.textContent = '✗ ' + e.message.substring(0, 60); statusEl.style.color = 'var(--accent3)'; }
   }
 }
 
@@ -5267,7 +5382,85 @@ function gcwRender() {
   }).join('');
 }
 
-// Init gcw on load
+// ─────────────────────────────────────────────────────────────
+// USER MANAGEMENT (cloud-synced via relay)
+// ─────────────────────────────────────────────────────────────
+const ALL_TABS = ['mywix','garmin','amazon','watchlist','alerts','usd','topup','seo','publish','pricing','settings'];
+const TAB_LABELS = {mywix:'My Products',garmin:'Garmin',amazon:'Amazon',watchlist:'Watchlist',alerts:'Competitor',usd:'USD Pricing',topup:'Topups',seo:'SEO',publish:'Publish',pricing:'Global Pricing',settings:'Settings'};
+
+async function renderUserManagement() {
+  const session = getSession();
+  if (!session || !session.isAdmin) return;
+  const section = document.getElementById('userMgmtSection');
+  if (section) section.style.display = 'block';
+  const grid = document.getElementById('umGrid');
+  if (!grid) return;
+  const users = getUsers();
+  const entries = Object.entries(users);
+  if (!entries.length) { grid.innerHTML = '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);padding:8px 0">No users yet.</div>'; return; }
+  grid.innerHTML = entries.map(([email, u]) => {
+    const isAdmin = !!u.isAdmin;
+    const userTabs = u.tabs || ALL_TABS;
+    const tabChips = ALL_TABS.map(t =>
+      '<span onclick="umToggleTab(\'' + email + '\',\'' + t + '\')" style="cursor:pointer;display:inline-block;margin:2px;padding:2px 7px;border-radius:3px;font-family:var(--mono);font-size:9px;border:1px solid ' +
+      (userTabs.includes(t) ? 'var(--accent2);background:rgba(0,229,176,.12);color:var(--accent2)' : 'var(--border);color:var(--muted)') +
+      '">' + (TAB_LABELS[t]||t) + '</span>'
+    ).join('');
+    return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:8px">' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
+      '<div style="flex:1"><div style="font-size:13px;font-weight:600">' + (u.name||email) + (isAdmin ? ' <span style="font-family:var(--mono);font-size:9px;color:var(--accent4);background:rgba(255,200,77,.12);padding:1px 6px;border-radius:3px">ADMIN</span>' : '') + '</div>' +
+      '<div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:2px">' + email + '</div></div>' +
+      (!isAdmin ? '<button onclick="umResetPw(\'' + email + '\')" class="btn btn-ghost btn-sm" style="font-size:9px">Reset PW</button>' : '') +
+      (!isAdmin ? '<button onclick="umDeleteUser(\'' + email + '\')" class="btn btn-danger btn-sm" style="font-size:9px">Delete</button>' : '') +
+      '</div>' +
+      (!isAdmin ? '<div style="margin-top:6px"><div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em">Tab Access (click to toggle)</div>' + tabChips + '</div>' : '') +
+      '</div>';
+  }).join('');
+}
+
+async function umAddUser() {
+  const email = (document.getElementById('umEmail').value||'').trim().toLowerCase();
+  const name  = (document.getElementById('umName').value||'').trim();
+  const pass  = (document.getElementById('umPassword').value||'').trim();
+  const errEl = document.getElementById('umError');
+  errEl.textContent = '';
+  if (!email || !name || !pass) { errEl.textContent = 'All fields required.'; return; }
+  if (!email.endsWith(ALLOWED_DOMAIN) && email !== ADMIN_EMAIL) { errEl.textContent = 'Must be a @satcomms.co.za email.'; return; }
+  const users = getUsers();
+  if (users[email]) { errEl.textContent = 'User already exists.'; return; }
+  saveUserToRelay(email, { name, password:pass, isAdmin:false, tabs:['mywix','topup'] });
+  document.getElementById('umEmail').value = '';
+  document.getElementById('umName').value = '';
+  document.getElementById('umPassword').value = '';
+  renderUserManagement();
+}
+
+async function umDeleteUser(email) {
+  if (!confirm('Delete user ' + email + '?')) return;
+  deleteUserFromRelay(email);
+  renderUserManagement();
+}
+
+async function umResetPw(email) {
+  const newPw = prompt('New password for ' + email + ':');
+  if (!newPw) return;
+  const users = getUsers();
+  if (!users[email]) return;
+  users[email].password = newPw;
+  saveUserToRelay(email, users[email]);
+  alert('Password updated.');
+}
+
+async function umToggleTab(email, tab) {
+  const users = getUsers();
+  if (!users[email]) return;
+  const tabs = users[email].tabs || ALL_TABS.slice();
+  const idx = tabs.indexOf(tab);
+  if (idx >= 0) tabs.splice(idx, 1); else tabs.push(tab);
+  users[email].tabs = tabs;
+  saveUserToRelay(email, users[email]);
+  renderUserManagement();
+}
 try {
   // Sanitise any stored gcwProducts with non-array results field
   gcwProducts = gcwProducts.map(function(p) {
