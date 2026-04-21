@@ -1056,27 +1056,17 @@ function runCDRLookup() {
   }, 500);
 }
 
-// ── Balance Check — Railway API ────────────────────────
+// ── Balance Check ────────────────────────
 // Keep Render awake — ping every 10 mins
 function keepAlive() { fetch('https://balance-check-api.onrender.com/health').catch(()=>{}); }
 keepAlive();
 setInterval(keepAlive, 10 * 60 * 1000);
-  const iccid = document.getElementById('balance-iccid').value.trim();
-  document.getElementById('balance-btn').disabled = !/^\d{15,22}$/.test(iccid.replace(/[\s\-]/g,''));
-}
 
-const RELAY_URL = 'https://script.google.com/macros/s/AKfycbwL6dSBkfSvx60QnAV1viZD2xaVA1QrI6en2qRSuhz_L-6OtYMVuIRd2IUNvUMKGdI/exec';
 const BALANCE_API = 'https://balance-check-api.onrender.com/api/balance';
 
-async function callSimRelay(action, body) {
-  const resp = await fetch(RELAY_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action, ...body })
-  });
-  const data = await resp.json();
-  if (!data.success) throw new Error(data.error || 'Relay error');
-  return data.data;
+function balCheckRunnable() {
+  const iccid = document.getElementById('balance-iccid').value.trim();
+  document.getElementById('balance-btn').disabled = !/^\d{15,22}$/.test(iccid.replace(/[\s\-]/g,''));
 }
 
 async function runBalanceCheck() {
