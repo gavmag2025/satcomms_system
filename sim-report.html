@@ -1062,7 +1062,7 @@ function balCheckRunnable() {
   document.getElementById('balance-btn').disabled = !/^\d{15,22}$/.test(iccid.replace(/[\s\-]/g,''));
 }
 
-const RELAY_URL = 'https://script.google.com/macros/s/AKfycbwL6dSBkfSvx60QnAV1viZD2xaVA1Qrl6en2qRSuhz_L-60tYMVulRd2IUNvUMKGdI/exec';
+const RELAY_URL = 'https://script.google.com/macros/s/AKfycbwL6dSBkfSvx60QnAV1viZD2xaVA1QrI6en2qRSuhz_L-6OtYMVuIRd2IUNvUMKGdI/exec';
 
 async function callSimRelay(action, body) {
   const resp = await fetch(RELAY_URL, {
