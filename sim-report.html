@@ -1057,12 +1057,16 @@ function runCDRLookup() {
 }
 
 // ── Balance Check — Railway API ────────────────────────
-function balCheckRunnable() {
+// Keep Render awake — ping every 10 mins
+function keepAlive() { fetch('https://balance-check-api.onrender.com/health').catch(()=>{}); }
+keepAlive();
+setInterval(keepAlive, 10 * 60 * 1000);
   const iccid = document.getElementById('balance-iccid').value.trim();
   document.getElementById('balance-btn').disabled = !/^\d{15,22}$/.test(iccid.replace(/[\s\-]/g,''));
 }
 
 const RELAY_URL = 'https://script.google.com/macros/s/AKfycbwL6dSBkfSvx60QnAV1viZD2xaVA1QrI6en2qRSuhz_L-6OtYMVuIRd2IUNvUMKGdI/exec';
+const BALANCE_API = 'https://balance-check-api.onrender.com/api/balance';
 
 async function callSimRelay(action, body) {
   const resp = await fetch(RELAY_URL, {
@@ -1106,12 +1110,18 @@ async function runBalanceCheck() {
   }, 5000);
 
   try {
-    const data = await callSimRelay('getSimBalance', { iccid });
+    const resp = await fetch(BALANCE_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ iccid })
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Server error — please try again.');
     clearInterval(msgTimer);
     renderBalanceResult(data);
   } catch(e) {
     clearInterval(msgTimer);
-    showBalanceError(e.message || 'Could not retrieve balance. Please try again.');
+    showBalanceError(e.message || 'Could not connect to the balance service. Please try again.');
   } finally {
     document.getElementById('balance-loading').style.display = 'none';
     document.getElementById('balance-btn').disabled = false;
