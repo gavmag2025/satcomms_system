@@ -1118,44 +1118,6 @@ async function runBalanceCheck() {
   }
 }
 
-  // Reset UI
-  document.getElementById('balance-result').style.display = 'none';
-  document.getElementById('balance-error').style.display = 'none';
-  document.getElementById('balance-loading').style.display = 'block';
-  document.getElementById('balance-btn').disabled = true;
-
-  // Cycle loading messages
-  const msgs = [
-    'Connecting to IBIS portal...',
-    'Logging in...',
-    'Searching for SIM...',
-    'Reading balance data...'
-  ];
-  let mi = 0;
-  const msgEl = document.getElementById('balance-loading-msg');
-  const msgTimer = setInterval(() => {
-    mi = (mi + 1) % msgs.length;
-    msgEl.textContent = msgs[mi];
-  }, 5000);
-
-  try {
-    const resp = await fetch(BALANCE_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ iccid })
-    });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || 'Server error — please try again.');
-    renderBalanceResult(data);
-  } catch(e) {
-    showBalanceError(e.message || 'Could not connect to the balance service. Please try again.');
-  } finally {
-    clearInterval(msgTimer);
-    document.getElementById('balance-loading').style.display = 'none';
-    document.getElementById('balance-btn').disabled = false;
-  }
-}
-
 function renderBalanceResult(d) {
   // Balance amount
   const bal = parseFloat(d.balance) || 0;
