@@ -225,7 +225,8 @@ select option{background:var(--surface2)}
 .bulk-actions{display:flex;gap:8px;flex-wrap:wrap}
 
 /* ── PRODUCT GRID ── */
-.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1px;background:var(--border)}
+.pgrid{display:flex;flex-direction:column;gap:8px}
+#amzGrid.pgrid{gap:8px}
 .pcard{
   background:var(--surface);border:none;overflow:hidden;
   transition:all .2s;position:relative;cursor:pointer;
@@ -392,7 +393,7 @@ select option{background:var(--surface2)}
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:14px;min-width:0">
     <div class="logo"><span class="logo-icon">🛰</span><em>Sat</em>&nbsp;Comms</div>
-    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v3.0 · 2026-04-21</div>
+    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v3.1 · 2026-04-24</div>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><span class="pulse"></span><span id="feedStatusText">Ready</span></div>
@@ -3481,13 +3482,14 @@ async function sendTopupRequest() {
   const htmlBody = buildTopupEmail({ invoice, date, custName, custEmail, custPhone, amount: amtFmt, product, devices, notes, ts, devRows });
 
   try {
+    // Send to both sales and gavmag
     await callRelay('sendEmail', {
-      to: 'sales@satcomms.co.za',
+      to: 'sales@satcomms.co.za,gavmag@satcomms.co.za',
       subject,
       body: 'Airtime Topup Request: ' + (invoice||'') + ' - ' + (custName||'Customer') + ' - ' + product,
       htmlBody
     });
-    status.textContent = '✓ Email sent to sales@satcomms.co.za';
+    status.textContent = '✓ Email sent to sales & gavmag@satcomms.co.za';
     status.style.color = 'var(--accent2)';
   } catch(e) {
     status.textContent = '✗ Send failed: ' + e.message;
@@ -3726,12 +3728,12 @@ async function resendTopupEmail(id) {
   const plainBody = 'Topup Request (Resend)\nInvoice: ' + (r.invoice||'-') + '\nCustomer: ' + (r.custName||'-') + '\nProduct: ' + (r.product||'-');
   try {
     await callRelay('sendEmail', {
-      to: 'sales@satcomms.co.za',
+      to: 'sales@satcomms.co.za,gavmag@satcomms.co.za',
       subject,
       body: plainBody,
       htmlBody
     });
-    alert('✓ Resent to sales@satcomms.co.za');
+    alert('✓ Resent to sales & gavmag@satcomms.co.za');
   } catch(e) {
     window.open(`mailto:gavmag@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainBody)}`, '_blank');
   }
@@ -3930,37 +3932,47 @@ function renderAmazon() {
     const lastChecked = p.lastChecked ? new Date(p.lastChecked).toLocaleString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Never';
     const allPrices = p.allPrices || [];
     const priceRows = allPrices.slice(0,4).map(r =>
-      `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border)">
-        <div style="flex:1;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.title||''}">${(r.title||'').substring(0,55)}</div>
-        <div style="font-family:var(--cond);font-size:15px;font-weight:700;color:var(--accent4)">${r.price?'$'+r.price.toLocaleString('en-ZA'):'—'}</div>
-        ${r.url ? `<a href="${r.url}" target="_blank" style="font-size:10px;color:var(--accent)">↗</a>` : ''}
-      </div>`
+      '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border)">'
+      + '<div style="flex:1;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + (r.title||'') + '">' + (r.title||'').substring(0,55) + '</div>'
+      + '<div style="font-family:var(--cond);font-size:15px;font-weight:700;color:var(--accent4)">' + (r.price ? '$'+r.price.toLocaleString('en-ZA') : '—') + '</div>'
+      + (r.url ? '<a href="' + r.url + '" target="_blank" style="font-size:10px;color:var(--accent)">↗</a>' : '')
+      + '</div>'
     ).join('');
-    const imgHtml = p.image
-      ? `<img src="${p.image}" alt="${p.name||''}" style="width:64px;height:64px;object-fit:contain;border-radius:4px;background:var(--surface3);flex-shrink:0;border:1px solid var(--border)" onerror="this.style.display='none'">`
-      : `<div style="width:64px;height:64px;border-radius:4px;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📦</div>`;
+    // Try multiple image sources — Amazon CDN, then fallback to placeholder
+    const imgSrcs = [];
+    if (p.image && !p.image.includes('images-na.ssl-images-amazon')) imgSrcs.push(p.image);
+    if (p.asin) {
+      imgSrcs.push('https://ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&ASIN=' + p.asin + '&Format=_SL160_&ID=AsinImage&MarketPlace=US&ServiceVersion=20070822&WS=1&tag=satcomms-20');
+      imgSrcs.push('https://images-na.ssl-images-amazon.com/images/P/' + p.asin + '.01.L.jpg');
+    }
+    const imgSrc = imgSrcs[0] || '';
+    const imgHtml = imgSrc
+      ? '<img src="' + imgSrc + '" alt="' + (p.name||'') + '" style="width:72px;height:72px;object-fit:contain;border-radius:6px;background:#fff;flex-shrink:0;border:1px solid var(--border);padding:4px" onerror="this.style.background=\'var(--surface3)\';this.src=\'\';this.outerHTML=\'<div style=&quot;width:72px;height:72px;border-radius:6px;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0&quot;>📦</div>\'">'
+      : '<div style="width:72px;height:72px;border-radius:6px;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📦</div>';
     const stockBadge = p.inStock === false
-      ? `<span style="font-family:var(--mono);font-size:9px;font-weight:700;background:rgba(255,77,109,.15);color:var(--accent3);border:1px solid rgba(255,77,109,.35);border-radius:3px;padding:2px 7px;letter-spacing:.06em;text-transform:uppercase">OUT OF STOCK</span>`
-      : `<span style="font-family:var(--mono);font-size:9px;font-weight:700;background:rgba(0,229,176,.12);color:var(--accent2);border:1px solid rgba(0,229,176,.3);border-radius:3px;padding:2px 7px;letter-spacing:.06em;text-transform:uppercase">In Stock</span>`;
+      ? '<span style="font-family:var(--mono);font-size:9px;font-weight:700;background:rgba(255,77,109,.15);color:var(--accent3);border:1px solid rgba(255,77,109,.35);border-radius:3px;padding:2px 7px;letter-spacing:.06em;text-transform:uppercase">OUT OF STOCK</span>'
+      : '<span style="font-family:var(--mono);font-size:9px;font-weight:700;background:rgba(0,229,176,.12);color:var(--accent2);border:1px solid rgba(0,229,176,.3);border-radius:3px;padding:2px 7px;letter-spacing:.06em;text-transform:uppercase">In Stock</span>';
     const stockChecked = p.stockChecked ? ' · checked ' + new Date(p.stockChecked).toLocaleString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
-    return `<div style="background:var(--surface);border:1px solid ${p.inStock === false ? 'rgba(255,77,109,.4)' : 'var(--border)'};border-radius:6px;overflow:hidden;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface2)">
-        ${imgHtml}
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name||p.asin||'—'}</div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <span>${p.asin||'no ASIN'} · ${lastChecked}</span>
-            ${stockBadge}
-            <span style="color:var(--muted);font-size:9px">${stockChecked}</span>
-          </div>
-        </div>
-        <div style="font-family:var(--cond);font-size:24px;font-weight:700;color:var(--accent4)">${p.price ? (p.currency === 'USD' ? '$' : 'R') + p.price.toLocaleString('en-ZA') : '—'}</div>
-        <button class="btn btn-ghost btn-sm" onclick="syncOneAmazon(${i})">↻</button>
-        ${p.url ? `<a href="${p.url}" target="_blank" class="btn btn-ghost btn-sm">↗</a>` : ''}
-        <button class="btn btn-danger btn-sm" onclick="removeAmazon(${i})">✕</button>
-      </div>
-      ${priceRows ? `<div style="padding:8px 16px">${priceRows}</div>` : ''}
-    </div>`;
+    return '<div style="background:var(--surface);border:1px solid ' + (p.inStock === false ? 'rgba(255,77,109,.4)' : 'var(--border)') + ';border-radius:6px;overflow:hidden">'
+      + '<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface2)">'
+      + imgHtml
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-weight:600;font-size:13px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + (p.name||p.asin||'—') + '</div>'
+      + '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+      + '<span>' + (p.asin||'no ASIN') + ' · ' + lastChecked + '</span>'
+      + stockBadge
+      + '<span style="color:var(--muted);font-size:9px">' + stockChecked + '</span>'
+      + '</div>'
+      + '<div style="font-family:var(--cond);font-size:26px;font-weight:700;color:var(--accent4);margin-top:6px">' + (p.price ? (p.currency === 'USD' ? '$' : 'R') + p.price.toLocaleString('en-ZA') : '—') + '</div>'
+      + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">'
+      + '<button class="btn btn-ghost btn-sm" onclick="syncOneAmazon(' + i + ')">↻</button>'
+      + (p.url ? '<a href="' + p.url + '" target="_blank" class="btn btn-ghost btn-sm">↗</a>' : '')
+      + '<button class="btn btn-danger btn-sm" onclick="removeAmazon(' + i + ')">✕</button>'
+      + '</div>'
+      + '</div>'
+      + (priceRows ? '<div style="padding:8px 16px">' + priceRows + '</div>' : '')
+      + '</div>';
   }).join('');
   const tc = document.getElementById('tc-amz');
   if (tc) tc.textContent = amazonProducts.length;
