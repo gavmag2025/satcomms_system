@@ -393,7 +393,7 @@ select option{background:var(--surface2)}
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:14px;min-width:0">
     <div class="logo"><span class="logo-icon">🛰</span><em>Sat</em>&nbsp;Comms</div>
-    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v3.1 · 2026-04-24</div>
+    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v3.2 · 2026-04-24</div>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><span class="pulse"></span><span id="feedStatusText">Ready</span></div>
@@ -602,7 +602,7 @@ select option{background:var(--surface2)}
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
       <div>
         <div style="font-family:var(--cond);font-size:16px;font-weight:700;letter-spacing:.06em;color:var(--accent2)">📊 WIX PRICE COMPARISON</div>
-        <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-top:2px">CSV calculated price (excl VAT) vs current live Wix price — push updates in one click</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-top:2px">Calculated sell price (dealer cost + markup%, excl VAT) vs current live Wix price — push updates in one click</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-primary btn-sm" onclick="loadGarminWixComparison()">↻ Load &amp; Compare</button>
@@ -5192,7 +5192,7 @@ async function loadGarminWixComparison() {
     t += '<thead><tr style="background:var(--surface2);font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase">';
     t += '<th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)">Product / SKU</th>';
     t += '<th style="padding:8px 12px;text-align:right;border-bottom:1px solid var(--border)">Dealer Cost</th>';
-    t += '<th style="padding:8px 12px;text-align:right;border-bottom:1px solid var(--border)">CSV Price (Excl VAT)</th>';
+    t += '<th style="padding:8px 12px;text-align:right;border-bottom:1px solid var(--border)">Calc Price (Excl VAT)</th>';
     t += '<th style="padding:8px 12px;text-align:right;border-bottom:1px solid var(--border)">Wix Price (Current)</th>';
     t += '<th style="padding:8px 12px;text-align:center;border-bottom:1px solid var(--border)">Diff</th>';
     t += '<th style="padding:8px 12px;text-align:center;border-bottom:1px solid var(--border)">Action</th>';
