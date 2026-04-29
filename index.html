@@ -393,7 +393,7 @@ select option{background:var(--surface2)}
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:14px;min-width:0">
     <div class="logo"><span class="logo-icon">🛰</span><em>Sat</em>&nbsp;Comms</div>
-    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v3.2 · 2026-04-24</div>
+    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v3.3 · 2026-04-29</div>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><span class="pulse"></span><span id="feedStatusText">Ready</span></div>
@@ -858,7 +858,7 @@ select option{background:var(--surface2)}
 <div class="panel" id="panel-alerts">
   <div class="shdr">
     <div class="stitle">🇿🇦 SA <span>Price Comparison</span></div>
-    <div style="font-family:var(--mono);font-size:9px;color:var(--muted2)">Searches Google Shopping for all SA prices — any retailer, any product</div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted2)">Claude AI web search finds live SA prices — any retailer, any product</div>
   </div>
 
   <!-- SETTINGS BAR -->
@@ -913,7 +913,7 @@ select option{background:var(--surface2)}
     </div>
   </div>
 
-  <div id="compEmpty" class="empty" style="padding:40px 20px"><div class="empty-icon" style="font-size:52px;opacity:.6;margin-bottom:16px">🇿🇦</div><div class="empty-text">No products tracked yet.<br>Search a product above, or load from your Garmin CSV / Wix store.</div></div>
+  <div id="compEmpty" class="empty" style="padding:40px 20px"><div class="empty-icon" style="font-size:52px;opacity:.6;margin-bottom:16px">🇿🇦</div><div class="empty-text">No products tracked yet.<br>Search a product above, or load from your Garmin CSV / Wix store.<br><span style="font-family:var(--mono);font-size:9px;color:var(--accent4);margin-top:8px;display:inline-block">⚙ Requires Anthropic API key — set it in <strong>Settings → Anthropic API Key</strong></span></div></div>
   <div id="compGrid" style="display:flex;flex-direction:column;gap:10px"></div>
 </div>
 
@@ -1266,6 +1266,10 @@ select option{background:var(--surface2)}
       <div class="flabel" style="margin-bottom:12px">Google Apps Script Relay — SatComms</div>
       <div class="mfield"><label>GAS Relay URL</label>
         <input type="text" id="relayUrlSettings" placeholder="https://script.google.com/macros/s/..." style="font-family:var(--mono);font-size:10px">
+      </div>
+      <div class="mfield" style="margin-top:10px"><label style="display:flex;align-items:center;gap:6px">Anthropic API Key <span style="background:var(--accent2);color:#000;font-size:8px;padding:1px 6px;border-radius:2px;font-family:var(--mono);font-weight:700">COMPETITOR SEARCH</span></label>
+        <input type="password" id="anthropicKeySettings" placeholder="sk-ant-..." style="font-family:var(--mono);font-size:10px" autocomplete="off">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-top:4px">Used for SA competitor price searches (browser → Anthropic direct). Never sent to GAS relay.</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-sat btn-sm" onclick="testWix()">Test Connection</button>
@@ -1781,6 +1785,7 @@ function loadSettings() {
   }
   const el1 = document.getElementById('relayUrl'); if (el1) el1.value = s.relayUrl;
   const el2 = document.getElementById('relayUrlSettings'); if (el2) el2.value = s.relayUrl;
+  const elAnthropicKey = document.getElementById('anthropicKeySettings'); if (elAnthropicKey && s.anthropicKey) elAnthropicKey.value = s.anthropicKey;
   if (s.defaultAiContext) { const el = document.getElementById('defaultAiContext'); if (el) el.value = s.defaultAiContext; }
   if (s.garminMarkup !== undefined) { const el = document.getElementById('garminMarkup'); if (el) el.value = s.garminMarkup; }
   if (s.garminVAT !== undefined) { const el = document.getElementById('garminVAT'); if (el) el.value = s.garminVAT; }
@@ -1803,10 +1808,12 @@ function saveSettings() {
   const markupEl = document.getElementById('garminMarkup');
   const vatEl = document.getElementById('garminVAT');
   const roundEl = document.getElementById('garminRounding');
+  const anthropicKeyEl = document.getElementById('anthropicKeySettings');
   if (ctxEl?.value) s.defaultAiContext = ctxEl.value;
   if (markupEl?.value) s.garminMarkup = parseFloat(markupEl.value);
   if (vatEl?.value) s.garminVAT = parseFloat(vatEl.value);
   if (roundEl?.value) s.garminRounding = parseInt(roundEl.value);
+  if (anthropicKeyEl?.value?.trim().startsWith('sk-ant-')) s.anthropicKey = anthropicKeyEl.value.trim();
   localStorage.setItem('sc_cfg', JSON.stringify(s));
   const btns = document.querySelectorAll('[onclick="saveSettings()"]');
   btns.forEach(btn => { const orig = btn.textContent; btn.textContent = '✓ Saved'; setTimeout(() => btn.textContent = orig, 1500); });
@@ -1936,9 +1943,63 @@ function prefillCompFromWix() {
 }
 
 // ---- Search Google Shopping via relay ----
+// ---- Direct Anthropic web_search competitor lookup (no GAS relay needed) ----
 async function searchGoogleShopping(productName) {
-  const r = await callRelay('searchGoogleShopping', { query: productName + ' south africa' });
-  return r?.results || [];
+  const cfg = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
+  const apiKey = cfg.anthropicKey || '';
+  if (!apiKey) {
+    const msg = 'Anthropic API key not set. Go to Settings (Publish to Wix tab) and enter your key under "Anthropic API Key".';
+    throw new Error(msg);
+  }
+
+  const prompt = `Search for current South African retail prices for the product: "${productName}".
+Find prices from SA retailers such as Takealot, Navworld, Amazon.co.za, WantItAll, Outdoor Warehouse, BobShop, Bidorbuy, and any other South African online stores.
+Return ONLY a valid JSON object with no markdown, no explanation, no preamble — just raw JSON:
+{"results":[{"title":"exact product name from listing","price":12999,"store":"Store Name","url":"https://..."}]}
+Rules:
+- price must be a plain number in South African Rand (no R symbol, no commas, no spaces)
+- Only include listings from South African retailers (ZAR prices)
+- Sort results cheapest price first
+- Maximum 10 results
+- If no SA results found, return {"results":[]}`;
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1024,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error('Anthropic API error: ' + (err?.error?.message || resp.status));
+  }
+
+  const data = await resp.json();
+  // Extract the final text block (after tool use)
+  const textBlock = (data.content || []).filter(b => b.type === 'text').pop();
+  if (!textBlock) return [];
+
+  try {
+    const clean = textBlock.text.replace(/```json|```/g, '').trim();
+    // Find the JSON object in the response
+    const jsonMatch = clean.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return [];
+    const parsed = JSON.parse(jsonMatch[0]);
+    return (parsed.results || []).filter(r => r.price > 0 && typeof r.price === 'number');
+  } catch(e) {
+    console.error('searchGoogleShopping parse error:', e, textBlock.text.substring(0, 200));
+    return [];
+  }
 }
 
 // ---- Add / search a product ----
@@ -1951,7 +2012,7 @@ async function addCompetitorProduct() {
   const btn = document.getElementById('compAddBtn');
   const status = document.getElementById('compAddStatus');
   btn.disabled = true; btn.textContent = '🔍 Searching SA market...';
-  status.textContent = 'Searching Google Shopping for all SA prices...';
+  status.textContent = 'Using Claude web_search to find current SA prices...';
   status.style.color = 'var(--muted2)';
 
   let item = compProducts.find(c => c.name.toLowerCase() === name.toLowerCase() || (sku && c.sku === sku));
@@ -3839,8 +3900,8 @@ async function fetchAmazonProduct() {
         ? (label || finalAsin) + ' amazon.com'
         : (label || 'amazon product') + ' amazon.com';
       if (status) status.textContent = 'Searching via Google Shopping...';
-      const results = await callRelay('searchGoogleShopping', { query: searchQ });
-      const items = (results && results.results) || [];
+      const _amzSearchResults = await searchGoogleShopping(searchQ).catch(() => []);
+      const items = _amzSearchResults;
       const amzItems = items.filter(function(r) {
         return (r.url||'').includes('amazon') || (r.store||'').toLowerCase().includes('amazon');
       });
@@ -3892,8 +3953,8 @@ async function syncAllAmazon() {
     if (btn) btn.textContent = 'Syncing ' + (i+1) + '/' + amazonProducts.length + '...';
     try {
       const searchQ = (p.asin ? p.asin + ' amazon.com' : p.name + ' amazon.com');
-      const results = await callRelay('searchGoogleShopping', { query: searchQ });
-      const items = ((results && results.results) || []).filter(function(r) {
+      const _syncItems = await searchGoogleShopping(searchQ).catch(() => []);
+      const items = _syncItems.filter(function(r) {
         return r.store && r.store.toLowerCase().includes('amazon');
       });
       if (items.length) {
@@ -4004,8 +4065,8 @@ async function syncOneAmazon(i) {
     }
     if (!refreshed) {
       const syncQuery = (p.asin ? p.asin + ' amazon.com' : p.name + ' amazon.com');
-      const results = await callRelay('searchGoogleShopping', { query: syncQuery });
-      const items = ((results && results.results) || []).filter(function(r) { return (r.store||'').toLowerCase().includes('amazon') || (r.url||'').includes('amazon.com'); });
+      const _refreshItems = await searchGoogleShopping(syncQuery).catch(() => []);
+      const items = _refreshItems.filter(function(r) { return (r.store||'').toLowerCase().includes('amazon') || (r.url||'').includes('amazon.com'); });
       if (items.length) {
         p.price = items[0].price;
         p.allPrices = items.map(function(r) { return { title: r.title, price: r.price, url: r.url, store: r.store }; });
@@ -5328,8 +5389,7 @@ async function gcwRefreshOne(id) {
 
 async function gcwSearch(name) {
   try {
-    var r = await callRelay('searchGoogleShopping', { query: name + ' south africa price' });
-    return (r && r.results) || [];
+    return await searchGoogleShopping(name + ' south africa');
   } catch(e) { return []; }
 }
 
