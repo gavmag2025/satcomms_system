@@ -913,7 +913,7 @@ select option{background:var(--surface2)}
     </div>
   </div>
 
-  <div id="compEmpty" class="empty" style="padding:40px 20px"><div class="empty-icon" style="font-size:52px;opacity:.6;margin-bottom:16px">🇿🇦</div><div class="empty-text">No products tracked yet.<br>Search a product above, or load from your Garmin CSV / Wix store.<br><span style="font-family:var(--mono);font-size:9px;color:var(--accent4);margin-top:8px;display:inline-block">⚙ Requires Anthropic API key — set it in <strong>Settings → Anthropic API Key</strong></span></div></div>
+  <div id="compEmpty" class="empty" style="padding:40px 20px"><div class="empty-icon" style="font-size:52px;opacity:.6;margin-bottom:16px">🇿🇦</div><div class="empty-text">No products tracked yet.<br>Search a product above, or load from your Garmin CSV / Wix store.<br><span style="font-family:var(--mono);font-size:9px;color:var(--accent4);margin-top:8px;display:inline-block">⚙ Requires Anthropic API key — set it in <strong>⚙ Settings → Relay &amp; API → Anthropic API Key</strong></span></div></div>
   <div id="compGrid" style="display:flex;flex-direction:column;gap:10px"></div>
 </div>
 
@@ -1267,10 +1267,6 @@ select option{background:var(--surface2)}
       <div class="mfield"><label>GAS Relay URL</label>
         <input type="text" id="relayUrlSettings" placeholder="https://script.google.com/macros/s/..." style="font-family:var(--mono);font-size:10px">
       </div>
-      <div class="mfield" style="margin-top:10px"><label style="display:flex;align-items:center;gap:6px">Anthropic API Key <span style="background:var(--accent2);color:#000;font-size:8px;padding:1px 6px;border-radius:2px;font-family:var(--mono);font-weight:700">COMPETITOR SEARCH</span></label>
-        <input type="password" id="anthropicKeySettings" placeholder="sk-ant-..." style="font-family:var(--mono);font-size:10px" autocomplete="off">
-        <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-top:4px">Used for SA competitor price searches (browser → Anthropic direct). Never sent to GAS relay.</div>
-      </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-sat btn-sm" onclick="testWix()">Test Connection</button>
         <button class="btn btn-ghost btn-sm" onclick="saveWix()">Save</button>
@@ -1469,13 +1465,18 @@ select option{background:var(--surface2)}
       <div class="mfield"><label>GAS Relay URL</label>
         <input type="text" id="relayUrl" placeholder="https://script.google.com/macros/s/..." style="font-family:var(--mono);font-size:10px">
       </div>
+      <div class="mfield" style="margin-top:10px">
+        <label style="display:flex;align-items:center;gap:6px">Anthropic API Key <span style="background:var(--accent2);color:#000;font-size:8px;padding:1px 6px;border-radius:2px;font-family:var(--mono);font-weight:700">COMPETITOR SEARCH</span></label>
+        <input type="password" id="anthropicKeySettings" placeholder="sk-ant-..." style="font-family:var(--mono);font-size:10px" autocomplete="off">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-top:4px;line-height:1.7">Used for SA competitor price searches.<br>Browser → Anthropic direct. Never sent to GAS relay.</div>
+      </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
         <button class="btn btn-success btn-sm" onclick="saveSettings()">Save</button>
         <button class="btn btn-ghost btn-sm" onclick="testRelay()">Test Relay</button>
       </div>
       <div id="relayTestStatus" style="font-family:var(--mono);font-size:10px;margin-top:8px;color:var(--muted2)"></div>
       <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px;line-height:1.8">
-        Your GAS relay URL from<br>Apps Script → Deploy → Manage Deployments
+        GAS relay URL from<br>Apps Script → Deploy → Manage Deployments
       </div>
     </div>
       <div class="mfield"><label>Default Markup % on cost excl VAT</label><input type="number" id="defaultMarkup" value="35" min="5" max="300"></div>
@@ -1948,7 +1949,7 @@ async function searchGoogleShopping(productName) {
   const cfg = JSON.parse(localStorage.getItem('sc_cfg') || '{}');
   const apiKey = cfg.anthropicKey || '';
   if (!apiKey) {
-    const msg = 'Anthropic API key not set. Go to Settings (Publish to Wix tab) and enter your key under "Anthropic API Key".';
+    const msg = 'Anthropic API key not set. Go to ⚙ Settings tab → Relay & API → Anthropic API Key.';
     throw new Error(msg);
   }
 
