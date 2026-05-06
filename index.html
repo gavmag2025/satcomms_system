@@ -432,7 +432,7 @@ select option{background:var(--surface2)}
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:14px;min-width:0">
     <div class="logo"><span class="logo-icon">🛰</span><em>Sat</em>&nbsp;Comms</div>
-    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v3.4 · 2026-05-06</div>
+    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v3.5 · 2026-05-06</div>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><span class="pulse"></span><span id="feedStatusText">Ready</span></div>
@@ -1602,7 +1602,7 @@ select option{background:var(--surface2)}
         <div class="mfield" style="width:140px;margin-bottom:0"><label>Name</label><input type="text" id="umName" placeholder="Full name"></div>
         <div class="mfield" style="width:130px;margin-bottom:0"><label>Password</label><input type="text" id="umPassword" placeholder="temp password"></div>
         <button class="btn btn-primary btn-sm" onclick="umAddUser()">+ Add User</button>
-        <button class="btn btn-ghost btn-sm" onclick="renderUserManagement()">↻ Refresh</button>
+        <button class="btn btn-ghost btn-sm" onclick="umRefresh()">↻ Refresh</button><button class="btn btn-primary btn-sm" onclick="umPushAllToRelay()" style="margin-left:4px" title="Push all local users up to the relay so any browser can log in">⬆ Push All to Relay</button>
       </div>
       <div id="umError" style="font-family:var(--mono);font-size:10px;color:var(--accent3);margin-bottom:8px"></div>
       <div id="umGrid"></div>
@@ -1730,21 +1730,22 @@ function saveUsers(u) {
 
 // Try to pull latest users from relay — updates localStorage cache if successful
 async function syncUsersFromRelay() {
-  try {
-    var cfg = JSON.parse(localStorage.getItem('sc_cfg')||'{}');
-    var url = cfg.relayUrl || HARDCODED_RELAY_AUTH;
-    var resp = await fetch(url, {
-      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({action:'getUsers'})
-    });
-    var d = await resp.json();
-    if (d.success && d.data && Object.keys(d.data).length) {
-      _usersCache = d.data;
-      localStorage.setItem('sc_users', JSON.stringify(_usersCache));
-      console.log('Users synced from relay:', Object.keys(_usersCache).length, 'users');
-    }
-  } catch(e) {
-    console.log('Relay user sync unavailable — using localStorage:', e.message);
+  var cfg = JSON.parse(localStorage.getItem('sc_cfg')||'{}');
+  var url = cfg.relayUrl || HARDCODED_RELAY_AUTH;
+  var resp = await fetch(url, {
+    method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({action:'getUsers'})
+  });
+  var d = await resp.json();
+  console.log('[syncUsersFromRelay] relay response:', JSON.stringify(d).substring(0,300));
+  if (d.success && d.data && Object.keys(d.data).length) {
+    _usersCache = d.data;
+    localStorage.setItem('sc_users', JSON.stringify(_usersCache));
+    console.log('[syncUsersFromRelay] synced', Object.keys(_usersCache).length, 'users:', Object.keys(_usersCache).join(', '));
+  } else {
+    console.warn('[syncUsersFromRelay] no users returned or relay error:', JSON.stringify(d));
+    // Relay may not support getUsers — throw so doLogin can show a real error
+    if (!d.success) throw new Error(d.error || 'Relay returned no users');
   }
 }
 
@@ -1810,14 +1811,19 @@ function doLogin() {
     err.textContent = 'Checking account…';
     syncUsersFromRelay().then(function() {
       var freshUsers = getUsers();
+      console.log('[doLogin] after relay sync, users in cache:', Object.keys(freshUsers).join(', ') || '(none)');
       var freshUser  = freshUsers[email];
-      if (!freshUser) { err.textContent = 'Account not found.'; return; }
+      if (!freshUser) {
+        err.textContent = 'Account not found. (Relay synced ' + Object.keys(freshUsers).length + ' users — check console for details)';
+        return;
+      }
       if (freshUser.password !== pass) { err.textContent = 'Incorrect password.'; return; }
       err.textContent = '';
       saveSession({email:email, name:freshUser.name, isAdmin:!!freshUser.isAdmin, tabs:freshUser.tabs||[]});
       showApp();
-    }).catch(function() {
-      err.textContent = 'Account not found. Check your connection and try again.';
+    }).catch(function(e) {
+      console.error('[doLogin] relay sync failed:', e.message);
+      err.textContent = 'Could not reach relay to verify account. Error: ' + e.message;
     });
   }
 }
@@ -5724,6 +5730,49 @@ function gcwRender() {
 // ─────────────────────────────────────────────────────────────
 const ALL_TABS = ['mywix','garmin','amazon','watchlist','alerts','usd','topup','seo','publish','pricing','settings'];
 const TAB_LABELS = {mywix:'My Products',garmin:'Garmin',amazon:'Amazon',watchlist:'Watchlist',alerts:'Competitor',usd:'USD Pricing',topup:'Topups',seo:'SEO',publish:'Publish',pricing:'Global Pricing',settings:'Settings'};
+
+async function umRefresh() {
+  const btn = event && event.target;
+  if (btn) { btn.disabled = true; btn.textContent = 'Syncing…'; }
+  try {
+    await syncUsersFromRelay();
+  } catch(e) {
+    console.warn('[umRefresh] relay sync failed:', e.message);
+  }
+  await renderUserManagement();
+  if (btn) { btn.disabled = false; btn.textContent = '↻ Refresh'; }
+}
+
+async function umPushAllToRelay() {
+  const btn = event && event.target;
+  const errEl = document.getElementById('umError');
+  if (btn) { btn.disabled = true; btn.textContent = 'Pushing…'; }
+  const users = getUsers();
+  const entries = Object.entries(users);
+  if (!entries.length) {
+    if (errEl) errEl.textContent = 'No local users to push.';
+    if (btn) { btn.disabled = false; btn.textContent = '⬆ Push All to Relay'; }
+    return;
+  }
+  let ok = 0, fail = 0;
+  for (const [email, userData] of entries) {
+    try {
+      var cfg = JSON.parse(localStorage.getItem('sc_cfg')||'{}');
+      var url = cfg.relayUrl || HARDCODED_RELAY_AUTH;
+      const resp = await fetch(url, {
+        method: 'POST', headers: {'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'saveUser', email, userData})
+      });
+      const d = await resp.json();
+      if (d.success) ok++; else fail++;
+    } catch(e) { fail++; }
+  }
+  if (errEl) {
+    errEl.style.color = fail ? 'var(--accent3)' : 'var(--accent2)';
+    errEl.textContent = '⬆ Pushed ' + ok + ' user' + (ok!==1?'s':'') + ' to relay' + (fail ? ' (' + fail + ' failed)' : '') + '. Other browsers can now log in.';
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '⬆ Push All to Relay'; }
+}
 
 async function renderUserManagement() {
   const session = getSession();
