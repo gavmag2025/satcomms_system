@@ -1791,17 +1791,35 @@ function doLogin() {
   if (email !== ADMIN_EMAIL && !email.endsWith(ALLOWED_DOMAIN)) {
     err.textContent = 'Only @satcomms.co.za accounts are allowed.'; return;
   }
+
+  // Check localStorage first — fast path for known machines
   var users = getUsers();
   var user  = users[email];
-  if (!user) { err.textContent = 'Account not found.'; return; }
-  if (user.password !== pass) { err.textContent = 'Incorrect password.'; return; }
-  saveSession({email:email, name:user.name, isAdmin:!!user.isAdmin, tabs:user.tabs||[]});
-  showApp();
-  // After login, sync users from relay in background to get latest
-  syncUsersFromRelay().then(function() {
-    // If relay had updated users, re-render user management if open
-    if (document.getElementById('umGrid')) renderUserManagement();
-  }).catch(function(){});
+
+  if (user) {
+    // User found locally — validate and log in immediately
+    if (user.password !== pass) { err.textContent = 'Incorrect password.'; return; }
+    saveSession({email:email, name:user.name, isAdmin:!!user.isAdmin, tabs:user.tabs||[]});
+    showApp();
+    // Sync relay in background so next login gets latest data
+    syncUsersFromRelay().then(function() {
+      if (document.getElementById('umGrid')) renderUserManagement();
+    }).catch(function(){});
+  } else {
+    // Not in localStorage — new browser/PC; fetch from relay first
+    err.textContent = 'Checking account…';
+    syncUsersFromRelay().then(function() {
+      var freshUsers = getUsers();
+      var freshUser  = freshUsers[email];
+      if (!freshUser) { err.textContent = 'Account not found.'; return; }
+      if (freshUser.password !== pass) { err.textContent = 'Incorrect password.'; return; }
+      err.textContent = '';
+      saveSession({email:email, name:freshUser.name, isAdmin:!!freshUser.isAdmin, tabs:freshUser.tabs||[]});
+      showApp();
+    }).catch(function() {
+      err.textContent = 'Account not found. Check your connection and try again.';
+    });
+  }
 }
 
 function doSignOut(){localStorage.removeItem('sc_session');location.reload();}
