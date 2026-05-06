@@ -387,13 +387,52 @@ select option{background:var(--surface2)}
     <div class="login-field"><label>Password</label><input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"></div>
     <div class="login-error" id="loginError"></div>
     <button class="login-btn" onclick="doLogin()">Sign In</button>
+    <div style="text-align:center;margin-top:-6px">
+      <a href="#" id="forgotPwdLink" style="font-size:11px;color:var(--muted);text-decoration:none;opacity:.6;transition:opacity .2s;font-family:'JetBrains Mono',monospace;letter-spacing:.04em" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'">Forgot password?</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RESET PASSWORD MODAL ═══ -->
+<div id="resetModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:10000;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-top:2px solid var(--accent);border-radius:16px;padding:36px 32px 28px;width:360px;max-width:92vw;box-shadow:0 32px 80px rgba(0,0,0,.6)">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:.12em;margin-bottom:6px">RESET PASSWORD</div>
+    <div style="font-size:13px;color:var(--text);margin-bottom:24px;opacity:.7">Enter your reset code to set a new password.</div>
+
+    <!-- Step 1: enter reset code -->
+    <div id="resetStep1">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:8px;letter-spacing:.05em">RESET CODE</div>
+      <input id="resetCodeInput" type="password" placeholder="Enter reset code" autocomplete="off"
+        style="width:100%;box-sizing:border-box;padding:11px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none;margin-bottom:14px;transition:border-color .2s"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+        onkeydown="if(event.key==='Enter')verifyResetCode()" />
+      <button onclick="verifyResetCode()" class="login-btn" style="width:100%;margin-bottom:0">Verify Code</button>
+    </div>
+
+    <!-- Step 2: set new password -->
+    <div id="resetStep2" style="display:none">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:8px;letter-spacing:.05em">NEW PASSWORD</div>
+      <input id="newPwdInput" type="password" placeholder="New password" autocomplete="new-password"
+        style="width:100%;box-sizing:border-box;padding:11px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none;margin-bottom:8px;transition:border-color .2s"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+      <input id="newPwdConfirm" type="password" placeholder="Confirm new password" autocomplete="new-password"
+        style="width:100%;box-sizing:border-box;padding:11px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none;margin-bottom:14px;transition:border-color .2s"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+        onkeydown="if(event.key==='Enter')commitResetPassword()" />
+      <button onclick="commitResetPassword()" class="login-btn" style="width:100%;margin-bottom:0">Set New Password</button>
+    </div>
+
+    <div id="resetMsg" style="font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:12px;text-align:center;min-height:16px"></div>
+    <div style="text-align:center;margin-top:16px">
+      <a href="#" onclick="closeResetModal();return false;" style="font-size:11px;color:var(--muted);text-decoration:none;opacity:.6;font-family:'JetBrains Mono',monospace" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'">Cancel</a>
+    </div>
   </div>
 </div>
 
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:14px;min-width:0">
     <div class="logo"><span class="logo-icon">🛰</span><em>Sat</em>&nbsp;Comms</div>
-    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v3.3 · 2026-04-29</div>
+    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v3.4 · 2026-05-06</div>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><span class="pulse"></span><span id="feedStatusText">Ready</span></div>
@@ -1504,6 +1543,55 @@ select option{background:var(--surface2)}
       <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
     </div>
   </div>
+  <!-- Admin Password Management — admin only -->
+  <div id="adminPwdSection" style="display:none;margin-top:2px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-top:2px solid var(--accent);padding:20px">
+      <div class="flabel" style="margin-bottom:4px;color:var(--accent)">🔐 Password Management</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:18px">Manage your login password and the reset code used on the login screen</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+        <!-- Change login password -->
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.07em;margin-bottom:12px">CHANGE LOGIN PASSWORD</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="mfield" style="margin-bottom:0"><label>Current Password</label>
+              <input type="password" id="curPwdInput" placeholder="Current password" autocomplete="current-password">
+            </div>
+            <div class="mfield" style="margin-bottom:0"><label>New Password</label>
+              <input type="password" id="newLoginPwd" placeholder="New password" autocomplete="new-password">
+            </div>
+            <div class="mfield" style="margin-bottom:0"><label>Confirm New Password</label>
+              <input type="password" id="newLoginPwdConfirm" placeholder="Confirm new password" autocomplete="new-password">
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="changeLoginPassword()" style="margin-top:4px">Update Password</button>
+            <div id="loginPwdMsg" style="font-family:var(--mono);font-size:10px;min-height:14px"></div>
+          </div>
+        </div>
+
+        <!-- Set reset code -->
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.07em;margin-bottom:4px">RECOVERY / RESET CODE</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.5">Used on the login screen — enter this code to unlock the "Set New Password" flow.</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px">
+              <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">STATUS:</span>
+              <span id="resetCodeStatus" style="font-family:var(--mono);font-size:10px;font-weight:700">—</span>
+            </div>
+            <div class="mfield" style="margin-bottom:0"><label>New Reset Code</label>
+              <input type="password" id="resetCodeNew" placeholder="Set a reset code" autocomplete="new-password">
+            </div>
+            <div class="mfield" style="margin-bottom:0"><label>Confirm Reset Code</label>
+              <input type="password" id="resetCodeConfirm" placeholder="Confirm reset code" autocomplete="new-password">
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="saveResetCode()" style="margin-top:4px">Save Reset Code</button>
+            <div id="resetCodeMsg" style="font-family:var(--mono);font-size:10px;min-height:14px"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <!-- User Management — admin only, cloud-synced -->
   <div id="userMgmtSection" style="display:none;margin-top:2px">
     <div style="background:var(--surface);border:1px solid var(--border);border-top:2px solid var(--accent5);padding:20px">
@@ -1685,8 +1773,9 @@ function deleteUserFromRelay(email) {
 function bootstrapAdmin() {
   var users = getUsers();
   if (!users[ADMIN_EMAIL]) {
+    var storedPwd = localStorage.getItem('sc_admin_pwd') || 'satcomms2024';
     users[ADMIN_EMAIL] = {
-      name:'Gav (Admin)', password:'satcomms2024', isAdmin:true,
+      name:'Gav (Admin)', password: storedPwd, isAdmin:true,
       tabs:['mywix','garmin','amazon','watchlist','alerts','usd','topup','seo','publish','pricing','settings']
     };
     saveUsers(users);
@@ -1704,7 +1793,7 @@ function doLogin() {
   }
   var users = getUsers();
   var user  = users[email];
-  if (!user) { err.textContent = 'Account not found. Default password: satcomms2024'; return; }
+  if (!user) { err.textContent = 'Account not found.'; return; }
   if (user.password !== pass) { err.textContent = 'Incorrect password.'; return; }
   saveSession({email:email, name:user.name, isAdmin:!!user.isAdmin, tabs:user.tabs||[]});
   showApp();
@@ -1716,6 +1805,163 @@ function doLogin() {
 }
 
 function doSignOut(){localStorage.removeItem('sc_session');location.reload();}
+
+// ══════════════════════════════════════════════════════════════════
+// PASSWORD MANAGEMENT
+// ══════════════════════════════════════════════════════════════════
+
+function getStoredAdminPwd() {
+  // Always read from the users store (single source of truth), fall back to sc_admin_pwd, then hardcoded default
+  var users = getUsers();
+  if (users[ADMIN_EMAIL] && users[ADMIN_EMAIL].password) return users[ADMIN_EMAIL].password;
+  return localStorage.getItem('sc_admin_pwd') || 'satcomms2024';
+}
+
+function getResetCode() {
+  return localStorage.getItem('sc_reset_code') || null;
+}
+
+// ── Login screen reset modal ─────────────────────────────────────
+
+function openResetModal() {
+  var m = document.getElementById('resetModal');
+  if (!m) return;
+  document.getElementById('resetStep1').style.display = 'block';
+  document.getElementById('resetStep2').style.display = 'none';
+  document.getElementById('resetMsg').textContent = '';
+  document.getElementById('resetCodeInput').value = '';
+  if (document.getElementById('newPwdInput')) document.getElementById('newPwdInput').value = '';
+  if (document.getElementById('newPwdConfirm')) document.getElementById('newPwdConfirm').value = '';
+  m.style.display = 'flex';
+  setTimeout(function(){ var el = document.getElementById('resetCodeInput'); if(el) el.focus(); }, 80);
+}
+
+function closeResetModal() {
+  var m = document.getElementById('resetModal');
+  if (m) m.style.display = 'none';
+}
+
+function verifyResetCode() {
+  var code = document.getElementById('resetCodeInput').value.trim();
+  var stored = getResetCode();
+  var msg = document.getElementById('resetMsg');
+  if (!stored) {
+    msg.style.color = 'var(--accent4)';
+    msg.textContent = 'No reset code has been set. Contact admin.';
+    return;
+  }
+  if (!code || code !== stored) {
+    msg.style.color = 'var(--accent4)';
+    msg.textContent = 'Incorrect reset code. Try again.';
+    return;
+  }
+  document.getElementById('resetStep1').style.display = 'none';
+  document.getElementById('resetStep2').style.display = 'block';
+  msg.textContent = '';
+  setTimeout(function(){ var el = document.getElementById('newPwdInput'); if(el) el.focus(); }, 80);
+}
+
+function commitResetPassword() {
+  var p1 = document.getElementById('newPwdInput').value;
+  var p2 = document.getElementById('newPwdConfirm').value;
+  var msg = document.getElementById('resetMsg');
+  if (!p1 || p1.length < 4) {
+    msg.style.color = 'var(--accent4)';
+    msg.textContent = 'Password too short (minimum 4 characters).';
+    return;
+  }
+  if (p1 !== p2) {
+    msg.style.color = 'var(--accent4)';
+    msg.textContent = 'Passwords do not match.';
+    return;
+  }
+  // Update both localStorage and users store
+  localStorage.setItem('sc_admin_pwd', p1);
+  var users = getUsers();
+  if (users[ADMIN_EMAIL]) {
+    users[ADMIN_EMAIL].password = p1;
+    saveUsers(users);
+  }
+  msg.style.color = 'var(--accent2)';
+  msg.textContent = '✓ Password updated. You can now sign in.';
+  setTimeout(closeResetModal, 2200);
+}
+
+// ── Settings tab password functions ─────────────────────────────
+
+function changeLoginPassword() {
+  var cur  = document.getElementById('curPwdInput').value;
+  var n1   = document.getElementById('newLoginPwd').value;
+  var n2   = document.getElementById('newLoginPwdConfirm').value;
+  var msg  = document.getElementById('loginPwdMsg');
+  var actual = getStoredAdminPwd();
+  if (cur !== actual) {
+    msg.style.color = 'var(--accent4)';
+    msg.textContent = '✗ Current password incorrect.';
+    return;
+  }
+  if (!n1 || n1.length < 4) {
+    msg.style.color = 'var(--accent4)';
+    msg.textContent = '✗ New password too short (min 4 chars).';
+    return;
+  }
+  if (n1 !== n2) {
+    msg.style.color = 'var(--accent4)';
+    msg.textContent = '✗ New passwords do not match.';
+    return;
+  }
+  localStorage.setItem('sc_admin_pwd', n1);
+  var users = getUsers();
+  if (users[ADMIN_EMAIL]) {
+    users[ADMIN_EMAIL].password = n1;
+    saveUsers(users);
+  }
+  msg.style.color = 'var(--accent2)';
+  msg.textContent = '✓ Password updated successfully.';
+  document.getElementById('curPwdInput').value = '';
+  document.getElementById('newLoginPwd').value = '';
+  document.getElementById('newLoginPwdConfirm').value = '';
+}
+
+function saveResetCode() {
+  var c1  = document.getElementById('resetCodeNew').value.trim();
+  var c2  = document.getElementById('resetCodeConfirm').value.trim();
+  var msg = document.getElementById('resetCodeMsg');
+  if (!c1 || c1.length < 4) {
+    msg.style.color = 'var(--accent4)';
+    msg.textContent = '✗ Reset code too short (min 4 chars).';
+    return;
+  }
+  if (c1 !== c2) {
+    msg.style.color = 'var(--accent4)';
+    msg.textContent = '✗ Codes do not match.';
+    return;
+  }
+  localStorage.setItem('sc_reset_code', c1);
+  msg.style.color = 'var(--accent2)';
+  msg.textContent = '✓ Reset code saved.';
+  document.getElementById('resetCodeNew').value = '';
+  document.getElementById('resetCodeConfirm').value = '';
+  updateResetCodeStatus();
+  setTimeout(function(){ if(document.getElementById('resetCodeMsg')) document.getElementById('resetCodeMsg').textContent=''; }, 3000);
+}
+
+function updateResetCodeStatus() {
+  var el = document.getElementById('resetCodeStatus');
+  if (!el) return;
+  var stored = getResetCode();
+  el.textContent = stored ? 'SET ✓' : 'NOT SET';
+  el.style.color = stored ? 'var(--accent2)' : 'var(--accent3)';
+}
+
+// ── Wire up forgot password link on load ─────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  var link = document.getElementById('forgotPwdLink');
+  if (link) link.addEventListener('click', function(e){ e.preventDefault(); openResetModal(); });
+  // Close reset modal on backdrop click
+  var modal = document.getElementById('resetModal');
+  if (modal) modal.addEventListener('click', function(e){ if(e.target===modal) closeResetModal(); });
+});
 
 function showApp(){
   var session=getSession();if(!session)return;
@@ -5466,6 +5712,8 @@ async function renderUserManagement() {
   if (!session || !session.isAdmin) return;
   const section = document.getElementById('userMgmtSection');
   if (section) section.style.display = 'block';
+  const pwdSection = document.getElementById('adminPwdSection');
+  if (pwdSection) { pwdSection.style.display = 'block'; updateResetCodeStatus(); }
   const grid = document.getElementById('umGrid');
   if (!grid) return;
   const users = getUsers();
