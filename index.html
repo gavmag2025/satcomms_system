@@ -1340,7 +1340,7 @@ select option{background:var(--surface2)}
   <div class="shdr">
     <div class="stitle">📶 Airtime <span>Topup Requests</span></div>
     <div style="display:flex;gap:8px;align-items:center">
-      <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Upload invoice → AI extracts details → email to sales@satcomms.co.za</span>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Upload invoice → AI extracts details → email to sales@satcomms.co.za & gavmag@gmail.com</span>
     </div>
   </div>
 
@@ -3843,12 +3843,12 @@ async function sendTopupRequest() {
   try {
     // Send to both sales and gavmag
     await callRelay('sendEmail', {
-      to: 'sales@satcomms.co.za,gavmag@satcomms.co.za',
+      to: 'sales@satcomms.co.za,gmagid@satcomms.co.za,gavmag@gmail.com',
       subject,
       body: 'Airtime Topup Request: ' + (invoice||'') + ' - ' + (custName||'Customer') + ' - ' + product,
       htmlBody
     });
-    status.textContent = '✓ Email sent to sales & gavmag@satcomms.co.za';
+    status.textContent = '✓ Email sent to sales, gmagid@satcomms.co.za & gavmag@gmail.com';
     status.style.color = 'var(--accent2)';
   } catch(e) {
     status.textContent = '✗ Send failed: ' + e.message;
@@ -4088,12 +4088,12 @@ async function resendTopupEmail(id) {
   const plainBody = 'Topup Request (Resend)\nInvoice: ' + (r.invoice||'-') + '\nCustomer: ' + (r.custName||'-') + '\nProduct: ' + (r.product||'-');
   try {
     await callRelay('sendEmail', {
-      to: 'sales@satcomms.co.za,gavmag@satcomms.co.za',
+      to: 'sales@satcomms.co.za,gmagid@satcomms.co.za,gavmag@gmail.com',
       subject,
       body: plainBody,
       htmlBody
     });
-    alert('✓ Resent to sales & gavmag@satcomms.co.za');
+    alert('✓ Resent to sales, gmagid@satcomms.co.za & gavmag@gmail.com');
   } catch(e) {
     window.open(`mailto:gavmag@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainBody)}`, '_blank');
   }
@@ -4491,13 +4491,13 @@ async function checkAllAmazonStock() {
     const subject = `⚠ Stock Alert: ${newlyOOS.length} Amazon product${newlyOOS.length!==1?'s':''} out of stock`;
     try {
       await callRelay('sendEmail', {
-        to: 'gavmag@satcomms.co.za',
+        to: 'gmagid@satcomms.co.za',
         subject,
         body: `Stock Alert: ${newlyOOS.map(p=>p.name||p.asin).join(', ')} — OUT OF STOCK on Amazon as of ${checkedTime}`,
         htmlBody
       });
       const status = document.getElementById('amzFetchStatus');
-      if (status) { status.textContent = `⚠ ${newlyOOS.length} product(s) went out of stock — alert sent to gavmag@satcomms.co.za`; status.style.color = 'var(--accent4)'; }
+      if (status) { status.textContent = `⚠ ${newlyOOS.length} product(s) went out of stock — alert sent to gmagid@satcomms.co.za`; status.style.color = 'var(--accent4)'; }
     } catch(e) {
       console.error('Failed to send OOS alert email:', e);
     }
