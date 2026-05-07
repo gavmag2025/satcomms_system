@@ -432,7 +432,7 @@ select option{background:var(--surface2)}
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:14px;min-width:0">
     <div class="logo"><span class="logo-icon">🛰</span><em>Sat</em>&nbsp;Comms</div>
-    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v3.5 · 2026-05-06</div>
+    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v3.6 · 2026-05-07</div>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><span class="pulse"></span><span id="feedStatusText">Ready</span></div>
@@ -2026,7 +2026,10 @@ function switchTab(name) {
   if (name === 'alerts' && typeof renderCompGrid === 'function') renderCompGrid();
   if (name === 'publish' && typeof renderQueue === 'function') renderQueue();
   if (name === 'watchlist' && typeof renderWatchlist === 'function') renderWatchlist();
-  if (name === 'topup' && typeof renderTopupQueue === 'function') renderTopupQueue();
+  if (name === 'topup' && typeof renderTopupQueue === 'function') {
+    renderTopupQueue();
+    loadTopupsFromRelay();
+  }
   if (name === 'pricing' && typeof pricingLoad === 'function') pricingLoad();
   if (name === 'mywix' && typeof loadWixProducts === 'function' && !wixProducts.length) loadWixProducts();
 }
@@ -3711,6 +3714,30 @@ function addLog() {}
 let topupRequests = JSON.parse(localStorage.getItem('sc_topups') || '[]');
 function saveTopups() { localStorage.setItem('sc_topups', JSON.stringify(topupRequests)); }
 
+async function saveTopupToRelay(request) {
+  try { await callRelay('saveTopup', { topup: request }); }
+  catch(e) { console.warn('saveTopupToRelay failed (non-fatal):', e.message); }
+}
+
+async function loadTopupsFromRelay() {
+  try {
+    const r = await callRelay('getTopups', {});
+    const relayTopups = Array.isArray(r) ? r : (r && Array.isArray(r.topups) ? r.topups : []);
+    if (!relayTopups.length) return;
+    const localMap = {};
+    topupRequests.forEach(function(t) { localMap[t.id] = t; });
+    const merged = relayTopups.map(function(rt) {
+      const local = localMap[rt.id];
+      if (local && local.done) { rt.done = local.done; rt.doneAt = local.doneAt; }
+      return rt;
+    });
+    const relayIds = new Set(relayTopups.map(function(t) { return t.id; }));
+    topupRequests.forEach(function(t) { if (!relayIds.has(t.id)) merged.unshift(t); });
+    topupRequests = merged.sort(function(a, b) { return new Date(b.sentAt) - new Date(a.sentAt); });
+    saveTopups(); renderTopupQueue(); updateTopupBadge();
+  } catch(e) { console.warn('loadTopupsFromRelay (using local):', e.message); }
+}
+
 function handleTopupDrop(file) { if (file) processTopupFile(file); }
 function handleTopupFile(file) { if (file) processTopupFile(file); }
 
@@ -3847,6 +3874,7 @@ async function sendTopupRequest() {
   saveTopups();
   renderTopupQueue();
   updateTopupBadge();
+  saveTopupToRelay(request); // share with all users via relay
 
   btn.disabled = false; btn.textContent = '📧 Send Topup Request to SatComms';
   setTimeout(() => {
@@ -3866,7 +3894,7 @@ function resetTopupForm() {
 
 function markTopupDone(id, done) {
   const t = topupRequests.find(r => r.id === id);
-  if (t) { t.done = done; t.doneAt = done ? new Date().toISOString() : null; }
+  if (t) { t.done = done; t.doneAt = done ? new Date().toISOString() : null; saveTopupToRelay(t); }
   saveTopups();
   renderTopupQueue();
   updateTopupBadge();
