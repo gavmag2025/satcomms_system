@@ -3859,6 +3859,69 @@ async function processTopupFile(file) {
   }
 }
 
+function setTopupDeviceRows(devices) {
+  const list = document.getElementById('tp_devices_list');
+  if (!list) return;
+  if (!devices || !devices.length) devices = [{ tel: '', sim: '' }];
+  list.innerHTML = devices.map((d, i) => `
+    <div id="tp_dev_${i}" style="display:grid;grid-template-columns:1fr 1fr 28px;gap:6px;margin-bottom:6px;align-items:center">
+      <input type="text" id="tp_tel_${i}" value="${(d.tel||'').replace(/"/g,'&quot;')}"
+        placeholder="TEL / IMEI" style="font-family:var(--mono);font-size:11px">
+      <input type="text" id="tp_sim_${i}" value="${(d.sim||'').replace(/"/g,'&quot;')}"
+        placeholder="SIM / ICCID" style="font-family:var(--mono);font-size:11px;color:var(--accent2)">
+      <button type="button" onclick="removeTopupDevice(${i})"
+        style="background:none;border:1px solid var(--border2);color:var(--accent3);cursor:pointer;border-radius:4px;padding:0;height:34px;font-size:14px">✕</button>
+    </div>`).join('');
+}
+
+function getTopupDeviceRows() {
+  const list = document.getElementById('tp_devices_list');
+  if (!list) return [];
+  const rows = list.querySelectorAll('[id^="tp_dev_"]');
+  const devices = [];
+  rows.forEach((_, i) => {
+    const tel = document.getElementById('tp_tel_' + i)?.value?.trim() || '';
+    const sim = document.getElementById('tp_sim_' + i)?.value?.trim() || '';
+    if (tel || sim) devices.push({ tel, sim });
+  });
+  return devices;
+}
+
+function addTopupDevice() {
+  const list = document.getElementById('tp_devices_list');
+  if (!list) return;
+  const i = list.querySelectorAll('[id^="tp_dev_"]').length;
+  const row = document.createElement('div');
+  row.id = 'tp_dev_' + i;
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 28px;gap:6px;margin-bottom:6px;align-items:center';
+  row.innerHTML = `
+    <input type="text" id="tp_tel_${i}" placeholder="TEL / IMEI" style="font-family:var(--mono);font-size:11px">
+    <input type="text" id="tp_sim_${i}" placeholder="SIM / ICCID" style="font-family:var(--mono);font-size:11px;color:var(--accent2)">
+    <button type="button" onclick="removeTopupDevice(${i})"
+      style="background:none;border:1px solid var(--border2);color:var(--accent3);cursor:pointer;border-radius:4px;padding:0;height:34px;font-size:14px">✕</button>`;
+  list.appendChild(row);
+  document.getElementById('tp_tel_' + i)?.focus();
+}
+
+function removeTopupDevice(i) {
+  const allRows = document.getElementById('tp_devices_list')?.querySelectorAll('[id^="tp_dev_"]');
+  if (!allRows || allRows.length <= 1) {
+    const telEl = document.getElementById('tp_tel_' + i);
+    const simEl = document.getElementById('tp_sim_' + i);
+    if (telEl) telEl.value = '';
+    if (simEl) simEl.value = '';
+    return;
+  }
+  const all = [];
+  allRows.forEach((_, idx) => {
+    if (idx !== i) all.push({
+      tel: document.getElementById('tp_tel_' + idx)?.value || '',
+      sim: document.getElementById('tp_sim_' + idx)?.value || ''
+    });
+  });
+  setTopupDeviceRows(all.length ? all : [{ tel:'', sim:'' }]);
+}
+
 async function sendTopupRequest() {
   const get = id => document.getElementById(id)?.value?.trim() || '';
   const invoice  = get('tp_invoice');
@@ -3871,12 +3934,16 @@ async function sendTopupRequest() {
   const notes    = get('tp_notes');
   const devices  = getTopupDeviceRows();
 
-  if (!product && !devices.length) { alert('Please enter the airtime product/units.'); return; }
+  if (!product && !devices.filter(d => d.tel || d.sim).length) { alert('Please enter the airtime product/units.'); return; }
 
   const btn = document.getElementById('topupSendBtn');
   const status = document.getElementById('topupSendStatus');
   btn.disabled = true; btn.textContent = '⏳ Sending...';
   status.textContent = ''; status.style.color = 'var(--muted2)';
+  // Safety net — re-enable after 15s if something goes wrong
+  const btnSafetyTimer = setTimeout(() => {
+    btn.disabled = false; btn.textContent = '📧 Send Topup Request to SatComms';
+  }, 15000);
 
   const subject = 'Airtime Topup Request' + (invoice ? ' - ' + invoice : '') + ' - ' + (custName || 'Customer');
   const amtFmt = amount ? 'R' + parseFloat(amount).toLocaleString('en-ZA',{minimumFractionDigits:2}) : '-';
@@ -3909,6 +3976,7 @@ async function sendTopupRequest() {
     }
   } finally {
     // ALWAYS re-enable the button regardless of success or failure
+    clearTimeout(btnSafetyTimer);
     btn.disabled = false;
     btn.textContent = '📧 Send Topup Request to SatComms';
   }
