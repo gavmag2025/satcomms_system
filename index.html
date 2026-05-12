@@ -3887,10 +3887,9 @@ async function sendTopupRequest() {
       + '<td style="padding:8px 12px;border-bottom:1px solid #e8edf2;font-family:monospace;color:#006644">' + (d.sim||'-') + '</td></tr>';
   }).join('') : '<tr><td colspan="3" style="padding:8px 12px;color:#999">(none provided)</td></tr>';
 
-  const htmlBody = buildTopupEmail({ invoice, date, custName, custEmail, custPhone, amount: amtFmt, product, devices, notes, ts, devRows });
-
   try {
-    // Send to both sales and gavmag
+    const htmlBody = buildTopupEmail({ invoice, date, custName, custEmail, custPhone, amount: amtFmt, product, devices, notes, ts, devRows });
+    // Send to sales, gmagid and gavmag gmail as backup
     await callRelay('sendEmail', {
       to: 'sales@satcomms.co.za,gmagid@satcomms.co.za,gavmag@gmail.com',
       subject,
@@ -3900,14 +3899,18 @@ async function sendTopupRequest() {
     status.textContent = '✓ Email sent to sales, gmagid@satcomms.co.za & gavmag@gmail.com';
     status.style.color = 'var(--accent2)';
   } catch(e) {
-    status.textContent = '✗ Send failed: ' + e.message;
+    status.textContent = '✗ Send failed: ' + e.message + ' — saved to queue locally.';
     status.style.color = 'var(--accent3)';
     console.error('sendEmail failed:', e);
-    // Only fall back to mailto if relay is completely unconfigured
-    if (e.message.includes('not configured') || e.message.includes('Relay URL')) {
+    // Fall back to mailto if relay not configured
+    if (e.message && (e.message.includes('not configured') || e.message.includes('Relay URL'))) {
       const plainBody = 'Topup Request\nInvoice: ' + (invoice||'-') + '\nCustomer: ' + (custName||'-') + '\nProduct: ' + (product||'-');
       window.open('mailto:gavmag@gmail.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(plainBody), '_blank');
     }
+  } finally {
+    // ALWAYS re-enable the button regardless of success or failure
+    btn.disabled = false;
+    btn.textContent = '📧 Send Topup Request to SatComms';
   }
 
   // Save to queue regardless
@@ -3925,7 +3928,6 @@ async function sendTopupRequest() {
   updateTopupBadge();
   saveTopupToRelay(request); // share with all users via relay
 
-  btn.disabled = false; btn.textContent = '📧 Send Topup Request to SatComms';
   setTimeout(() => {
     resetTopupForm();
     if (status) status.textContent = '';
