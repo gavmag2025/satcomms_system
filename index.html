@@ -432,7 +432,7 @@ select option{background:var(--surface2)}
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:14px;min-width:0">
     <div class="logo"><span class="logo-icon">🛰</span><em>Sat</em>&nbsp;Comms</div>
-    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v3.6 · 2026-05-07</div>
+    <div class="sys-badge">Product Intelligence System &nbsp;·&nbsp; v3.6 · 2026-05-12</div>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><span class="pulse"></span><span id="feedStatusText">Ready</span></div>
@@ -1334,129 +1334,178 @@ select option{background:var(--surface2)}
 <!-- SETTINGS -->
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- ═══════════════════════════════════════════════════════════ -->
-<!-- AIRTIME TOPUP REQUESTS -->
+<!-- AIRTIME TOPUP DASHBOARD -->
 <!-- ═══════════════════════════════════════════════════════════ -->
 <div class="panel" id="panel-topup">
-  <div class="shdr">
-    <div class="stitle">📶 Airtime <span>Topup Requests</span></div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Upload invoice → AI extracts details → email to sales@satcomms.co.za & gavmag@gmail.com</span>
+
+  <!-- ── DASHBOARD HEADER ── -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+    <div>
+      <div style="font-family:var(--cond);font-size:20px;font-weight:800;letter-spacing:.06em;color:var(--text)">📶 Airtime Topup <span style="color:var(--accent)">Dashboard</span></div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:3px">Shared queue · all staff · relay-synced</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();testTopupRelay()">🔌 Test Relay</button>
+      <span id="topupRelayStatus" style="font-family:var(--mono);font-size:9px;color:var(--muted)"></span>
+      <button class="btn btn-ghost btn-sm" onclick="loadTopupsFromRelay()">↻ Sync</button>
+      <button class="btn btn-primary btn-sm" onclick="showTopupUploadModal()">+ Upload Invoice</button>
     </div>
   </div>
 
-  <!-- TWO COL: UPLOAD LEFT, QUEUE RIGHT -->
-  <div style="display:grid;grid-template-columns:420px 1fr;gap:16px;align-items:start">
+  <!-- ── STAT CARDS ── -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px">
+    <div class="stat">
+      <div class="stat-label">Pending</div>
+      <div class="stat-val" id="tq-stat-pending" style="color:var(--accent4)">0</div>
+      <div class="stat-sub">awaiting action</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Completed Today</div>
+      <div class="stat-val" id="tq-stat-today" style="color:var(--accent2)">0</div>
+      <div class="stat-sub">done today</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">This Month</div>
+      <div class="stat-val" id="tq-stat-month" style="color:var(--accent)">0</div>
+      <div class="stat-sub">total requests</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Revenue (est.)</div>
+      <div class="stat-val" id="tq-stat-revenue" style="color:var(--accent2);font-size:18px">R0</div>
+      <div class="stat-sub">invoice totals</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Overdue</div>
+      <div class="stat-val" id="tq-stat-overdue" style="color:var(--accent3)">0</div>
+      <div class="stat-sub">&gt;24 hrs pending</div>
+    </div>
+  </div>
 
-    <!-- LEFT: UPLOAD + EXTRACTED -->
+  <!-- ── MAIN LAYOUT: QUEUE LEFT, SIDEBAR RIGHT ── -->
+  <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start">
+
+    <!-- LEFT: QUEUE -->
     <div>
-      <!-- Upload box -->
-      <div id="topupUploadBox"
-        onclick="document.getElementById('topupFileInput').click()"
-        ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
-        ondragleave="this.style.borderColor='var(--accent)'"
-        ondrop="event.preventDefault();this.style.borderColor='var(--accent)';handleTopupDrop(event.dataTransfer.files[0])"
-        style="border:2px dashed var(--accent);border-radius:6px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface);margin-bottom:14px">
-        <div style="font-size:40px;margin-bottom:12px;opacity:.7">🧾</div>
-        <div style="font-family:var(--cond);font-size:18px;font-weight:800;color:var(--accent);letter-spacing:.06em;margin-bottom:6px">DROP INVOICE HERE</div>
-        <div style="font-family:var(--mono);font-size:9px;color:var(--muted2)">PDF or image (JPG/PNG) · AI will extract all details</div>
-        <div style="margin-top:8px"><button type="button" class="btn btn-ghost btn-sm" onclick="event.stopPropagation();testTopupRelay()" style="font-size:8px;padding:2px 8px">🔌 Test Relay</button><span id="topupRelayStatus" style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-left:6px"></span></div>
-        <input type="file" id="topupFileInput" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="handleTopupFile(this.files[0])">
+      <!-- Queue header + filter -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+        <span style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--muted2);letter-spacing:.1em">QUEUE</span>
+        <input type="text" id="tqSearch" placeholder="Search name, invoice, product..." oninput="renderTopupQueue()" style="flex:1;min-width:160px;font-size:12px;padding:6px 10px">
+        <select id="tqFilter" onchange="renderTopupQueue()" style="font-size:11px;padding:6px 10px;width:auto">
+          <option value="pending">Pending only</option>
+          <option value="all">All requests</option>
+          <option value="done">Completed</option>
+          <option value="overdue">Overdue</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="clearDoneTopups()">Clear done</button>
       </div>
 
-      <!-- Extracted fields (hidden until parsed) -->
-      <div id="topupExtractedPanel" style="display:none">
-        <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:16px;margin-bottom:12px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-            <div style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.1em">EXTRACTED FROM INVOICE</div>
-            <div id="topupExtractBadge" style="font-family:var(--mono);font-size:8px;padding:2px 8px;border-radius:3px;background:var(--accent2);color:#000">✓ AI PARSED</div>
-          </div>
+      <!-- Queue list -->
+      <div id="topupQueue" style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <div class="empty" style="padding:40px 20px">
+          <div class="empty-icon">📶</div>
+          <div class="empty-text">No topup requests yet.<br>Click <b>+ Upload Invoice</b> to get started.</div>
+        </div>
+      </div>
+    </div>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-            <div>
-              <div class="flabel">Invoice Number</div>
-              <input type="text" id="tp_invoice" placeholder="INV-0001">
-            </div>
-            <div>
-              <div class="flabel">Invoice Date</div>
-              <input type="date" id="tp_date">
-            </div>
-            <div>
-              <div class="flabel">Customer Name</div>
-              <input type="text" id="tp_custname" placeholder="Full name">
-            </div>
-            <div>
-              <div class="flabel">Customer Email</div>
-              <input type="email" id="tp_custemail" placeholder="customer@email.com">
-            </div>
-            <div>
-              <div class="flabel">Customer Phone</div>
-              <input type="text" id="tp_custphone" placeholder="+27...">
-            </div>
-            <div>
-              <div class="flabel">Invoice Total (R)</div>
-              <input type="number" id="tp_amount" placeholder="0.00" min="0" step="0.01">
-            </div>
-          </div>
+    <!-- RIGHT: SIDEBAR -->
+    <div style="display:flex;flex-direction:column;gap:12px">
 
-          <!-- Airtime line items -->
-          <div style="margin-bottom:10px">
-            <div class="flabel" style="margin-bottom:6px">Airtime Product / Units</div>
-            <textarea id="tp_product" rows="2" placeholder="e.g. Iridium 500 African Units x1&#10;Inmarsat 100 Global Units x2" style="font-size:12px;resize:vertical"></textarea>
-          </div>
+      <!-- Upload card -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <div style="background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 14px;font-family:var(--mono);font-size:9px;font-weight:700;color:var(--accent);letter-spacing:.1em">UPLOAD INVOICE</div>
+        <div id="topupUploadBox"
+          onclick="document.getElementById('topupFileInput').click()"
+          ondragover="event.preventDefault();this.style.background='var(--surface3)'"
+          ondragleave="this.style.background=''"
+          ondrop="event.preventDefault();this.style.background='';handleTopupDrop(event.dataTransfer.files[0])"
+          style="padding:20px;text-align:center;cursor:pointer;transition:background .2s">
+          <div style="font-size:32px;margin-bottom:8px;opacity:.6">🧾</div>
+          <div style="font-family:var(--cond);font-size:14px;font-weight:700;color:var(--accent);letter-spacing:.05em;margin-bottom:4px">DROP INVOICE HERE</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted2)">PDF or image (JPG/PNG)</div>
+          <input type="file" id="topupFileInput" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="handleTopupFile(this.files[0])">
+        </div>
+        <!-- Parsing spinner (inline) -->
+        <div id="topupParsingPanel" style="display:none;padding:16px;text-align:center;border-top:1px solid var(--border)">
+          <div style="font-size:22px;animation:spin 1.5s linear infinite;display:inline-block;margin-bottom:6px">⚙</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--accent)">Reading invoice...</div>
+          <div id="topupParsingMsg" style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:3px"></div>
+        </div>
+      </div>
 
-          <!-- TEL/IMEI + SIM/ICCID pairs — dynamically generated -->
-          <div style="margin-bottom:10px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-              <div class="flabel" style="margin-bottom:0">TEL / IMEI &amp; SIM / ICCID Numbers</div>
-              <button type="button" class="btn btn-ghost btn-sm" onclick="addTopupDevice()" style="padding:2px 8px;font-size:9px">+ Add Row</button>
-            </div>
-            <div id="tp_devices_list"></div>
-          </div>
+      <!-- Top products card -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <div style="background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 14px;font-family:var(--mono);font-size:9px;font-weight:700;color:var(--muted2);letter-spacing:.1em">TOP PRODUCTS</div>
+        <div id="tq-top-products" style="padding:12px 14px">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;padding:10px 0">No data yet</div>
+        </div>
+      </div>
 
-          <!-- Notes -->
-          <div>
-            <div class="flabel" style="margin-bottom:6px">Notes (optional)</div>
-            <textarea id="tp_notes" rows="2" placeholder="Any special instructions..." style="font-size:12px;resize:vertical"></textarea>
-          </div>
+      <!-- Staff activity card -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <div style="background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 14px;font-family:var(--mono);font-size:9px;font-weight:700;color:var(--muted2);letter-spacing:.1em">STAFF ACTIVITY <span style="color:var(--muted)">(THIS MONTH)</span></div>
+        <div id="tq-staff-activity" style="padding:12px 14px">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;padding:10px 0">No data yet</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── INVOICE MODAL (shown after parsing) ── -->
+  <div id="topupInvoiceModal" style="display:none;position:fixed;inset:0;background:rgba(2,4,8,.85);z-index:500;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.7)">
+      <div style="background:var(--surface2);border-bottom:1px solid var(--border);padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-family:var(--cond);font-size:16px;font-weight:800;letter-spacing:.06em;color:var(--accent)">EXTRACTED FROM INVOICE</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">Review and confirm before sending</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div id="topupExtractBadge" style="font-family:var(--mono);font-size:8px;padding:2px 8px;border-radius:3px;background:var(--accent2);color:#000">✓ AI PARSED</div>
+          <button onclick="closeTopupModal()" style="background:none;border:none;cursor:pointer;color:var(--muted2);font-size:18px;line-height:1">✕</button>
+        </div>
+      </div>
+
+      <div style="padding:20px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div><div class="flabel">Invoice Number</div><input type="text" id="tp_invoice" placeholder="INV-0001"></div>
+          <div><div class="flabel">Invoice Date</div><input type="date" id="tp_date"></div>
+          <div><div class="flabel">Customer Name</div><input type="text" id="tp_custname" placeholder="Full name"></div>
+          <div><div class="flabel">Customer Email</div><input type="email" id="tp_custemail" placeholder="customer@email.com"></div>
+          <div><div class="flabel">Customer Phone</div><input type="text" id="tp_custphone" placeholder="+27..."></div>
+          <div><div class="flabel">Invoice Total (R)</div><input type="number" id="tp_amount" placeholder="0.00" min="0" step="0.01"></div>
         </div>
 
-        <!-- Action buttons -->
+        <div style="margin-bottom:12px">
+          <div class="flabel" style="margin-bottom:6px">Airtime Product / Units</div>
+          <textarea id="tp_product" rows="2" placeholder="e.g. Iridium 500 African Units x1" style="font-size:12px;resize:vertical"></textarea>
+        </div>
+
+        <div style="margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div class="flabel" style="margin-bottom:0">TEL / IMEI &amp; SIM / ICCID Numbers</div>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="addTopupDevice()" style="padding:2px 8px;font-size:9px">+ Add Row</button>
+          </div>
+          <div id="tp_devices_list"></div>
+        </div>
+
+        <div style="margin-bottom:16px">
+          <div class="flabel" style="margin-bottom:6px">Notes (optional)</div>
+          <textarea id="tp_notes" rows="2" placeholder="Any special instructions..." style="font-size:12px;resize:vertical"></textarea>
+        </div>
+
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-primary" onclick="sendTopupRequest()" id="topupSendBtn" style="flex:1;justify-content:center">
-            📧 Send Topup Request to SatComms
-          </button>
+          <button class="btn btn-primary" onclick="sendTopupRequest()" id="topupSendBtn" style="flex:1;justify-content:center">📧 Send Topup Request to SatComms</button>
           <button class="btn btn-ghost btn-sm" onclick="resetTopupForm()">✕ Clear</button>
         </div>
         <div id="topupSendStatus" style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-top:8px;min-height:14px;text-align:center"></div>
       </div>
-
-      <!-- Parsing spinner -->
-      <div id="topupParsingPanel" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:24px;text-align:center">
-        <div style="font-size:28px;animation:spin 1.5s linear infinite;display:inline-block;margin-bottom:10px">⚙</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--accent)">Reading invoice with AI...</div>
-        <div id="topupParsingMsg" style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px"></div>
-      </div>
-    </div>
-
-    <!-- RIGHT: TOPUP QUEUE -->
-    <div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--muted2);letter-spacing:.1em">TOPUP QUEUE</div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer">
-            <input type="checkbox" id="topupShowDone" onchange="renderTopupQueue()" style="accent-color:var(--accent)"> Show completed
-          </label>
-          <button class="btn btn-ghost btn-sm" onclick="clearDoneTopups()">Clear done</button>
-        </div>
-      </div>
-      <div id="topupQueue">
-        <div class="empty" style="padding:40px 20px">
-          <div class="empty-icon">📶</div>
-          <div class="empty-text">No topup requests yet.<br>Upload an invoice to get started.</div>
-        </div>
-      </div>
     </div>
   </div>
+
+  <!-- hidden extracted panel anchor (JS still references this) -->
+  <div id="topupExtractedPanel" style="display:none"></div>
+
 </div>
 
 
@@ -3795,15 +3844,15 @@ async function processTopupFile(file) {
     setTopupDeviceRows(devices.length ? devices : [{ tel: '', sim: '' }]);
 
     parsing.style.display = 'none';
-    extracted.style.display = 'block';
     document.getElementById('topupExtractBadge').textContent = '✓ AI PARSED';
     document.getElementById('topupExtractBadge').style.background = 'var(--accent2)';
+    showTopupExtractedModal();
 
   } catch(e) {
     parsing.style.display = 'none';
-    extracted.style.display = 'block';
     document.getElementById('topupExtractBadge').textContent = '⚠ MANUAL ENTRY';
     document.getElementById('topupExtractBadge').style.background = 'var(--accent4)';
+    showTopupExtractedModal();
     setTopupDeviceRows([{ tel: '', sim: '' }]);
     const status = document.getElementById('topupSendStatus');
     if (status) { status.textContent = 'Could not auto-extract (' + e.message + ') — fill in manually.'; status.style.color = 'var(--accent4)'; }
@@ -3879,16 +3928,16 @@ async function sendTopupRequest() {
   btn.disabled = false; btn.textContent = '📧 Send Topup Request to SatComms';
   setTimeout(() => {
     resetTopupForm();
-    status.textContent = '';
-  }, 3000);
+    if (status) status.textContent = '';
+  }, 2000);
 }
 
 function resetTopupForm() {
   ['tp_invoice','tp_date','tp_custname','tp_custemail','tp_custphone','tp_amount','tp_product','tp_notes']
     .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   setTopupDeviceRows([{ tel: '', sim: '' }]);
-  document.getElementById('topupExtractedPanel').style.display = 'none';
   document.getElementById('topupParsingPanel').style.display = 'none';
+  closeTopupModal();
   document.getElementById('topupFileInput').value = '';
 }
 
@@ -3925,178 +3974,206 @@ function updateTopupBadge() {
   else { badge.style.display = 'none'; }
 }
 
+// ── DASHBOARD STAT CARDS ────────────────────────────────────────
+function updateTopupStats() {
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  const monthStr = now.toISOString().substring(0, 7);
+  const pending  = topupRequests.filter(r => !r.done);
+  const overdue  = pending.filter(r => {
+    if (!r.sentAt) return false;
+    return (now - new Date(r.sentAt)) > 24 * 60 * 60 * 1000;
+  });
+  const doneToday = topupRequests.filter(r => r.done && r.doneAt && r.doneAt.startsWith(todayStr));
+  const thisMonth = topupRequests.filter(r => r.sentAt && r.sentAt.startsWith(monthStr));
+  const revenue   = thisMonth.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('tq-stat-pending', pending.length);
+  set('tq-stat-today',   doneToday.length);
+  set('tq-stat-month',   thisMonth.length);
+  set('tq-stat-revenue', 'R' + Math.round(revenue).toLocaleString('en-ZA'));
+  set('tq-stat-overdue', overdue.length);
+  // Colour overdue red if > 0
+  const overdueEl = document.getElementById('tq-stat-overdue');
+  if (overdueEl) overdueEl.style.color = overdue.length > 0 ? 'var(--accent3)' : 'var(--muted2)';
+  updateTopupSidePanels();
+}
+
+function updateTopupSidePanels() {
+  // ── Top products ──
+  const prodCounts = {};
+  topupRequests.forEach(r => {
+    if (!r.product) return;
+    const lines = r.product.split('\n').filter(Boolean);
+    lines.forEach(l => {
+      const key = l.trim().substring(0, 40);
+      if (key) prodCounts[key] = (prodCounts[key] || 0) + 1;
+    });
+  });
+  const sorted = Object.entries(prodCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const prodEl = document.getElementById('tq-top-products');
+  if (prodEl) {
+    if (!sorted.length) {
+      prodEl.innerHTML = '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;padding:10px 0">No data yet</div>';
+    } else {
+      const max = sorted[0][1];
+      prodEl.innerHTML = sorted.map(([name, count]) =>
+        `<div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <div style="font-size:11px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:190px" title="${name}">${name}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);flex-shrink:0;margin-left:6px">${count}×</div>
+          </div>
+          <div style="height:3px;background:var(--border2);border-radius:2px">
+            <div style="height:100%;background:var(--accent);border-radius:2px;width:${Math.round(count/max*100)}%"></div>
+          </div>
+        </div>`
+      ).join('');
+    }
+  }
+
+  // ── Staff activity ──
+  const now = new Date();
+  const monthStr = now.toISOString().substring(0, 7);
+  const staffCounts = {};
+  topupRequests.filter(r => r.sentAt && r.sentAt.startsWith(monthStr)).forEach(r => {
+    const who = r.submittedBy || r.custName || 'Unknown';
+    staffCounts[who] = (staffCounts[who] || 0) + 1;
+  });
+  const staffSorted = Object.entries(staffCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const staffEl = document.getElementById('tq-staff-activity');
+  if (staffEl) {
+    if (!staffSorted.length) {
+      staffEl.innerHTML = '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;padding:10px 0">No data yet</div>';
+    } else {
+      staffEl.innerHTML = staffSorted.map(([name, count]) => {
+        const initials = name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+        return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">${initials}</div>
+            <div style="font-size:12px;color:var(--text)">${name.substring(0, 18)}</div>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">${count} processed</div>
+        </div>`;
+      }).join('');
+    }
+  }
+}
+
+// ── MODAL HELPERS ──────────────────────────────────────────────
+function showTopupUploadModal() {
+  document.getElementById('topupFileInput').click();
+}
+
+function showTopupExtractedModal() {
+  const modal = document.getElementById('topupInvoiceModal');
+  if (modal) { modal.style.display = 'flex'; }
+}
+
+function closeTopupModal() {
+  const modal = document.getElementById('topupInvoiceModal');
+  if (modal) modal.style.display = 'none';
+}
+
+// Close modal on backdrop click
+document.addEventListener('click', function(e) {
+  const modal = document.getElementById('topupInvoiceModal');
+  if (modal && e.target === modal) closeTopupModal();
+});
+
+// ── RENDER QUEUE (DASHBOARD ROW STYLE) ──────────────────────────
 function renderTopupQueue() {
   const container = document.getElementById('topupQueue');
   if (!container) return;
-  const showDone = document.getElementById('topupShowDone')?.checked;
-  const visible = showDone ? topupRequests : topupRequests.filter(r => !r.done);
+  updateTopupStats();
+
+  const filterMode = document.getElementById('tqFilter')?.value || 'pending';
+  const search     = (document.getElementById('tqSearch')?.value || '').toLowerCase();
+  const now        = new Date();
+
+  let visible = topupRequests.filter(r => {
+    const isOverdue = !r.done && r.sentAt && (now - new Date(r.sentAt)) > 24 * 60 * 60 * 1000;
+    if (filterMode === 'pending' && r.done) return false;
+    if (filterMode === 'done'    && !r.done) return false;
+    if (filterMode === 'overdue' && (!isOverdue)) return false;
+    if (search) {
+      const haystack = ((r.custName||'') + (r.invoice||'') + (r.product||'') + (r.custEmail||'')).toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+    return true;
+  });
 
   if (!visible.length) {
     container.innerHTML = `<div class="empty" style="padding:40px 20px">
       <div class="empty-icon">📶</div>
-      <div class="empty-text">${topupRequests.length ? 'No pending topups.<br>All done! 🎉' : 'No topup requests yet.<br>Upload an invoice to get started.'}</div>
+      <div class="empty-text">${topupRequests.length ? 'No requests match your filter.' : 'No topup requests yet.<br>Click <b>+ Upload Invoice</b> to get started.'}</div>
     </div>`;
     return;
   }
 
   container.innerHTML = visible.map(r => {
-    const date = r.date || (r.sentAt ? new Date(r.sentAt).toLocaleDateString('en-ZA') : '—');
-    const sentAt = r.sentAt ? new Date(r.sentAt).toLocaleString('en-ZA', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
-    const amount = r.amount ? 'R' + r.amount.toLocaleString('en-ZA', {minimumFractionDigits:2}) : '—';
+    const sentAt = r.sentAt ? new Date(r.sentAt) : null;
+    const ageMs  = sentAt ? now - sentAt : 0;
+    const ageStr = !sentAt ? '—' : ageMs < 3600000 ? Math.round(ageMs/60000) + ' min ago'
+      : ageMs < 86400000 ? Math.round(ageMs/3600000) + ' hr ago'
+      : Math.round(ageMs/86400000) + ' days ago';
+    const isOverdue = !r.done && ageMs > 24 * 60 * 60 * 1000;
+    const amount = r.amount ? 'R' + parseFloat(r.amount).toLocaleString('en-ZA', {minimumFractionDigits:2}) : '—';
+    const deviceCount = r.devices ? r.devices.filter(d => d.tel || d.sim).length : 0;
+    const prodShort = (r.product || '—').split('\n')[0].substring(0, 45);
 
-    return `<div style="background:var(--surface);border:1px solid ${r.done ? 'var(--border)' : 'var(--border2)'};border-left:3px solid ${r.done ? 'var(--accent2)' : 'var(--accent)'};border-radius:0 6px 6px 0;padding:14px 16px;margin-bottom:8px;opacity:${r.done ? '.6' : '1'};transition:opacity .2s">
-      <!-- Header row -->
-      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
-        <input type="checkbox" ${r.done ? 'checked' : ''} onchange="markTopupDone(${r.id}, this.checked)"
-          style="accent-color:var(--accent2);width:16px;height:16px;margin-top:2px;flex-shrink:0;cursor:pointer">
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent)">${r.invoice || 'No invoice #'}</span>
-            <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">· ${date}</span>
-            <span style="font-family:var(--mono);font-size:9px;color:var(--accent2);font-weight:600">${amount}</span>
-            ${r.done ? '<span style="font-family:var(--mono);font-size:8px;padding:1px 6px;border-radius:2px;background:var(--accent2);color:#000">DONE</span>' : ''}
-          </div>
-          <div style="font-size:13px;font-weight:600;color:var(--text);margin-top:3px">${r.custName || '—'}</div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--muted2)">
-            ${r.custEmail || ''} ${r.custPhone ? '· ' + r.custPhone : ''}
-          </div>
+    return `<div style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border);background:${r.done ? 'transparent' : isOverdue ? 'rgba(255,77,109,.04)' : 'transparent'};transition:background .15s"
+      onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='${r.done ? 'transparent' : isOverdue ? 'rgba(255,77,109,.04)' : 'transparent'}'">
+
+      <input type="checkbox" ${r.done ? 'checked' : ''} onchange="markTopupDone(${r.id}, this.checked)"
+        style="accent-color:var(--accent2);width:15px;height:15px;flex-shrink:0;cursor:pointer">
+
+      <div style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:${r.done ? 'var(--accent2)' : isOverdue ? 'var(--accent3)' : 'var(--accent4)'}"></div>
+
+      <div style="flex:1;min-width:0;${r.done ? 'opacity:.5' : ''}">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
+          <span style="font-size:13px;font-weight:600;${r.done ? 'text-decoration:line-through' : ''}">${r.custName || '—'}</span>
+          ${r.invoice ? `<span style="font-family:var(--mono);font-size:9px;color:var(--accent)">· ${r.invoice}</span>` : ''}
+          <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">${ageStr}</span>
+          ${isOverdue ? '<span style="font-family:var(--mono);font-size:8px;padding:1px 6px;border-radius:2px;background:var(--accent3);color:#fff">OVERDUE</span>' : ''}
+          ${r.done ? '<span style="font-family:var(--mono);font-size:8px;padding:1px 6px;border-radius:2px;background:var(--accent2);color:#000">DONE</span>' : ''}
         </div>
-        <button onclick="deleteTopup(${r.id})" class="btn btn-danger btn-sm" style="flex-shrink:0">✕</button>
-      </div>
-
-      <!-- Airtime product -->
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:8px 12px;margin-bottom:8px">
-        <div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.1em;margin-bottom:4px">AIRTIME REQUESTED</div>
-        <div style="font-size:12px;line-height:1.6;white-space:pre-wrap">${r.product || '—'}</div>
-      </div>
-
-      <!-- Device entries: TEL/IMEI + SIM/ICCID -->
-      ${r.devices && r.devices.length ? `
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:8px 12px;margin-bottom:8px">
-        <div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.1em;margin-bottom:6px">TEL / IMEI &amp; SIM / ICCID (${r.devices.length})</div>
-        ${r.devices.map((d, i) => `
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:10px">
-            <div><span style="color:var(--muted);font-size:8px">TEL/IMEI ${i+1}</span><br><span style="color:var(--text)">${d.tel || '—'}</span></div>
-            <div><span style="color:var(--muted);font-size:8px">SIM/ICCID ${i+1}</span><br><span style="color:var(--accent2)">${d.sim || '—'}</span></div>
-          </div>`).join('')}
-      </div>` : ''}
-
-      ${r.notes ? `<div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-bottom:8px">📝 ${r.notes}</div>` : ''}
-
-      <!-- Footer -->
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
-        <div style="font-family:var(--mono);font-size:8px;color:var(--muted)">Submitted ${sentAt}</div>
-        <div style="display:flex;gap:6px">
-          ${r.custEmail ? `<a href="mailto:${r.custEmail}?subject=Re: Airtime Topup ${r.invoice||''}" class="btn btn-ghost btn-sm">📧 Reply</a>` : ''}
-          <button onclick="resendTopupEmail(${r.id})" class="btn btn-ghost btn-sm">↩ Resend</button>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          ${prodShort}${deviceCount ? ` · ${deviceCount} device${deviceCount !== 1 ? 's' : ''}` : ''}
         </div>
       </div>
+
+      <div style="font-family:var(--cond);font-size:16px;font-weight:700;color:var(--accent2);flex-shrink:0;${r.done ? 'opacity:.5' : ''}">${amount}</div>
+
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        <button class="btn btn-ghost btn-sm" onclick="expandTopupRow(${r.id})" title="View details" style="padding:3px 8px">⋯</button>
+        ${r.custEmail ? `<button class="btn btn-ghost btn-sm" onclick="resendTopupEmail(${r.id})" title="Resend email" style="padding:3px 8px">📧</button>` : ''}
+        <button class="btn btn-danger btn-sm" onclick="deleteTopup(${r.id})" style="padding:3px 8px">✕</button>
+      </div>
+    </div>
+    <div id="tq-expand-${r.id}" style="display:none;padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border)">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:10px;font-size:12px">
+        <div><span style="color:var(--muted)">Email: </span><span>${r.custEmail || '—'}</span></div>
+        <div><span style="color:var(--muted)">Phone: </span><span>${r.custPhone || '—'}</span></div>
+        <div><span style="color:var(--muted)">Date: </span><span>${r.date || '—'}</span></div>
+        <div><span style="color:var(--muted)">Total: </span><span style="color:var(--accent2);font-weight:600">${amount}</span></div>
+      </div>
+      ${r.product ? `<div style="background:var(--surface3);border-radius:4px;padding:8px 10px;font-size:12px;margin-bottom:8px;white-space:pre-wrap">${r.product}</div>` : ''}
+      ${r.devices && r.devices.filter(d=>d.tel||d.sim).length ? `
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Devices (${r.devices.filter(d=>d.tel||d.sim).length})</div>
+        ${r.devices.filter(d=>d.tel||d.sim).map((d,i) =>
+          `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:10px">
+            <div><span style="color:var(--muted)">TEL/IMEI ${i+1}: </span><span style="color:var(--accent)">${d.tel||'—'}</span></div>
+            <div><span style="color:var(--muted)">SIM/ICCID: </span><span style="color:var(--accent2)">${d.sim||'—'}</span></div>
+          </div>`
+        ).join('')}` : ''}
+      ${r.notes ? `<div style="margin-top:8px;font-size:12px;color:var(--muted2)">📝 ${r.notes}</div>` : ''}
     </div>`;
   }).join('');
 }
 
-// ---- Device row helpers (TEL/IMEI + SIM/ICCID) ----
-function setTopupDeviceRows(devices) {
-  const list = document.getElementById('tp_devices_list');
-  if (!list) return;
-  if (!devices || !devices.length) devices = [{ tel: '', sim: '' }];
-  list.innerHTML = devices.map((d, i) => `
-    <div id="tp_dev_${i}" style="display:grid;grid-template-columns:1fr 1fr 28px;gap:6px;margin-bottom:6px;align-items:center">
-      <input type="text" id="tp_tel_${i}" value="${(d.tel||'').replace(/"/g,'&quot;')}"
-        placeholder="TEL / IMEI" style="font-family:var(--mono);font-size:11px">
-      <input type="text" id="tp_sim_${i}" value="${(d.sim||'').replace(/"/g,'&quot;')}"
-        placeholder="SIM / ICCID" style="font-family:var(--mono);font-size:11px;color:var(--accent2)">
-      <button type="button" onclick="removeTopupDevice(${i})"
-        style="background:none;border:1px solid var(--border2);color:var(--accent3);cursor:pointer;border-radius:4px;padding:0;height:34px;font-size:14px">✕</button>
-    </div>`).join('');
-}
-
-function getTopupDeviceRows() {
-  const list = document.getElementById('tp_devices_list');
-  if (!list) return [];
-  const rows = list.querySelectorAll('[id^="tp_dev_"]');
-  const devices = [];
-  rows.forEach((_, i) => {
-    const tel = document.getElementById('tp_tel_' + i)?.value?.trim() || '';
-    const sim = document.getElementById('tp_sim_' + i)?.value?.trim() || '';
-    if (tel || sim) devices.push({ tel, sim });
-  });
-  return devices;
-}
-
-function addTopupDevice() {
-  const current = getTopupDeviceRows();
-  // Add a blank row
-  const list = document.getElementById('tp_devices_list');
-  if (!list) return;
-  const i = list.querySelectorAll('[id^="tp_dev_"]').length;
-  const row = document.createElement('div');
-  row.id = 'tp_dev_' + i;
-  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 28px;gap:6px;margin-bottom:6px;align-items:center';
-  row.innerHTML = `
-    <input type="text" id="tp_tel_${i}" placeholder="TEL / IMEI" style="font-family:var(--mono);font-size:11px">
-    <input type="text" id="tp_sim_${i}" placeholder="SIM / ICCID" style="font-family:var(--mono);font-size:11px;color:var(--accent2)">
-    <button type="button" onclick="removeTopupDevice(${i})"
-      style="background:none;border:1px solid var(--border2);color:var(--accent3);cursor:pointer;border-radius:4px;padding:0;height:34px;font-size:14px">✕</button>`;
-  list.appendChild(row);
-  document.getElementById('tp_tel_' + i)?.focus();
-}
-
-function removeTopupDevice(i) {
-  const current = getTopupDeviceRows();
-  // remove the row at index i from current, re-render
-  const allRows = document.getElementById('tp_devices_list')?.querySelectorAll('[id^="tp_dev_"]');
-  if (!allRows || allRows.length <= 1) {
-    // Don't remove the last row, just clear it
-    const telEl = document.getElementById('tp_tel_' + i);
-    const simEl = document.getElementById('tp_sim_' + i);
-    if (telEl) telEl.value = '';
-    if (simEl) simEl.value = '';
-    return;
-  }
-  // Collect all current values, remove index i, re-render
-  const all = [];
-  allRows.forEach((_, idx) => {
-    if (idx !== i) all.push({
-      tel: document.getElementById('tp_tel_' + idx)?.value || '',
-      sim: document.getElementById('tp_sim_' + idx)?.value || ''
-    });
-  });
-  setTopupDeviceRows(all.length ? all : [{ tel:'', sim:'' }]);
-}
-
-async function resendTopupEmail(id) {
-  const r = topupRequests.find(x => x.id === id);
-  if (!r) return;
-  const subject = `Airtime Topup Request${r.invoice ? ' — ' + r.invoice : ''} — ${r.custName || 'Customer'} (RESEND)`;
-  const ts = new Date().toLocaleString('en-ZA');
-  const amtFmt = r.amount ? 'R' + parseFloat(r.amount).toLocaleString('en-ZA',{minimumFractionDigits:2}) : '-';
-  const devRows2 = (r.devices && r.devices.length)
-    ? r.devices.map(function(d,i){
-        return '<tr><td style="padding:8px 12px;border-bottom:1px solid #e8edf2;color:#333;text-align:center">' + (i+1) + '</td>'
-          + '<td style="padding:8px 12px;border-bottom:1px solid #e8edf2;font-family:monospace;color:#0055aa">' + (d.tel||'-') + '</td>'
-          + '<td style="padding:8px 12px;border-bottom:1px solid #e8edf2;font-family:monospace;color:#006644">' + (d.sim||'-') + '</td></tr>';
-      }).join('')
-    : '<tr><td colspan="3" style="padding:8px 12px;color:#999">(none provided)</td></tr>';
-
-  const htmlBody = buildTopupEmail({
-    invoice: r.invoice, date: r.date, custName: r.custName, custEmail: r.custEmail,
-    custPhone: r.custPhone, amount: amtFmt, product: r.product,
-    devices: r.devices, notes: r.notes, ts, devRows: devRows2
-  });
-
-  const plainBody = 'Topup Request (Resend)\nInvoice: ' + (r.invoice||'-') + '\nCustomer: ' + (r.custName||'-') + '\nProduct: ' + (r.product||'-');
-  try {
-    await callRelay('sendEmail', {
-      to: 'sales@satcomms.co.za,gmagid@satcomms.co.za,gavmag@gmail.com',
-      subject,
-      body: plainBody,
-      htmlBody
-    });
-    alert('✓ Resent to sales, gmagid@satcomms.co.za & gavmag@gmail.com');
-  } catch(e) {
-    window.open(`mailto:gavmag@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainBody)}`, '_blank');
-  }
+function expandTopupRow(id) {
+  const el = document.getElementById('tq-expand-' + id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 // Init topup on load
